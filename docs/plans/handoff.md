@@ -56,7 +56,6 @@ grid-passport/
 ├── grid-passport-harness/              specs + subagent prompts (don't delete)
 ├── docs/plans/handoff.md               this file
 ├── CLAUDE.md                           project rules
-├── vercel.json                         monorepo build config
 └── pnpm-workspace.yaml
 ```
 
@@ -117,9 +116,22 @@ Add a new case:
 - Repo was initialized with `git init --initial-branch=main`. First commit: `03d8b57 initial hackathon build (phases 0–2)`.
 - Memory files in `~/.claude/projects/...` have been retired in favor of this doc. Don't resume persisting state there for this project.
 
+## Vercel deploy
+
+- **Live:** https://grid-passport.vercel.app (canonical) and https://grid-passport-web.vercel.app (default).
+- **Project:** `ming-jins-projects/grid-passport-web`, linked to GitHub. Pushes to `main` auto-deploy to production.
+- **Settings live server-side (no `vercel.json` in repo).** Root Directory = `apps/web`, framework = nextjs, install = `cd ../.. && pnpm install --frozen-lockfile`, build = `pnpm run build`, output = `.next`. SSO/password protection disabled (public hackathon demo).
+- **Why no `vercel.json`:** an earlier root `vercel.json` doubled the output path (`apps/web/apps/web/.next`) when combined with the Root Directory setting. We tried multiple in-repo configs; project-level settings turned out to be the only stable place. Don't re-add `vercel.json` without re-deriving why it was removed.
+- **`apps/web/next.config.ts` pins `turbopack.root` to the workspace root** so `vercel build` from `apps/web` cwd can resolve the Next package. Don't remove unless you stop using `vercel build` locally and Vercel's remote builder gets smarter about pnpm workspaces.
+- **CLI ops** (Vercel CLI installed via Homebrew, auth in `~/Library/Application Support/com.vercel.cli/`):
+  - Re-link: `vercel link --yes --project grid-passport-web`
+  - Pull settings: `vercel pull --yes --environment=production`
+  - Manual deploy: `vercel deploy --prod --yes`
+  - Logs: `vercel logs <deployment-url> --follow`
+  - Aliases: `vercel alias ls`
+
 ## Open items
 
-- **Vercel deploy** — done. Project `ming-jins-projects/grid-passport-web`, linked to GitHub for auto-deploy on `main`. Settings live server-side (no `vercel.json` in repo): Root Directory = `apps/web`, framework = nextjs, install = `cd ../.. && pnpm install --frozen-lockfile`, build = `pnpm run build`, output = `.next`. SSO/password protection disabled (public hackathon demo). To re-link locally: `vercel link --yes --project grid-passport-web`. Local sanity: `vercel pull --yes --environment=production` from `apps/web/`.
 - **OPA WASM runtime** — Rego is canonical, but still evaluated by a TS mirror. Plan: precompile `grid-passport.rego` → WASM, load in-process in the Next.js route handler. Remove the TS mirror once cross-checked.
 - **LLM Explainer agent** — a Claude API call that turns released proofs into role-specific prose ("why this customer is in this treatment band"). Must only consume the ProjectedView, never the raw request. First Python-only agent; motivates the Next.js → FastAPI proxy.
 - **Eval harness** — promptfoo + deepeval per the spec. At minimum: role-leakage tests, counterfactual-responsiveness, evidence recall.
