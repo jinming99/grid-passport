@@ -1,0 +1,133 @@
+# Eval-harness owner briefs
+
+**Purpose.** Standalone briefs for the three owners of the roadmap §14 eval harness. Each brief is self-contained: goal, scope, acceptance, dependencies, escalation path. Read the linked docs for full context.
+
+**Rubric.** `docs/evals/rubric.md` (approved 2026-04-18). This is what "good" means for the human-preference axis. Use it verbatim.
+
+**Canonical spec.** `docs/agents.md` §7 — category table, N-targets, baseline methodology.
+
+**Handoff fixture context.** `docs/plans/handoff.md` — read §Architecture + §Extending before touching `packages/core/` or `packages/agents/`.
+
+**Escalation.** Ping Ming for: rubric interpretation disputes, any decision that would change `packages/core/` projection/policy code, or upstream domain-source changes (EPRI MOSAIC spec, DEQ tier structure, FEMA flood-zone codes). Otherwise proceed.
+
+---
+
+## Owner A — eval scaffolding + analysis
+
+**Timeline.** Week 1 (scaffolding), week 3 (analysis).
+
+**Week 1 — scaffolding.**
+
+- Goal: `pnpm eval:agents` runs all four eval categories end-to-end and writes per-Skill JSON + a markdown summary table.
+- Files: new `apps/web/scripts/eval/` directory. Structure:
+  - `runner.ts` — top-level orchestrator; iterates category × Skill × case.
+  - `categories/role-leakage.ts` — extends the existing `privacy-canary.ts` logic to run over agent outputs (not just projection outputs).
+  - `categories/workflow-alignment.ts` — promptfoo scenario runner; binary stays-in-lane check.
+  - `categories/human-preference.ts` — deepeval + LLM-judge; rubric from `docs/evals/rubric.md`.
+  - `categories/domain-spec.ts` — versioned fixture comparison.
+  - `output/` — gitignored; `summary.md` goes to stdout too.
+- Wire promptfoo and deepeval as dev deps.
+- Skeleton each category file with a `TODO: Owner B/C fills in cases` comment so the structure is visible from day 1.
+
+**Acceptance (week 1).**
+- `pnpm eval:agents --dry-run` prints the four category headers and zero-case scaffolding without erroring.
+- `docs/evals/` gains `run-format.md` describing the JSON schema for per-Skill results (one row per case; category, skill, case_id, score, notes).
+- Passes `pnpm typecheck`.
+
+**Week 3 — analysis.**
+
+- Aggregate results from all three Skill × four category runs into the 4×3 matrix.
+- Plot Skill-vs-baseline delta per category (matplotlib or similar; PNG output).
+- Draft `docs/evals/results-summary.md` — one page, table + 3 paragraphs. Hand to Ming for the talk slide.
+
+**Acceptance (week 3).**
+- 4×3 matrix populated; delta column shows sign + effect size.
+- Results summary reads standalone (no reader context required).
+
+**Dependencies on others.** Owner B/C produce Skills and case data by end of week 2. If Owner A finishes scaffolding early, help Owner B with Interviewer case authoring.
+
+---
+
+## Owner B — Interviewer Skill + workflow-alignment cases
+
+**Timeline.** Weeks 1–2.
+
+**Goal.** Ship `packages/agents/interviewer/` as a Claude Agent Skill, plus 20 NL→CaseInput eval pairs, plus the prompt-only baseline, plus workflow-alignment scenario runs.
+
+**Scope.**
+
+- **Skill body.** `packages/agents/interviewer/SKILL.md` with frontmatter (`name`, `description`, `when_to_use`). Trust constraint must be in the body: never invents private values; asks for ambiguous fields; writes only to fields the user explicitly approves.
+- **Bundled resources.**
+  - `REFERENCE.md` — `CaseInput` schema, field classes, required/optional markers. Pull from `packages/core/src/types.ts`.
+  - `examples/` — 3 short NL-to-CaseInput pairs showing expected behavior on the three existing cases (Owl Compute / Lantern Cloud / Kraken Train).
+  - `scripts/validate_caseinput.ts` — runs the output through the TS schema; exits non-zero on fail.
+- **Eval cases.** 20 NL prompts with expected CaseInput. Three anchor to the existing fixtures; author 17 new synthetic ones spanning realistic applicant language (vague phrasing, missing fields, contradictory inputs, out-of-domain requests).
+- **Baseline.** Flatten SKILL.md + REFERENCE.md content into one monolithic system prompt; no bundled resources, no progressive disclosure.
+- **Scoring.** Workflow alignment is binary stays-in-lane — did the Skill write only to fields it should have written to? (Interviewer must never populate `publicEvidence` or `auditChain`.) Run via Owner A's `categories/workflow-alignment.ts`.
+
+**Acceptance.**
+- `pnpm eval:agents --skill interviewer` runs both Skill and baseline, writes scores to `apps/web/scripts/eval/output/interviewer.json`.
+- All 20 cases have a ground-truth CaseInput; inter-author consistency: if a second reviewer scored them, agreement ≥ 18/20.
+- SKILL.md passes structural lint (frontmatter present, word count under 800, references land).
+
+**Dependencies.** Owner A's scaffolding (`pnpm eval:agents` entrypoint) by end of week 1. If A slips, B writes cases anyway; wiring is last.
+
+**Open question you might hit.** NL prompts that are ambiguous by design — should the Skill ask a follow-up, or populate a best-guess with low-confidence flag? Decision: **always ask.** The trust constraint forbids invention.
+
+---
+
+## Owner C — Cartographer Skill + domain-spec cases
+
+**Timeline.** Week 2.
+
+**Goal.** Ship `packages/agents/cartographer/` as a Claude Agent Skill plus 20 site-location → expected-evidence pairs covering VA DEQ tiers, FEMA flood zones, and county zoning.
+
+**Scope.**
+
+- **Skill body.** `packages/agents/cartographer/SKILL.md`. Trust constraint: writes only to `publicEvidence`; cannot touch `privateProfile` or `auditChain`.
+- **Bundled resources.**
+  - `SOURCES.md` — registered sources: VA DEQ permits index, FEMA NFHL flood overlay, county zoning, parcel records. URL + cadence + access method per source.
+  - `scripts/` — one fetch helper per source. Label every fetch with source URL + timestamp.
+- **Desktop vs web.** Local SDK on desktop has live network; hosted API on web falls back to a pre-fetched cache labeled "cache, not live." Ship both paths; cache lives at `packages/agents/cartographer/cache/`.
+- **Eval cases.** 20 (county, parcel-or-lat-lng) → expected-evidence pairs. Mix: 10 VA locations spanning DEQ tiers; 5 with FEMA flood-zone overlays (A, AE, X); 5 with unusual zoning (industrial-light, agricultural-with-commercial-overlay, etc.).
+- **Scoring.** Domain-spec compliance = % of expected-citation facts that match the ground truth. Stale-spec flag: if a source changes format mid-run, log and continue; don't fail the whole run.
+
+**Acceptance.**
+- `pnpm eval:agents --skill cartographer` runs against both the Skill and baseline versions.
+- All 20 cases have a ground-truth evidence record; sources cited with timestamp.
+- Cache directory is checked in for web-demo reproducibility (gitignore only the fetch scratch).
+
+**Dependencies.** Owner A's `categories/domain-spec.ts`. If you hit it before A is ready, stub the runner and hand-score the first few.
+
+**Open question you might hit.** DEQ tier boundaries aren't a published cleanly-versioned spec; they're a state rulebook. Decision: **snapshot the current interpretation into `SOURCES.md` with a 2026-04-18 date stamp.** If DEQ updates, we re-snapshot.
+
+---
+
+## Explainer Skill + human-preference cases
+
+**Timeline.** Weeks 2–3. Assign to whichever of Owner A or B has bandwidth.
+
+**Goal.** Ship `packages/agents/explainer/` as a Claude Agent Skill plus 20 ProjectedView × 3 role rubric pairs (60 scored responses per run, target N=60 total across runs).
+
+**Scope.**
+
+- **Skill body.** `packages/agents/explainer/SKILL.md`. Trust constraint: consumes only `ProjectedView`, never the raw `CaseInput`. By construction cannot leak.
+- **Bundled resource.** `ROLE_VOICES.md` — mirror the expanded axis-C spec from `docs/evals/rubric.md`. Applicant voice / Utility voice / Regulator voice, each with good/bad examples.
+- **Eval cases.** 20 ProjectedView inputs (the 3 existing fixtures × multiple role combinations + 17 new synthetic projected views). Each scored against all three roles → 60 responses per run. Score via LLM-judge using the approved rubric; spot-check 20% (12 responses) by hand.
+- **Baseline.** Flat system prompt without ROLE_VOICES.md.
+
+**Acceptance.**
+- `pnpm eval:agents --skill explainer` produces per-(case, role, axis) Likert scores.
+- Inter-judge agreement spread ≤ 1 Likert point on each axis (rubric target).
+- Hand-spot-check notes filed into the free-text bucket workflow (see rubric §Free-text: raw for first 20, then Owner A promotes recurring themes to buckets).
+
+**Dependencies.** Owner A's `categories/human-preference.ts` + Owner B's Interviewer cases (for ProjectedView generation — run Interviewer first, feed outputs to Explainer).
+
+---
+
+## Cross-cutting notes
+
+- **Package structure.** `packages/agents/<name>/` is the canonical path. Each Skill is a workspace package but doesn't need its own `package.json` unless it ships scripts — start minimal.
+- **Seeds.** Fixed seeds on everything except the Skill call itself (which uses a fresh seed per run, per the rubric). Lock in `SEEDS.md` or a const at the top of `runner.ts`.
+- **Don't hand-edit `packages/core/`.** If a Skill needs a new field or type, open an issue and loop Ming in. The projection code is trust-critical; changes go through the canary.
+- **Commit cadence.** One commit per Skill shipped + one per eval category wired. Don't bundle Skills with scaffolding.

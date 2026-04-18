@@ -32,7 +32,8 @@ Durable record of project state, decisions, and what future work needs to know. 
 | 3c  | Privacy canary (TS↔Rego↔Python drift, structural, audit-action scan) + `docs/privacy-claim.md` · audit baseline-flex leak fixed | done |
 | 3d  | Vision + trust-model pivot: `docs/vision.md` — local-first applicant tool is the production form; web demo is a teaching artifact; TEE no longer critical-path | done |
 | 3e  | Privacy Benefit Panel (replaces LeakCounter) · `/about` story page v1 — classified-briefing × SCADA design pass via `/frontend-design` plugin skill | done |
-| 4+  | Planned — see `docs/plans/roadmap.md` for current sprint + near-term order (single source of truth) | planned |
+| 3f  | Landing page v1 (`/` problem-first hero + BenefitPanel teaser + pain cards + crew + desktop CTA) + `/downloads` placeholder · decision sweep (AGPL v3 license · Interviewer LLM = Claude Code session/SDK host · Dominion as first utility partner) · eval rubric approved & promoted to `docs/evals/rubric.md` · owner briefs for §14 harness | done |
+| 4+  | Planned — see `docs/plans/roadmap.md` for current sprint + near-term order (single source of truth). Next: **#4 Tauri scaffold** (longest pole, frontend-stack decision pending) | planned |
 
 ## Architecture
 
@@ -41,18 +42,21 @@ grid-passport/
 ├── apps/
 │   ├── web/                            Next.js 16 · TS · Tailwind 4 · App Router
 │   │   ├── app/
-│   │   │   ├── page.tsx                hero + release-diff teaser + nav to /about, /demo
+│   │   │   ├── page.tsx                landing · hero + BenefitPanel teaser (Owl × utility) + pain cards + crew + desktop CTA
 │   │   │   ├── about/page.tsx          long-scroll · renders docs/story.md at build time
 │   │   │   ├── demo/
 │   │   │   │   ├── page.tsx            redirects to /demo/owl-compute
 │   │   │   │   └── [caseId]/page.tsx   server component · projects for initial role only
+│   │   │   ├── downloads/page.tsx      desktop-app placeholder · "coming soon" status + build plan
 │   │   │   └── api/scenario/route.ts   POST · returns {view, auditEvents, baselineFlexPercent}
 │   │   ├── components/                 DemoClient, RoleToggle, RequestView, FieldRow,
 │   │   │                               FieldChip, SectionCard, BenefitPanel, CaseSelector,
 │   │   │                               CounterfactualSlider, MapPanel, EvidencePanel,
 │   │   │                               AuditTrail, PolicyPanel
 │   │   ├── lib/
-│   │   │   └── policy-source.ts        reads the Rego file + sha-256 at request time (web-only: cwd-dep)
+│   │   │   ├── policy-source.ts        reads the Rego file + sha-256 at request time (web-only: cwd-dep)
+│   │   │   ├── pain-framings.ts        pain-point cards · shared by landing + (future) demo header
+│   │   │   └── team.ts                 crew strip data (Ming · Bhawuk/Dominion · Vikrant)
 │   │   └── scripts/
 │   │       └── privacy-canary.ts       structural + audit-action scan + TS↔Rego↔Python drift
 │   └── api/                            FastAPI parity (uv · Python 3.11+) — Phase 2 target
@@ -73,6 +77,9 @@ grid-passport/
 │   ├── privacy-claim.md                the case for the privacy claim — read this for stage
 │   ├── agents.md                       agent architecture, Claude Skills, eval targets, research connection
 │   ├── story.md                        talk-arc narrative — renders to website /about, drives the job-talk slides
+│   ├── evals/
+│   │   ├── rubric.md                   APPROVED 2026-04-18 · human-preference axis rubric (Explainer Skill)
+│   │   └── owner-briefs.md             per-owner briefs for the §14 eval harness (students A/B/C)
 │   └── plans/
 │       ├── handoff.md                  this file — state, decisions, what-already-exists
 │       └── roadmap.md                  master plan — what's shipping next, decisions awaited

@@ -57,6 +57,8 @@ With three developers (Ming Jin, Bhawuk Luthra, Vikrant Bhati), the four web ite
 
 **Status: parked (2026-04-18).** Repo stays private for this sprint. Revisit when the open-source push is green-lit; the work itself is ready to execute. Until this lands, anything downstream (#3 public doc links, §1-hook "audit the source yourself" framing) routes around it.
 
+**License: AGPL v3** (decided 2026-04-18). Utility forks must publish their changes — trust-story alignment wins over adoption friction. Legal teams on the utility side will read the license; that's a feature, not a bug, since it forces the protocol conversation.
+
 > The local-first trust story requires auditable code. Without this, "you don't have to trust us" is just words.
 
 **Goal.** Public GitHub repo with a license, a README that explains the trust pivot, and a CONTRIBUTING that frames the project as protocol-not-product.
@@ -89,6 +91,8 @@ With three developers (Ming Jin, Bhawuk Luthra, Vikrant Bhati), the four web ite
 
 ### 3. Landing page expansion (~2–3 days)
 
+**Status: v1 shipped 2026-04-18.** Rewritten `apps/web/app/page.tsx` with hero (problem-first), static BenefitPanel teaser for Owl Compute × utility, three pain-point cards from `lib/pain-framings.ts`, crew strip from `lib/team.ts` (Bhawuk's Dominion affiliation prominent), desktop-app CTA linking to new `/downloads` placeholder, footer with repo link. Typecheck + canary pass. See Done table.
+
 > Make the public web app a real first impression — pain studies, team, downloads, doc links — not just a hero card.
 
 **Goal.** Rewrite `apps/web/app/page.tsx` so first-time visitors arrive on a page that surfaces the problem, the three pain-point case studies, the team, the benefit metrics, links to all four docs (`vision.md`, `agents.md`, `privacy-claim.md`, `roadmap.md`), and a download CTA for the desktop app (placeholder while Tauri is in flight).
@@ -114,9 +118,9 @@ With three developers (Ming Jin, Bhawuk Luthra, Vikrant Bhati), the four web ite
 
 **Demo moment.** Show the public URL to a stakeholder. They land, scan, click into a case study, come back, see the team and the trust framing, click "get the desktop app," see "coming soon" with the actual roadmap timeline.
 
-**Decisions needed.**
-- Should the landing page also embed the Privacy Benefit Panel as a static teaser (with the live one only on case-study pages)?
-- Where do the doc links point — the public GitHub renderings, or in-app rendered routes? (Recommendation: GitHub for now to stay terse; in-app rendering is a backlog item.)
+**Decisions made.**
+- **Embed the Privacy Benefit Panel as a static teaser on the landing page** (decided 2026-04-18). Use Owl Compute as the canonical case. Render the three live metrics with a "see the live panel for any case" CTA into `/demo/owl-compute`. Keeps the public-facing first impression dense.
+- Doc links point to public GitHub renderings once #2 unparks; until then, links resolve in-app or are hidden.
 
 **Dependencies.** Open-source the repo (#2) — the doc links should resolve publicly. Privacy Benefit Panel (#1) is optional but nice to embed.
 
@@ -227,7 +231,9 @@ Define the on-wire format (JSON Schema) for the bundle: `{projection, auditChain
 
 > Trust + human-collaboration anchor; first agent shipped as a Claude Agent Skill.
 
-Natural-language form filling: applicant types "We're planning a 180 MW campus in Prince William, target COD October 2028, two phases" and the agent populates the structured `CaseInput`. Implemented as a [Claude Agent Skill](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) — `packages/agents/interviewer/SKILL.md` with frontmatter, a `REFERENCE.md` for field schemas, an `examples/` directory with NL→CaseInput pairs, and a `validate_caseinput.ts` script. **Trust constraint baked into the skill body:** never invents private values; always asks the user for ambiguous fields; writes only to fields the user explicitly approves. **Why first:** highest UX-wedge value for early adopters (it's the first thing a user touches), and the cleanest place to test the calibration thesis from `docs/agents.md` §6 — does an explicit-constraint Skill produce more workflow-aligned behavior than the same prompt without the Skill packaging? **Packaging (decided):** SKILL.md is the single source of truth. The desktop build invokes it locally via the Claude Agent SDK (raw inputs stay on-device); the web demo uploads the same SKILL.md to the Claude API for hosted execution. Cross-surface SKILL.md sync is a copy-from-source operation, not a shared runtime. **Decision still open:** LLM call routing — see decision log #7.
+Natural-language form filling: applicant types "We're planning a 180 MW campus in Prince William, target COD October 2028, two phases" and the agent populates the structured `CaseInput`. Implemented as a [Claude Agent Skill](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) — `packages/agents/interviewer/SKILL.md` with frontmatter, a `REFERENCE.md` for field schemas, an `examples/` directory with NL→CaseInput pairs, and a `validate_caseinput.ts` script. **Trust constraint baked into the skill body:** never invents private values; always asks the user for ambiguous fields; writes only to fields the user explicitly approves. **Why first:** highest UX-wedge value for early adopters (it's the first thing a user touches), and the cleanest place to test the calibration thesis from `docs/agents.md` §6 — does an explicit-constraint Skill produce more workflow-aligned behavior than the same prompt without the Skill packaging? **Packaging (decided):** SKILL.md is the single source of truth. The desktop build invokes it locally via the Claude Agent SDK (raw inputs stay on-device); the web demo uploads the same SKILL.md to the Claude API for hosted execution. Cross-surface SKILL.md sync is a copy-from-source operation, not a shared runtime.
+
+**LLM call routing (decided 2026-04-18):** no direct Anthropic-API key management in either surface. The desktop app expects to run *inside a Claude Code session* (or against the Claude Agent SDK when running headless) — the host session is the LLM transport. The web demo uses the same SDK path server-side. Upside: zero API-key UX for applicants, no key-rotation burden, and the trust story stays "this runs on your machine" rather than "this phones home to a vendor you configured." Downside: applicants who aren't Claude Code users need an SDK-backed fallback packaged with the desktop build — scope that as part of item #7.
 
 ### 8. Cartographer agent — second Claude Skill (~3–5 days)
 
@@ -295,6 +301,9 @@ In landing order. Newest at top. PR/commit ref where relevant.
 
 | Date       | Item                                                                                              | Ref       |
 | ---------- | ------------------------------------------------------------------------------------------------- | --------- |
+| 2026-04-18 | Landing page v1 — rewrote `apps/web/app/page.tsx` with hero (problem-first "AI compute wants to plug in"), static BenefitPanel teaser (Owl Compute × utility), 3 pain-point cards from new `lib/pain-framings.ts`, crew strip from new `lib/team.ts`, desktop-app CTA, footer with repo link. New `/downloads` placeholder page. Typecheck + canary pass. | this session |
+| 2026-04-18 | Eval-harness owner briefs — `docs/evals/owner-briefs.md` with per-owner (A/B/C) acceptance, dependencies, escalation path, and open-question defaults. Unblocks students to start against the approved rubric. | this session |
+| 2026-04-18 | Decision sweep — license (AGPL v3), landing-page BenefitPanel teaser (yes, Owl Compute canonical), Interviewer LLM routing (host via Claude Code session / Agent SDK; no API-key UX), first utility partner (Dominion via Bhawuk), and eval rubric approved + promoted to `docs/evals/rubric.md` with expanded axis-C voice specs + pilot→bucket free-text workflow. Decision log now empty. | this session |
 | 2026-04-18 | `packages/core/` hoist — moved the pure projection layer (types, policy, projection, forecast, audit, fixtures, geo) from `apps/web/lib/` to `packages/core/src/` as `@grid-passport/core` with subpath exports. `policy-source.ts` stays in `apps/web/lib/` (cwd-dependent, web-only). 11 files `git mv`ed, 23 consumer files rewritten (perl). `transpilePackages: ["@grid-passport/core"]` added to `next.config.ts`. Prep for the Tauri scaffold — desktop app will import the same projection code unchanged. typecheck + canary + `pnpm build` all pass. | this session |
 | 2026-04-18 | Derivation-band fix for `flexibilityPassport.durationHoursMin/Max` — replaced `max(2, bessHours)` identity with a coarse tier band (`[2,4]` / `[4,8]` / `[8,12]`) in `packages/core/src/forecast.ts` and `apps/api/gridpassport/forecast.py`. Observer can no longer invert the published band to the exact private `bessHours`. Canary + typecheck both pass. | this session |
 | 2026-04-18 | Decision fold — Tauri bundle format → JSON (folded into item #4); agent packaging → local SDK on desktop, hosted API on web demo (folded into items #7/#8/#13). Decision log slimmed from 9 to 6 open entries. | this session |
@@ -317,15 +326,16 @@ In landing order. Newest at top. PR/commit ref where relevant.
 
 These are things I shouldn't decide unilaterally. Each one is blocking a roadmap item or has architectural consequence. When a decision lands, fold the resolution into the relevant item and remove the log entry.
 
-1. **License choice for the open-source push (#2).** Recommendation: **Apache 2.0**. Permissive — utilities can integrate without contributing back. Aligns with the protocol-not-product framing. The alternative is **AGPL**: forces utility forks to publish their changes, which is more aligned with the trust story but creates friction for utility legal teams. Apache 2.0 wins if "easy adoption" matters more than "force the ecosystem." Your call.
-2. **Embed Privacy Benefit Panel on landing page (#3)?** Recommendation: **yes, as a static teaser** — show the metrics for a single canonical case (Owl Compute), with a "see the live panel for any case" link into the demo. Keeps the public-facing first impression dense.
-3. **Story page URL — `/about` vs `/story` (#5)?** Recommendation: **`/about`** — conventional, SEO-discoverable, matches what most users guess. `/story` reads as cute and might suggest "marketing copy" rather than substantive content. Confirm. *(Note: v1 shipped as `/about` on 2026-04-18; this entry persists only to confirm the URL choice sticks.)*
-4. **Interviewer LLM call routing (#7).** Recommendation: **direct to Anthropic by default, with an optional `--llm-proxy` flag** for utilities that disallow third-party LLM calls. Default-friction stays low; sensitive deployments have an opt-out.
-5. **LLM-judge rubric for human-preference eval (#14).** Draft lives at **`docs/plans/eval-rubric.md`** (created 2026-04-18) with a 3-axis 1–5 Likert per (case, role): (a) answers the role's actual question; (b) stays within the projected view; (c) tone calibrated for the role. Ming to review/approve the DRAFT; three open questions at the bottom of the doc need your input before Owner B/C can start scoring. Once approved, promote the file to `docs/evals/rubric.md` and the decision is closed.
-6. **First utility partner.** Out-of-scope for me — this is your relationship work, and Bhawuk's Dominion connection is a natural starting point. The Signed Bundle protocol (#6) is much more credible if it can be co-designed with one named utility's intake team. Worth flagging now.
+*(No open entries — all resolved 2026-04-18. Add new ones here as they arise.)*
 
 ### Resolved this session
 
+- ~~**License choice (#2)**~~ → **AGPL v3.** Forces utility forks to publish changes; trust-story alignment over adoption friction. Folded into item #2.
+- ~~**Embed Privacy Benefit Panel on landing page (#3)?**~~ → **Yes, static teaser with Owl Compute as canonical case + CTA into `/demo/owl-compute`.** Folded into item #3.
+- ~~**Story page URL — `/about` vs `/story`**~~ → **`/about`.** v1 shipped 2026-04-18 under `/about`; URL sticks.
+- ~~**Interviewer LLM call routing (#7)**~~ → **Run inside a Claude Code session or against the Claude Agent SDK; no direct Anthropic-API key management in either surface.** The host session is the LLM transport. Desktop ships with an SDK-backed fallback for non-Claude-Code users. Folded into item #7.
+- ~~**LLM-judge rubric for human-preference eval (#14)**~~ → **Approved 2026-04-18.** Axis C voices expanded with good/bad examples per role; free-text uses pilot→bucket workflow (raw for first 20, then Owner A promotes recurring themes to buckets); 3-case fixture set stays for v1 (add a 4th only if inter-rater variance is case-dominated). Rubric promoted to `docs/evals/rubric.md`.
+- ~~**First utility partner (#6 / Signed Bundle)**~~ → **Dominion via Bhawuk.** Ming's relationship work; lean on Bhawuk's existing Dominion affiliation rather than waiting for the bundle protocol to harden. Co-design the on-wire format with the Dominion intake team from day one.
 - ~~**Tauri bundle file format**~~ → **JSON** for v0; `.gpcase` wrapper deferred to Phase 5+. Folded into item #4 Steps #3.
 - ~~**Agent packaging route (#7/#8/#13)**~~ → **Local SDK on desktop, hosted API on web demo.** SKILL.md is the single source of truth; cross-surface copy/upload, not shared runtime. Cartographer is the one surface-specific case (web demo uses a pre-fetched evidence cache because the hosted API runtime has no outbound network). Folded into items #7, #8, #13.
 - ~~**Privacy Benefit Panel — replace LeakCounter or sit alongside (#1)?**~~ → **Replace.** Shipped 2026-04-18.

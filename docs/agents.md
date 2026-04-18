@@ -439,11 +439,9 @@ parallelizes well; each piece is small. Suggested allocation:
 - Plot the Skill-vs-prompt-only delta.
 - Hand to Ming for the talk slide.
 
-Total elapsed: 3 weeks with 2–3 owners working in parallel. Single
-blocker: the LLM-judge rubric authoring needs Ming's review before
-running at scale (it determines what "good" means). A starter draft
-lives at `docs/plans/eval-rubric.md` (2026-04-18) with three open
-questions at the bottom for Ming to resolve.
+Total elapsed: 3 weeks with 2–3 owners working in parallel. Rubric
+approved 2026-04-18; lives at `docs/evals/rubric.md`. No remaining
+Ming-side blockers.
 
 ### 7d. What we don't have to evaluate to pass the talk
 

@@ -1,0 +1,91 @@
+# Eval rubric — human-preference axis (roadmap §14)
+
+**Status:** APPROVED 2026-04-18 (Ming). Owner B or C scores against this.
+
+Applies to the **Explainer** Skill (near-term item #13) — the agent most sensitive to human-preference calibration because it generates prose for each role. The role-leakage and domain-spec axes have independent mechanical checks; this rubric is only for "is the prose any good?"
+
+See `docs/agents.md` §7 for the full eval-harness context (N-targets, owner allocation, why human-preference is one of four axes).
+
+---
+
+## Scoring — per (case, role) pair
+
+Three 1–5 Likert axes, plus a free-text field. Nine pairs per Skill run (3 cases × 3 roles); multiple runs with fresh seeds up to N=60 per Skill.
+
+### Axis A — Answers the role's actual question
+
+What would *this role* want to know from this view?
+
+- **1** — ignores the role's concern entirely; generic boilerplate that could have been written without seeing the view.
+- **3** — partially answers; touches the right topic but doesn't engage with the specific numbers.
+- **5** — directly answers the role's question for this case, referencing the specific values in the projected view.
+
+### Axis B — Stays within the projected view
+
+Strict containment. The Explainer only receives the `ProjectedView`, never raw `CaseInput` — so violations here are either (a) the Skill fabricating a hidden value, or (b) the Skill implying knowledge it doesn't have.
+
+- **1** — fabricates or implies a raw private value (e.g., claims an exact `flexPercent` when the role shouldn't see it).
+- **3** — stays within bounds but leans on borderline derived fields without disclaiming the derivation.
+- **5** — uses only fields visible to the role; acknowledges sealed fields by policy language, not by guessing content.
+
+### Axis C — Tone calibrated for the role
+
+Each role gets an expanded spec with a good/bad example. Judges should borrow voice, not paraphrase creatively.
+
+#### Applicant — transparency voice
+
+- Leads with what the applicant **controls**: which fields stayed sealed, which were released, what a counterfactual would change.
+- Uses first-person-plural ("we sealed …", "we released …") or direct address ("your 48% flex window …"). Never third-person clinical.
+- Surfaces the mechanism, not just the outcome — "this stayed sealed because policy class = private" beats "this is private."
+- Short sentences. Mono-style when referencing hashes or policy versions.
+
+> **Good:** "Your 48% flex window stayed sealed. The utility saw a B-tier flexibility response and the derived duration band [4,8] h — enough to plan around, not enough to reverse-engineer."
+> **Bad:** "We use advanced privacy technology to protect your information while enabling coordination." *(marketing boilerplate; no mechanism, no specifics)*
+
+#### Utility — operational voice
+
+- Leads with what **commits** and what the **margin** is. Numbers first, narrative second.
+- Frames everything as "what we'd need to verify / what we can rely on." No hedging that reads as PR.
+- Acknowledges sealed fields by name and class ("flex percent is sealed — policy class private"), never hand-waves around them.
+- Tone of a dispatcher reading a log line, not a salesperson.
+
+> **Good:** "Requested 180 MW, B-tier flex response, duration band [4,8] h. Derived firmness 0.72. Ten sealed inputs underlie this — policy-governed; see regulator view for the redaction map."
+> **Bad:** "We're happy to share that this applicant offers strong flexibility and should be a good grid partner." *(wrong register; no numbers; reads as applicant-side advocacy)*
+
+#### Regulator — accountability voice
+
+- Leads with the **redaction map** and the **policy path**: which fields were withheld from which role, and under which rule.
+- Cites policy version and audit-chain anchor by hash or short-hash. Mono formatting.
+- Neutral, procedural. The regulator should feel they're reading a record, not an argument.
+- Never editorializes on whether the outcome is "good" or "bad" — that's not the regulator's view.
+
+> **Good:** "Policy `grid-passport@0.1.0` (sha256:4f2c…). Six fields redacted from utility view under class `private`; zero redactions from regulator view. Audit chain anchored at `a7b3…` with 5 signed actions."
+> **Bad:** "The regulator can see everything they need to make sure this is fair." *(editorializes; no policy version; no audit anchor; wrong register)*
+
+Scoring:
+- **1** — wrong voice entirely; regulator gets sales pitch, utility gets apologia, applicant gets jargon.
+- **3** — functional but bland; correct register, no personality, no specific hooks.
+- **5** — audience-appropriate, substantive, confident. Matches the spec above on both content and register.
+
+### Free-text — "anything off?"
+
+Catches issues the axes miss: hallucinated numbers that happen to be plausible, invented jargon, condescension, ASCII-art flourishes, unacknowledged uncertainty, tone inconsistency within a single response.
+
+**Process:** raw notes during the pilot (first 20 scored responses). After the pilot, Owner A reviews and promotes recurring themes into pre-defined buckets (e.g., `hallucinated-number`, `invented-jargon`, `tone-drift`, `unacknowledged-uncertainty`). Remaining runs use buckets + notes. This avoids guessing the category taxonomy upfront while keeping the final dataset structured for analysis.
+
+---
+
+## Sample size per Skill
+
+- 9 (case × role) pairs × 7 runs per pair = 63 per Skill. Round to N=60.
+- Three-case fixture set (Owl Compute / Lantern Cloud / Kraken Train) is the v1 set. Add a 4th only if pilot-phase inter-rater variance is dominated by case-specific quirks.
+- Each pair uses a fresh seed for the Explainer. Fixed seeds for everything else.
+- Inter-rater: if we have two judges per response, report mean + spread; target spread ≤ 1 Likert point on each axis.
+
+## Baseline
+
+Same prompt, same view, same model — but without the SKILL.md packaging. Score against the same rubric. The delta between Skill and baseline is the finding for the talk.
+
+## What "pass" looks like
+
+A Skill-packaged Explainer scoring **≥ 4.0 mean on each axis across N=60**, with the baseline at **≤ 3.5 on ≥ 2 axes**, is the headline. Lower deltas are still publishable — just note the effect size honestly.
