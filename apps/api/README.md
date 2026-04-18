@@ -38,9 +38,9 @@ first Python-only agent.)
 
 ## Parity notes
 
-- `gridpassport/schemas.py` ↔ `apps/web/lib/types.ts`
-- `gridpassport/policy.py` ↔ `apps/web/lib/policy.ts` ↔ `packages/policy/grid-passport.rego`
-- `gridpassport/forecast.py` ↔ `apps/web/lib/forecast.ts`
-- `gridpassport/fixtures.py` ↔ `apps/web/lib/fixtures/*.ts`
+- `gridpassport/schemas.py` ↔ `packages/core/src/types.ts`
+- `gridpassport/policy.py` ↔ `packages/core/src/policy.ts` ↔ `packages/policy/grid-passport.rego`
+- `gridpassport/forecast.py` ↔ `packages/core/src/forecast.ts`
+- `gridpassport/fixtures.py` ↔ `packages/core/src/fixtures/*.ts`
 
 Keep these aligned. Drift between the two runtimes is a bug.

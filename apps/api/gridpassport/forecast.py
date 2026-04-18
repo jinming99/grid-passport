@@ -1,4 +1,4 @@
-"""Deterministic forecaster — mirrors apps/web/lib/forecast.ts."""
+"""Deterministic forecaster — mirrors packages/core/src/forecast.ts."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def _response_class(flex_percent: float) -> FlexResponseClass:
 
 
 def _duration_band(bess_hours: float) -> tuple[int, int]:
-    # Mirror of apps/web/lib/forecast.ts::durationBand. A band (not the
+    # Mirror of packages/core/src/forecast.ts::durationBand. A band (not the
     # private bessHours) hides the exact input — [4, 8] matches
     # bessHours ∈ {4, 5, 6, 7}.
     if bess_hours < 4:

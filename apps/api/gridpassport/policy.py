@@ -1,4 +1,4 @@
-"""Policy mirror — matches apps/web/lib/policy.ts and packages/policy/grid-passport.rego."""
+"""Policy mirror — matches packages/core/src/policy.ts and packages/policy/grid-passport.rego."""
 
 from __future__ import annotations
 

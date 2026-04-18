@@ -1,4 +1,4 @@
-"""Python fixture registry — mirrors apps/web/lib/fixtures/*.ts."""
+"""Python fixture registry — mirrors packages/core/src/fixtures/*.ts."""
 
 from __future__ import annotations
 

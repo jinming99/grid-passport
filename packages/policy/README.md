@@ -8,7 +8,7 @@ Canonical release policy for Grid Passport, expressed as Rego.
 
 ## Runtime
 
-For the current hackathon build, `apps/web/lib/policy.ts` mirrors this Rego in TypeScript and runs the enforcement in-process. The Rego file exists so:
+For the current hackathon build, `packages/core/src/policy.ts` mirrors this Rego in TypeScript and runs the enforcement in-process. The Rego file exists so:
 
 1. Policy decisions are expressible in a standard, auditable language.
 2. Regulator mode can display the exact rules used, together with a content hash.

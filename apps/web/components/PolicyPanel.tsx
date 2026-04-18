@@ -44,7 +44,7 @@ export function PolicyPanel({ source }: { source: PolicySource }) {
           <span className="font-mono text-neutral-200">{source.path}</span>.
           The TS runtime at{" "}
           <span className="font-mono text-neutral-200">
-            apps/web/lib/policy.ts
+            packages/core/src/policy.ts
           </span>{" "}
           mirrors these rules; a future build swaps it for a real OPA call
           without changing the API surface.

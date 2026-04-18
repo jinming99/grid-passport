@@ -17,7 +17,7 @@
 //                       are the high-risk surface because they are
 //                       free-form interpolated text.
 //
-//   (3) MIRROR DRIFT  — TS POLICY (apps/web/lib/policy.ts), the Rego
+//   (3) MIRROR DRIFT  — TS POLICY (packages/core/src/policy.ts), the Rego
 //                       canon (packages/policy/grid-passport.rego), and
 //                       the Python mirror (apps/api/gridpassport/policy.py)
 //                       must agree on the field-path set and class.

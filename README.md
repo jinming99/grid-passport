@@ -53,9 +53,9 @@ Each case supports:
 
 ## Privacy architecture
 
-- `apps/web/lib/policy.ts` — runtime mirror of the Rego
+- `packages/core/src/policy.ts` — runtime mirror of the Rego
 - `packages/policy/grid-passport.rego` — canonical source
-- `apps/web/lib/projection.ts` — pure function consumes policy + request
+- `packages/core/src/projection.ts` — pure function consumes policy + request
 - `apps/web/app/api/scenario/route.ts` — server-side scenario endpoint; applicant baseline is the only role-dependent field returned
 
 Raw private values do not ship to the browser unless the requesting role is `applicant`. See `lib/audit.ts` for the signed event trail.

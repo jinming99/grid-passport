@@ -1,4 +1,4 @@
-"""Pydantic schemas mirroring apps/web/lib/types.ts.
+"""Pydantic schemas mirroring packages/core/src/types.ts.
 
 Kept deliberately in lockstep with the TypeScript types so that the
 Next.js route handler and the FastAPI handler return the same shape.

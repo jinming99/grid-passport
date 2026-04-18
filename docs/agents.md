@@ -441,7 +441,9 @@ parallelizes well; each piece is small. Suggested allocation:
 
 Total elapsed: 3 weeks with 2–3 owners working in parallel. Single
 blocker: the LLM-judge rubric authoring needs Ming's review before
-running at scale (it determines what "good" means).
+running at scale (it determines what "good" means). A starter draft
+lives at `docs/plans/eval-rubric.md` (2026-04-18) with three open
+questions at the bottom for Ming to resolve.
 
 ### 7d. What we don't have to evaluate to pass the talk
 

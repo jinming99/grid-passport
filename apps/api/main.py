@@ -81,7 +81,7 @@ def scenario(case_id: str, override: ScenarioOverride) -> dict[str, Any]:
 
 
 def _project_all_roles(record: Any) -> dict[str, Any]:
-    """Placeholder projection mirroring apps/web/lib/projection.ts.
+    """Placeholder projection mirroring packages/core/src/projection.ts.
 
     For Phase 1c scaffold, this returns the full record for applicant and
     a filtered dict for utility/regulator. A full port of projection.ts
