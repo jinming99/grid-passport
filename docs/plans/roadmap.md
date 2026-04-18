@@ -132,6 +132,13 @@ With three developers (Ming Jin, Bhawuk Luthra, Vikrant Bhati), the four web ite
 
 **Why Tauri (decided).** Tauri 2.x. Rust core gives us memory safety on the trust-critical projection path *and* the nerdy aesthetic. ~10MB binary vs Electron's ~100MB+. Strong code-signing story across all three platforms. Tauri's IPC model is more security-conscious than Electron's. Web-tech UI means our existing Next.js code transfers as-is. Electron remains the conservative fallback if Rust intimidates the team; PWA-with-File-System-Access is ultra-light but Chromium-only and weaker enterprise trust signal.
 
+**Plugin skills to leverage.** See `CLAUDE.md` § "Available Claude Code plugin skills" for the canonical list; for this track specifically:
+- `/frontend-design:frontend-design` (installed) — apply to the side-by-side review screen, export-bundle flow, any new chrome. The `/about` page's classified-briefing × SCADA aesthetic is the visual reference; reuse the BenefitPanel + SectionPlate language.
+- `dchuk/claude-code-tauri-skills` / `tauri-plugins` — install at start of sprint via `npx playbooks add skill dchuk/claude-code-tauri-skills --skill tauri-plugins`. Covers Rust core, JS bindings, platform-specific code (macOS/Windows/Linux), permissions, lifecycle.
+- `actionbook/rust-skills` — install via `/plugin marketplace add actionbook/rust-skills && /plugin install rust-skills@rust-skills`. Idiomatic Rust patterns for the trust-critical projection code hoisted into `packages/core/`.
+- `rust-analyzer-lsp` (installed) — activate with `rustup component add rust-analyzer` before first edit of the Rust core.
+- `P3GLEG/tauri-plugin-mcp` — optional, post-scaffold. Embeds an MCP server in the running Tauri app so Claude can drive it for debug/test (screenshots, DOM access, input simulation) — useful when iterating on the side-by-side review screen without manual clicking.
+
 **Design direction — "sharp, professional, weird, fun, nerdy."** The framework choice doesn't make a UI weird; the design layer does. Anchor on these principles:
 
 - **Mono-everywhere typography.** JetBrains Mono or IBM Plex Mono for headers and labels; system sans only for long-form prose. Already partially in place via the existing demo's `font-mono` use.

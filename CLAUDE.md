@@ -82,6 +82,25 @@ Confidential worker:
 
 ---
 
+## Available Claude Code plugin skills
+
+When a plugin skill matches the task, invoke it rather than hand-rolling.
+
+Installed (user scope, official marketplace):
+- `/frontend-design:frontend-design` — distinctive frontend design passes. Used for `/about` v1 (classified-briefing × SCADA aesthetic).
+- `/vercel:*` — Vercel deploy tooling.
+- `rust-analyzer-lsp` — Rust LSP intelligence. Activate once with `rustup component add rust-analyzer`.
+- `typescript-lsp` — TS intelligence for `apps/web`.
+- `security-guidance` — worth consulting before touching signed-bundle / audit / policy-enforcement code.
+- `feature-dev`, `pr-review-toolkit`, `commit-commands`, `skill-creator`, `claude-md-management` — workflow tooling.
+
+Flagged for the Tauri track (#4 in the roadmap) — install at the top of that sprint:
+- `dchuk/claude-code-tauri-skills` / skill `tauri-plugins` — Tauri plugin dev (Rust core + JS bindings + platform-specific + permissions + lifecycle). Install: `npx playbooks add skill dchuk/claude-code-tauri-skills --skill tauri-plugins`.
+- `actionbook/rust-skills` — idiomatic Rust patterns for the trust-critical projection path. Install: `/plugin marketplace add actionbook/rust-skills && /plugin install rust-skills@rust-skills`.
+- `P3GLEG/tauri-plugin-mcp` — optional, post-scaffold: embeds an MCP server in the running Tauri app so Claude can drive it for debug/test (screenshots, DOM, input sim).
+
+---
+
 ## Privacy rules
 
 Protected fields include, at minimum:
