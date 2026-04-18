@@ -121,6 +121,62 @@ trustworthy at scale.
 
 ---
 
+## 4b. What we ask applicants, and why — the schema design choice
+
+> The product lives or dies on the quality of this list. Too many fields and the UX becomes a utility intake portal; too few and the derived proofs lose credibility. The answer is a criterion, not a count.
+
+The `CaseInput` schema is an opinionated artifact. Every field in it is a claim that "this question is worth asking a busy business applicant, and not asking a records clerk to look up." Getting that line right is the single biggest design lever between "polished demo" and "product someone will actually install." This section is the durable record of how we decide.
+
+### The 5-test filter
+
+A field earns its slot in `CaseInput` only if it passes **all five**:
+
+1. **Utility-need traceable.** Does the field feed at least one derived proof the utility actually plans against — firmness score, flexibility passport, expected peak band, energization band, readiness class? If you can't draw the arrow to a downstream proof the utility uses, cut it.
+2. **Asymmetric knowledge.** Is the applicant the only source? If a records search can answer it, it belongs in Cartographer's public-evidence bucket, not in the applicant's burden.
+3. **Business-answerable.** Can a VP of Infrastructure answer it in a meeting without pulling in three ops engineers? Fields that only site-reliability teams know as precise numbers are an Interviewer problem (agent distills squishy business language → schema), not a form problem.
+4. **Discriminating.** Do answers vary meaningfully across real applicants? A field where everyone answers "moderate / 3–5 / yes" is decoration.
+5. **Demo-legible.** Will a non-specialist grok what the field *means* in two seconds without domain training? The talk audience, the utility exec, the regulator — all have to recognize the value instantly.
+
+Failing any one of these is a cut. The most common failure mode is **#1** — we add fields because a real interconnection form has them, but they don't flow into a derived proof. Those fields inflate the form, add no privacy-story payoff, and push the UI toward "utility filing portal."
+
+### Applied to today's schema
+
+Eight private fields are in play. Five pass cleanly; two are borderline on #3; one is the weak link:
+
+| Field | #1 proof fed | Bucket | Notes |
+|---|---|---|---|
+| `flexPercent` | flexibility passport | sensitive | Cleanly competitive; most cinematic redaction. |
+| `redundancyShiftPercent` | firmness score | sensitive | Exposes multi-site strategy; never in a PDF. |
+| `workloadMix` (train/inf) | cost exposure class | sensitive | Most sensitive field. Hyperscalers would pay for a leak. |
+| `bessMW`, `bessHours` | flex passport · duration band | operational | Borderline on #3 (ops-detail), but answerable and discriminating. |
+| `backupGenMW`, `backupGenHours` | firmness score | operational | Same pattern — operational, not competitive. |
+| `internalScheduleConfidence` | energization band width | sensitive | **Weakest on #3 and borderline on #5.** Nobody quotes this as a 0–1 number; it's a vibe the Interviewer should distill from prose. Keep in the schema, but plan for Interviewer (#7) to own the translation — don't surface it as a raw slider. |
+
+No field currently in the schema fails outright. The tightness matters: with eight private fields, the three-column redaction view has exactly enough sealed rows to be cinematic and exactly few enough that a visitor can read them all in the time it takes to explain the pitch.
+
+### The three-tier demo narrative
+
+The filter gives us a natural narrative arc, encoded directly in the desktop UI (`apps/desktop/src/components/ProjectionSections.tsx` groups by these buckets and the tooltip text comes from `packages/core/src/ask-reasons.ts`):
+
+| Tier | Fields | The line on stage |
+|---|---|---|
+| **Identity** | org · site · MW · COD · phases | "Anyone could ask you this — it's how a filing even starts." |
+| **Operational profile** | flex · BESS · backup-gen | "Only you know this — and it produces the firmness + flexibility proofs the utility plans against." |
+| **Competitively sensitive** | workload mix · redundancy · confidence | "This is the stuff you'd never put in a PDF handover. It improves the proofs, and it never leaves your machine." |
+
+The work-view UI always shows identity; operational and sensitive are the dense middle; public evidence and derived proofs bracket the bottom. The click-through *is* the narrative — the applicant fills the form, hits review, and watches the two private tiers redact for utility and regulator while the derived proofs stay. The three-tier grouping is visible in review mode too, because the *tier* is the reason a row is sealed.
+
+### Two follow-ups this section commits to
+
+- **Single-source ask-reasons.** `packages/core/src/ask-reasons.ts` holds the one-sentence "why we ask" for every field path. The desktop UI renders it as a ⓘ tooltip on each row; the `/about` page surfaces the same copy. Any new field added to the schema MUST come with an ask-reason entry — that's the gate that stops the schema from ballooning accidentally.
+- **Interviewer owns the squishy ones.** Fields that fail #3 (business-answerable as a raw number) stay in the schema but get filled through Interviewer prose, not a form slider. This is the first calibration target for `docs/agents.md` §7 — "does the Skill produce accurate `internalScheduleConfidence` numbers from a VP's two-sentence prose?"
+
+### When the schema should grow
+
+If a utility partner (Dominion, per roadmap #6) tells us their intake needs a field we don't collect, run it through the 5-test filter before adding. If it fails, the answer is not "add the field" — it's either "derive it from fields we already have" or "push it to Cartographer as public evidence" or "explain why the utility's existing practice of asking for it is actually the wrong line." This section is the commitment to that discipline.
+
+---
+
 ## 5. The trust pivot — local-first, applicant as gatekeeper
 
 > This is the load-bearing decision. Everything below flows from it.

@@ -105,6 +105,20 @@ The **trust pivot**: by moving the projection to the applicant's machine, the en
 
 ---
 
+## 5a. Why we ask what we ask
+
+A natural objection at this point in the talk: *your product depends on getting busy hyperscaler executives to fill out a form. How do you keep it from becoming another intake portal?*
+
+The answer is an opinionated schema and a five-test filter. A field earns a slot in the applicant form only if it (1) feeds a derived proof the utility actually plans against, (2) is known only to the applicant (not something a records search could look up), (3) can be answered by a VP of Infrastructure in a meeting, (4) discriminates across real applicants, and (5) is legible to a non-specialist audience. Anything that fails any of the five is cut — even if real interconnection filings ask for it — because the bloat carries no privacy-story payoff.
+
+Eight private fields survive the filter today. They cluster into three tiers: *identity* (who / what / where / when — anyone could ask), *operational profile* (BESS, backup-gen — only you know, safe-ish to share), and *competitively sensitive* (flex %, workload mix, redundancy — the stuff you'd never put in a PDF). Demo-wise, the three tiers are the narrative: you fill identity and operational profile inline, then click "review" and watch the competitively-sensitive fields redact for the utility and regulator while the derived proofs still pass through.
+
+Every field ships with a one-sentence "why we ask" rendered as a tooltip in the desktop UI (`packages/core/src/ask-reasons.ts` is the single source). The full design-choice argument — including which field (`internalScheduleConfidence`) is the weakest and why the Interviewer Skill will own its translation — lives in `docs/vision.md` §4b.
+
+The schema is not the demo. It's the product shape.
+
+---
+
 ## 6. Empirical results — *placeholder until eval harness ships*
 
 > When the eval harness lands (target: 2-3 weeks pre-talk per `docs/plans/roadmap.md`), this section becomes a load-bearing slide showing concrete numbers.

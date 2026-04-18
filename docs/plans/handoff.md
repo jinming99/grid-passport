@@ -33,7 +33,8 @@ Durable record of project state, decisions, and what future work needs to know. 
 | 3d  | Vision + trust-model pivot: `docs/vision.md` — local-first applicant tool is the production form; web demo is a teaching artifact; TEE no longer critical-path | done |
 | 3e  | Privacy Benefit Panel (replaces LeakCounter) · `/about` story page v1 — classified-briefing × SCADA design pass via `/frontend-design` plugin skill | done |
 | 3f  | Landing page v1 (`/` problem-first hero + BenefitPanel teaser + pain cards + crew + desktop CTA) + `/downloads` placeholder · decision sweep (AGPL v3 license · Interviewer LLM = Claude Code session/SDK host · Dominion as first utility partner) · eval rubric approved & promoted to `docs/evals/rubric.md` · owner briefs for §14 harness | done |
-| 4+  | Planned — see `docs/plans/roadmap.md` for current sprint + near-term order (single source of truth). Next: **#4 Tauri scaffold** (longest pole, frontend-stack decision pending) | planned |
+| 4   | Tauri shell v0 — scaffold (`apps/desktop/`), Tauri dialog + fs plugins, local-file case loader with structural validate, three-column side-by-side review (applicant / utility / regulator), export bundle JSON (v0 unsigned — signing in #6), desktop canary, macOS build artifact | done |
+| 5+  | Planned — see `docs/plans/roadmap.md`. Next: **#6 Signed disclosure bundle protocol** (Ed25519 + audit-chain inclusion; Dominion intake as the counterparty), or **#14 Eval harness** for Ming's job talk (parallel track, 3 student owners already briefed) | planned |
 
 ## Architecture
 
@@ -59,15 +60,33 @@ grid-passport/
 │   │   │   └── team.ts                 crew strip data (Ming · Bhawuk/Dominion · Vikrant)
 │   │   └── scripts/
 │   │       └── privacy-canary.ts       structural + audit-action scan + TS↔Rego↔Python drift
-│   └── api/                            FastAPI parity (uv · Python 3.11+) — Phase 2 target
+│   ├── api/                            FastAPI parity (uv · Python 3.11+) — Phase 2 target
+│   └── desktop/                        Tauri 2.x shell · Vite + React + TS frontend · Rust core
+│       ├── src/
+│       │   ├── App.tsx                 top-level: two-mode (work/review) · case picker · file loader · review gate + export terminus
+│       │   ├── components/             ReviewColumn (work|review variant), MiniBenefit, ProjectionSections (bucket-tiered with ⓘ tooltips)
+│       │   ├── lib/
+│       │   │   ├── case-loader.ts      dialog.open + fs.readTextFile + structural validate against CaseInput
+│       │   │   └── bundle.ts           DisclosureBundle shape (v0) + dialog.save + fs.writeTextFile
+│       │   ├── styles.css              terminal-flavored vanilla CSS (no Tailwind on desktop yet)
+│       │   └── main.tsx
+│       ├── scripts/canary-desktop.ts   asserts @grid-passport/core imports + 3-case × 3-role projection invariant
+│       ├── vite.config.ts              port 1420 · strictPort · TAURI_ENV_* env · esnext target
+│       └── src-tauri/                  Rust crate `grid-passport-desktop` (lib `grid_passport_desktop_lib`)
+│           ├── tauri.conf.json         identifier app.gridpassport.desktop · window 1180×760
+│           ├── Cargo.toml              tauri 2.10 · tauri-plugin-{log,dialog,fs} 2 · AGPL-3.0-or-later
+│           ├── capabilities/default.json  dialog + fs read/write scoped to `**` (narrow for prod in #12)
+│           ├── icons/                  generated via `cargo tauri icon` from a placeholder source
+│           └── src/{main.rs,lib.rs}    Tauri builder · dialog + fs + log plugins registered
 ├── packages/
-│   ├── core/                           @grid-passport/core · subpath exports · shared across web + future desktop
+│   ├── core/                           @grid-passport/core · subpath exports · shared across web + desktop
 │   │   └── src/
 │   │       ├── types.ts                CaseInput · RequestRecord · FieldPath · Role · ...
-│   │       ├── policy.ts               POLICY table (runtime mirror of the Rego)
+│   │       ├── policy.ts               POLICY table (runtime mirror of the Rego) · enforcement
 │   │       ├── projection.ts           projectForRole(req, role) → ProjectedView
 │   │       ├── forecast.ts             forecast(case, override?) → DerivedProof
 │   │       ├── audit.ts                buildAuditTrail(case, record, role, override)
+│   │       ├── ask-reasons.ts          FieldPath → {bucket, why} · UX layer (tooltips, tier labels)
 │   │       ├── fixtures/               owl-compute · lantern-cloud · kraken-train · index
 │   │       └── geo/                    synthetic GeoJSON per case
 │   └── policy/grid-passport.rego       canonical release policy (source of truth)
@@ -149,6 +168,10 @@ Add a new case:
 - Lint: `pnpm lint` (eslint, web workspace)
 - Privacy canary: `pnpm privacy:canary` (mechanical privacy check; see `docs/privacy-claim.md` §2c)
 - FastAPI (optional): install uv, then `pnpm api:sync && pnpm api:dev` → http://localhost:8000
+- Desktop (Tauri) dev: `pnpm desktop:dev` (launches the Tauri window; requires `~/.cargo/bin` on PATH — `source ~/.cargo/env` if `cargo` is not found)
+- Desktop build: `pnpm desktop:build` (produces unsigned DMG + .app on macOS; MSI/AppImage on other platforms — untested for v0)
+- Desktop typecheck: `pnpm desktop:typecheck`
+- Desktop canary: `pnpm canary:desktop` (asserts apps/desktop imports `@grid-passport/core` and projection invariant holds on bundled fixtures)
 - Repo was initialized with `git init --initial-branch=main`. First commit: `03d8b57 initial hackathon build (phases 0–2)`.
 - Memory files in `~/.claude/projects/...` have been retired in favor of this doc. Don't resume persisting state there for this project.
 
@@ -174,6 +197,9 @@ Items in this section are state-of-the-codebase observations that matter to a fu
 
 - **No unit/integration tests yet.** The privacy canary is mechanical evidence for the projection layer, but `forecast.ts`, `audit.ts` proper, and the route handlers have no test suite. CLAUDE.md mandates tests for any change touching projections/policy/proofs/traces — wire this before the next round of changes there. Pytest is already in `apps/api/pyproject.toml` dev deps; the TS side needs vitest or a similar pick. (Tracked in roadmap backlog.)
 - **Derivation transparency — partial.** `flexibilityPassport.durationHoursMin/Max` was re-derived as coarse BESS tier bands (2026-04-18), so `bessHours` no longer leaks through that pair. Remaining surfaces with the same "monotone-invertible from a private input" risk: `flexibilityPassport.mwMin/Max`, `firmnessScore`, `expectedPeakMW`. A shared band-design pattern for the remaining derived fields is tracked in the roadmap backlog (`derivation transparency review, part 2`).
+- **Desktop v0 has audit trail stubbed out of the export bundle.** `@grid-passport/core/audit` uses `node:crypto` (sync SHA-256) which doesn't bundle cleanly into the Vite webview. v0 `DisclosureBundle` contains projections + policy version + timestamp only. Audit-chain inclusion + Ed25519 signing land together in #6 (signed bundle protocol) — the right place to design the on-wire format once rather than twice.
+- **Desktop icon is a placeholder** upscaled from the generated 256×256 PNG; bake a real branded icon before distribution (see roadmap backlog: `desktop packaging polish`).
+- **Desktop fs capabilities are scoped to `**`.** OK for local dev where the dialog gates file selection, not OK for a shipped binary. Narrow to user-selected dir + app data dir before distribution (see roadmap backlog: `desktop packaging polish`).
 
 ## What this doc is *not*
 

@@ -13,6 +13,10 @@
     "typecheck": "pnpm --filter @grid-passport/web typecheck",
     "privacy:canary": "pnpm --filter @grid-passport/web privacy:canary",
     "api:dev": "cd apps/api && uv run uvicorn main:app --reload --port 8000",
-    "api:sync": "cd apps/api && uv sync"
+    "api:sync": "cd apps/api && uv sync",
+    "desktop:dev": "pnpm --filter @grid-passport/desktop tauri:dev",
+    "desktop:build": "pnpm --filter @grid-passport/desktop tauri:build",
+    "desktop:typecheck": "pnpm --filter @grid-passport/desktop typecheck",
+    "canary:desktop": "pnpm --filter @grid-passport/desktop canary"
   }
 }

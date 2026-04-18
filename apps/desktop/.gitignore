@@ -1,0 +1,7 @@
+dist/
+node_modules/
+*.log
+
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/gen/schemas/

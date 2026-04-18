@@ -9,6 +9,7 @@
     "./projection": "./src/projection.ts",
     "./forecast": "./src/forecast.ts",
     "./audit": "./src/audit.ts",
+    "./ask-reasons": "./src/ask-reasons.ts",
     "./fixtures": "./src/fixtures/index.ts",
     "./geo/synthetic": "./src/geo/synthetic.ts",
     "./geo/types": "./src/geo/types.ts"
