@@ -22,7 +22,7 @@ Durable record of project state, decisions, and what future work needs to know. 
 | 1c  | FastAPI parity scaffold at `apps/api/` (not on hot path) | done |
 | 2   | MapLibre evidence panel + synthetic GeoJSON · signed audit trail with 5 named actors | done |
 | 3a  | Git init + first commit + private GitHub push | done |
-| 3b  | Vercel deploy | done — https://grid-passport-qt7zprvm8-ming-jins-projects.vercel.app |
+| 3b  | Vercel deploy | done — https://grid-passport.vercel.app |
 | 4+  | Planned: OPA runtime (WASM), LLM Explainer, eval harness (promptfoo + deepeval), PDF export, real Confidential Space | planned |
 
 ## Architecture
