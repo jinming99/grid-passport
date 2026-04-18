@@ -11,15 +11,19 @@ When something here ships:
 
 ---
 
-## Current sprint — next ~2 weeks
+## Current sprint — substantially landed (2026-04-18)
 
-Five items — **#2 is parked this sprint** (repo stays private for now). The four active items parallelize cleanly:
-- **#1 Privacy Benefit Panel**, **#3 Landing page**, **#5 Story page** are independent web work.
-- **#4 Tauri shell** is the longer pole; starts as soon as #1 lands (the side-by-side review screen reuses the Privacy Benefit Panel component).
+Status snapshot:
 
-With three developers (Ming Jin, Bhawuk Luthra, Vikrant Bhati), the four web items run concurrently while #4 takes the bulk of one developer's time. Sprint duration is gated by Tauri shell.
+- **#1 Privacy Benefit Panel** — shipped.
+- **#2 Open-source the repo** — parked pending go/no-go; work itself is ready.
+- **#3 Landing page v1** — shipped.
+- **#4 Tauri shell v0** — shipped (Steps 1–7 landed; desktop UX reframe + schema-justification doc rode along on top, 1953b05).
+- **#5 Story page v1** — shipped.
 
-**Parallel pre-talk track.** Item **#14 (Eval harness, near-term §14)** is flagged pre-talk priority and runs on its own 2–3 week elapsed timeline with three student owners — see §14 for owner allocation. It's deliberately outside the current-sprint numbering because it's a research-track effort that doesn't need sprint-level daily attention, but it should start *now* alongside sprint work. Ming's only blocking input is rubric authoring for the LLM-judge by end of week 1 (see decision log #8).
+Only #2 remains open in the current sprint, and it's gated on a decision outside the build queue. Entries below retain their full breakdowns as landed-sprint records. **Next wave** picks up from near-term — #6 signed bundle, #7 Interviewer (the natural continuation of today's schema-justification work, since the Interviewer Skill owns the squishy `internalScheduleConfidence` field per vision §4b), and #14 eval harness (now fully unblocked — rubric approved, owner briefs written, students can start).
+
+**Parallel pre-talk track.** Item **#14 (Eval harness, near-term §14)** runs on its own 2–3 week elapsed timeline with three student owners — see §14 for allocation. Ming's rubric authoring blocker is **resolved** (rubric promoted to `docs/evals/rubric.md` 2026-04-18). Students can kick off immediately; this track doesn't need sprint-level daily attention.
 
 ### 1. Privacy Benefit Panel (~1–2 days)
 
