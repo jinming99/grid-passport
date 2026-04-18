@@ -1,4 +1,4 @@
-import { POLICY, POLICY_VERSION } from "@/lib/policy";
+import { POLICY, POLICY_VERSION } from "./policy";
 import type {
   FieldClass,
   FieldPath,
@@ -10,7 +10,7 @@ import type {
   SiteContext,
   SourceRef,
   WorkloadMix,
-} from "@/lib/types";
+} from "./types";
 
 export interface ProjectedField<T> {
   path: FieldPath;

@@ -1,4 +1,4 @@
-import type { CaseInput } from "@/lib/types";
+import type { CaseInput } from "../types";
 import { owlCompute } from "./owl-compute";
 import { lanternCloud } from "./lantern-cloud";
 import { krakenTrain } from "./kraken-train";

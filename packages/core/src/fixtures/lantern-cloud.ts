@@ -1,4 +1,4 @@
-import type { CaseInput } from "@/lib/types";
+import type { CaseInput } from "../types";
 
 export const lanternCloud: CaseInput = {
   id: "req_lantern_cloud_001",

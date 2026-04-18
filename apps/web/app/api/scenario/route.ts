@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getCase } from "@/lib/fixtures";
-import { buildRecord } from "@/lib/forecast";
-import { projectForRole } from "@/lib/projection";
-import { buildAuditTrail } from "@/lib/audit";
-import type { Role, ScenarioOverride } from "@/lib/types";
+import { getCase } from "@grid-passport/core/fixtures";
+import { buildRecord } from "@grid-passport/core/forecast";
+import { projectForRole } from "@grid-passport/core/projection";
+import { buildAuditTrail } from "@grid-passport/core/audit";
+import type { Role, ScenarioOverride } from "@grid-passport/core/types";
 
 const VALID_ROLES: readonly Role[] = ["applicant", "utility", "regulator"];
 

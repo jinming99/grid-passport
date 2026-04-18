@@ -49,13 +49,25 @@ def _response_class(flex_percent: float) -> FlexResponseClass:
     return "C"
 
 
+def _duration_band(bess_hours: float) -> tuple[int, int]:
+    # Mirror of apps/web/lib/forecast.ts::durationBand. A band (not the
+    # private bessHours) hides the exact input — [4, 8] matches
+    # bessHours ∈ {4, 5, 6, 7}.
+    if bess_hours < 4:
+        return (2, 4)
+    if bess_hours < 8:
+        return (4, 8)
+    return (8, 12)
+
+
 def _flex_passport(p: PrivateProfile, requested_mw: float) -> FlexibilityPassport:
     flex_mw = requested_mw * (p.flexPercent / 100)
+    d_min, d_max = _duration_band(p.bessHours)
     return FlexibilityPassport(
         mwMin=round(flex_mw * 0.82),
         mwMax=round(flex_mw * 1.12),
-        durationHoursMin=max(2, p.bessHours - 1),
-        durationHoursMax=max(2, p.bessHours),
+        durationHoursMin=d_min,
+        durationHoursMax=d_max,
         responseClass=_response_class(p.flexPercent),
     )
 

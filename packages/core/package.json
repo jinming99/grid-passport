@@ -1,0 +1,16 @@
+{
+  "name": "@grid-passport/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./src/types.ts",
+    "./policy": "./src/policy.ts",
+    "./projection": "./src/projection.ts",
+    "./forecast": "./src/forecast.ts",
+    "./audit": "./src/audit.ts",
+    "./fixtures": "./src/fixtures/index.ts",
+    "./geo/synthetic": "./src/geo/synthetic.ts",
+    "./geo/types": "./src/geo/types.ts"
+  }
+}

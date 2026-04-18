@@ -1,4 +1,4 @@
-import type { AuditActor, AuditEvent, AuditReason } from "@/lib/audit";
+import type { AuditActor, AuditEvent, AuditReason } from "@grid-passport/core/audit";
 
 const ACTOR_TONE: Record<AuditActor, string> = {
   interviewer: "text-sky-300",

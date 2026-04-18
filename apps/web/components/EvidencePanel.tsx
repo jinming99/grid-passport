@@ -1,4 +1,4 @@
-import type { SiteGeo } from "@/lib/geo/types";
+import type { SiteGeo } from "@grid-passport/core/geo/types";
 import { MapPanel } from "./MapPanel";
 
 export function EvidencePanel({ geo }: { geo: SiteGeo }) {

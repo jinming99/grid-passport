@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { Map as MaplibreMap, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { SiteGeo } from "@/lib/geo/types";
+import type { SiteGeo } from "@grid-passport/core/geo/types";
 
 function buildStyle(geo: SiteGeo): StyleSpecification {
   return {

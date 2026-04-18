@@ -38,11 +38,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { POLICY, POLICY_VERSION } from "@/lib/policy";
-import { listCases } from "@/lib/fixtures";
-import { buildRecord } from "@/lib/forecast";
-import { projectForRole, type ProjectedField } from "@/lib/projection";
-import { buildAuditTrail, type AuditEvent } from "@/lib/audit";
+import { POLICY, POLICY_VERSION } from "@grid-passport/core/policy";
+import { listCases } from "@grid-passport/core/fixtures";
+import { buildRecord } from "@grid-passport/core/forecast";
+import { projectForRole, type ProjectedField } from "@grid-passport/core/projection";
+import { buildAuditTrail, type AuditEvent } from "@grid-passport/core/audit";
 import type {
   CaseInput,
   FieldClass,
@@ -50,7 +50,7 @@ import type {
   PrivateProfile,
   RequestRecord,
   Role,
-} from "@/lib/types";
+} from "@grid-passport/core/types";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 const REGO_PATH = join(REPO_ROOT, "packages/policy/grid-passport.rego");

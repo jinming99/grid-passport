@@ -1,4 +1,4 @@
-import type { FieldClass } from "@/lib/types";
+import type { FieldClass } from "@grid-passport/core/types";
 
 const styles: Record<FieldClass, string> = {
   public: "border-slate-600 text-slate-300",

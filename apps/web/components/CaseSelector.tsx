@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CASE_METAS } from "@/lib/fixtures";
+import { CASE_METAS } from "@grid-passport/core/fixtures";
 
 export function CaseSelector({ currentCaseId }: { currentCaseId: string }) {
   return (

@@ -1,4 +1,4 @@
-import type { CaseInput } from "@/lib/types";
+import type { CaseInput } from "../types";
 
 export const owlCompute: CaseInput = {
   id: "req_owl_compute_001",

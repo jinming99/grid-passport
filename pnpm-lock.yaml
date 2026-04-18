@@ -10,6 +10,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@grid-passport/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       maplibre-gl:
         specifier: ^5.23.0
         version: 5.23.0
@@ -59,6 +62,8 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+
+  packages/core: {}
 
   packages/policy: {}
 

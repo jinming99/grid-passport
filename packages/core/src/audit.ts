@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
-import { POLICY_VERSION } from "@/lib/policy";
+import { POLICY_VERSION } from "./policy";
 import type {
   CaseInput,
   DerivedProof,
   RequestRecord,
   Role,
   ScenarioOverride,
-} from "@/lib/types";
+} from "./types";
 
 export type AuditActor =
   | "interviewer"

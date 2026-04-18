@@ -1,4 +1,4 @@
-import type { FieldClass, FieldPath, Role } from "@/lib/types";
+import type { FieldClass, FieldPath, Role } from "./types";
 
 interface PolicyEntry {
   class: FieldClass;

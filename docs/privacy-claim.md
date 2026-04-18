@@ -32,7 +32,7 @@ The classification table lives in three places that must agree:
 | Location                                    | Role                            |
 | ------------------------------------------- | ------------------------------- |
 | `packages/policy/grid-passport.rego`        | canonical source of truth (Rego/OPA) |
-| `apps/web/lib/policy.ts`                    | runtime enforcement (TypeScript)     |
+| `packages/core/src/policy.ts`                    | runtime enforcement (TypeScript)     |
 | `apps/api/gridpassport/policy.py`           | parity for the FastAPI worker        |
 
 Drift between any two is a bug. The canary (§2) checks all three on every
@@ -56,7 +56,7 @@ caller who sends a `flexPercent` override has it silently dropped before
 the forecaster runs (`apps/web/app/api/scenario/route.ts`). Defense in
 depth: even if an override does reach the audit layer, the audit string
 substitutes "(baseline sealed)" for any non-applicant role
-(`apps/web/lib/audit.ts`).
+(`packages/core/src/audit.ts`).
 
 The **audit trail** records what happened with content-addressed
 artifacts (sha-256 of the request bytes, the public evidence bundle, the
@@ -86,7 +86,7 @@ shipping a different policy than the one displayed is detectable.
 
 ### 2b. Mirror you can run
 
-`apps/web/lib/policy.ts` mirrors the Rego table as TypeScript so the
+`packages/core/src/policy.ts` mirrors the Rego table as TypeScript so the
 Next.js runtime can enforce it without an OPA binary. The mirror is
 checked against the canon by the canary on every run. Long-term plan
 (open item): compile the Rego to WASM, evaluate in-process, drop the TS
@@ -431,7 +431,7 @@ The honest list, so the demo doesn't oversell.
 - **The signed disclosure bundle is conceptual.** The bundle exists in the architecture; the signing/verification step (Ed25519, public-key registry for utilities) isn't wired yet. Until it is, the privacy claim relies on the integrity of the projection function, not on cryptographic transit guarantees.
 - **TEE is no longer the critical-path future work.** Under local-first, raw inputs never leave the applicant's machine, so a hardware-attested execution environment isn't required for the disclosure layer. TEE re-enters only if a utility wants delegated verification (Phase 5+) or for utility-side aggregate analytics across many bundles.
 - **Flex MOSAIC compliance is stylized.** Our `responseClass: A | B | C` is a single-axis ordinal bucket inspired by [EPRI's Flex MOSAIC framework](https://dcflex.epri.com/flex-mosaic) (launched March 23, 2026), not an implementation of the published multi-axis ladder. Adopting the real schema is a 2–3 day swap once it stabilizes.
-- **The forecaster is a deterministic toy.** `firmnessScore` and `expectedPeakMW` come from hand-tuned linear formulas in `apps/web/lib/forecast.ts`, not a probabilistic model. A real forecaster would emit P10/P50/P90 uncertainty bands trained on historical interconnection outcomes.
+- **The forecaster is a deterministic toy.** `firmnessScore` and `expectedPeakMW` come from hand-tuned linear formulas in `packages/core/src/forecast.ts`, not a probabilistic model. A real forecaster would emit P10/P50/P90 uncertainty bands trained on historical interconnection outcomes.
 - **The audit trail is sha-256 anchored, not zero-knowledge.** A regulator can verify that a hash matches a payload, but the payload itself isn't proved without disclosure. ZK attestations of specific fields are an extension, not the baseline.
 - **Fixtures are synthetic.** Every number in the demo is fabricated for the case study. We do not claim utility-grade forecast accuracy.
 - **The policy is small.** ~20 fields. A production version would have hundreds, with cross-cutting rules (e.g., "redact any field whose classification has changed in the last 90 days unless re-attested"). The mechanism scales; the policy currently does not.

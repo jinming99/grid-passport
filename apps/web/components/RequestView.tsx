@@ -1,4 +1,4 @@
-import type { ProjectedView } from "@/lib/projection";
+import type { ProjectedView } from "@grid-passport/core/projection";
 import type {
   FlexibilityPassport,
   ReadinessClass,
@@ -6,7 +6,7 @@ import type {
   SiteContext,
   SourceRef,
   WorkloadMix,
-} from "@/lib/types";
+} from "@grid-passport/core/types";
 import { FieldRow } from "./FieldRow";
 import { SectionCard } from "./SectionCard";
 

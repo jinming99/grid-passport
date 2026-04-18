@@ -1,4 +1,4 @@
-import { POLICY_VERSION } from "@/lib/policy";
+import { POLICY_VERSION } from "./policy";
 import type {
   CaseInput,
   DerivedProof,
@@ -10,7 +10,7 @@ import type {
   RequestRecord,
   RiskClass,
   ScenarioOverride,
-} from "@/lib/types";
+} from "./types";
 
 const clamp = (v: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, v));
@@ -51,16 +51,26 @@ function responseClass(flexPercent: number): FlexResponseClass {
   return "C";
 }
 
+// Coarse commercial BESS duration tiers. Publishing a band means an
+// observer can't invert to the exact private bessHours — [4, 8] matches
+// bessHours ∈ {4, 5, 6, 7}. Mirror in apps/api/gridpassport/forecast.py.
+function durationBand(bessHours: number): [number, number] {
+  if (bessHours < 4) return [2, 4];
+  if (bessHours < 8) return [4, 8];
+  return [8, 12];
+}
+
 function flexibilityPassport(
   p: PrivateProfile,
   requestedMW: number,
 ): FlexibilityPassport {
   const flexMW = requestedMW * (p.flexPercent / 100);
+  const [durationHoursMin, durationHoursMax] = durationBand(p.bessHours);
   return {
     mwMin: Math.round(flexMW * 0.82),
     mwMax: Math.round(flexMW * 1.12),
-    durationHoursMin: Math.max(2, p.bessHours - 1),
-    durationHoursMax: Math.max(2, p.bessHours),
+    durationHoursMin,
+    durationHoursMax,
     responseClass: responseClass(p.flexPercent),
   };
 }

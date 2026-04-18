@@ -1,4 +1,4 @@
-import type { ProjectedView } from "@/lib/projection";
+import type { ProjectedView } from "@grid-passport/core/projection";
 
 export function BenefitPanel({ view }: { view: ProjectedView }) {
   const privateFields = Object.values(view.privateProfile);

@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { getCase, CASE_METAS } from "@/lib/fixtures";
-import { buildRecord } from "@/lib/forecast";
-import { projectForRole } from "@/lib/projection";
+import { getCase, CASE_METAS } from "@grid-passport/core/fixtures";
+import { buildRecord } from "@grid-passport/core/forecast";
+import { projectForRole } from "@grid-passport/core/projection";
 import { loadPolicySource } from "@/lib/policy-source";
-import { buildAuditTrail } from "@/lib/audit";
-import { getSiteGeo } from "@/lib/geo/synthetic";
-import type { Role } from "@/lib/types";
+import { buildAuditTrail } from "@grid-passport/core/audit";
+import { getSiteGeo } from "@grid-passport/core/geo/synthetic";
+import type { Role } from "@grid-passport/core/types";
 import { DemoClient } from "@/components/DemoClient";
 
 const INITIAL_ROLE: Role = "utility";

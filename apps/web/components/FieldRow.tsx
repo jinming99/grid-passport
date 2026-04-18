@@ -1,4 +1,4 @@
-import type { ProjectedField } from "@/lib/projection";
+import type { ProjectedField } from "@grid-passport/core/projection";
 import { FieldChip } from "./FieldChip";
 
 interface FieldRowProps<T> {

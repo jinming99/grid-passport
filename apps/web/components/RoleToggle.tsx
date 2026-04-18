@@ -1,6 +1,6 @@
 "use client";
 
-import type { Role } from "@/lib/types";
+import type { Role } from "@grid-passport/core/types";
 
 const roles: { id: Role; label: string; hint: string }[] = [
   { id: "applicant", label: "Applicant", hint: "Your raw data" },

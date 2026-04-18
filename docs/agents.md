@@ -81,7 +81,7 @@ This is enforced in two places:
 ### 2b. Agents never bypass policy
 
 Every projection is computed by the canonical projection function
-(`apps/web/lib/projection.ts`), regardless of who or what produced the
+(`packages/core/src/projection.ts`), regardless of who or what produced the
 inputs. Agents do not have a "fast path" that skips the projection
 layer. If the Cartographer agent fetches a piece of public evidence
 that turns out to need to be classified `private`, it goes through the
@@ -105,7 +105,7 @@ orchestration is workflow-driven. Agents wait their turn.
 ### 2d. Agents hand off via structured artifacts, not free-form messages
 
 Coordination between agents happens through the typed objects already
-defined in `apps/web/lib/types.ts`:
+defined in `packages/core/src/types.ts`:
 
 - Interviewer outputs a `CaseInput`.
 - Cartographer outputs a `PublicEvidence`.

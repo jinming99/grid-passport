@@ -51,19 +51,21 @@ grid-passport/
 │   │   │                               FieldChip, SectionCard, BenefitPanel, CaseSelector,
 │   │   │                               CounterfactualSlider, MapPanel, EvidencePanel,
 │   │   │                               AuditTrail, PolicyPanel
-│   │   └── lib/
+│   │   ├── lib/
+│   │   │   └── policy-source.ts        reads the Rego file + sha-256 at request time (web-only: cwd-dep)
+│   │   └── scripts/
+│   │       └── privacy-canary.ts       structural + audit-action scan + TS↔Rego↔Python drift
+│   └── api/                            FastAPI parity (uv · Python 3.11+) — Phase 2 target
+├── packages/
+│   ├── core/                           @grid-passport/core · subpath exports · shared across web + future desktop
+│   │   └── src/
 │   │       ├── types.ts                CaseInput · RequestRecord · FieldPath · Role · ...
 │   │       ├── policy.ts               POLICY table (runtime mirror of the Rego)
-│   │       ├── policy-source.ts        reads the Rego file + sha-256 at request time
 │   │       ├── projection.ts           projectForRole(req, role) → ProjectedView
 │   │       ├── forecast.ts             forecast(case, override?) → DerivedProof
 │   │       ├── audit.ts                buildAuditTrail(case, record, role, override)
-│   │       ├── fixtures/               owl-compute.ts · lantern-cloud.ts · kraken-train.ts · index.ts
+│   │       ├── fixtures/               owl-compute · lantern-cloud · kraken-train · index
 │   │       └── geo/                    synthetic GeoJSON per case
-│   │   └── scripts/
-│   │       └── privacy-canary.ts      structural + audit-action scan + TS↔Rego↔Python drift
-│   └── api/                            FastAPI parity (uv · Python 3.11+) — Phase 2 target
-├── packages/
 │   └── policy/grid-passport.rego       canonical release policy (source of truth)
 ├── grid-passport-harness/              specs + .claude/agents/ subagent prompts (don't delete)
 ├── docs/
@@ -81,7 +83,7 @@ grid-passport/
 ## The privacy claim, precisely
 
 - `packages/policy/grid-passport.rego` is the canonical source of field visibility rules.
-- `apps/web/lib/policy.ts` mirrors it as the runtime (TS). Python mirror lives at `apps/api/gridpassport/policy.py`. **Drift between these three is a bug.**
+- `packages/core/src/policy.ts` mirrors it as the runtime (TS). Python mirror lives at `apps/api/gridpassport/policy.py`. **Drift between these three is a bug.**
 - Initial page render at `/demo/[caseId]` projects for one role only (default `utility`). Role switches and counterfactuals go through `/api/scenario`, which returns only the selected role's view.
 - `/api/scenario` returns `baselineFlexPercent` only when `role === "applicant"`. Every other role gets `null`. This was a real fix after a Phase 0 leak where pre-projecting all three roles shipped raw `0.68` to the browser.
 - `/api/scenario` also drops the `flexPercent` override server-side when `role !== "applicant"` (Phase 3c). Defense in depth for `audit.ts` which now redacts the baseline in the override action string for non-applicants.
@@ -113,8 +115,8 @@ When adding new fields, consult this list first — don't copy from the harness 
 ## Extending
 
 Add a new field:
-1. Add to `FieldPath` union in `apps/web/lib/types.ts`.
-2. Add an entry to `POLICY` in `apps/web/lib/policy.ts`.
+1. Add to `FieldPath` union in `packages/core/src/types.ts`.
+2. Add an entry to `POLICY` in `packages/core/src/policy.ts`.
 3. Mirror in `packages/policy/grid-passport.rego` field_class map.
 4. Mirror in `apps/api/gridpassport/policy.py`.
 5. Update fixtures (TS + Python).
@@ -122,10 +124,10 @@ Add a new field:
 7. Run `pnpm privacy:canary` — checks structural projection, audit-action scan, and TS↔Rego↔Python policy drift. Add the new field's value strings to `privateValueStrings`/`publicValueStrings` in `apps/web/scripts/privacy-canary.ts` if it's a new shape.
 
 Add a new case:
-1. New fixture file in `apps/web/lib/fixtures/`.
-2. Register in `apps/web/lib/fixtures/index.ts` + `apps/api/gridpassport/fixtures.py`.
-3. Synthetic SiteGeo in `apps/web/lib/geo/synthetic.ts`.
-4. Audit anchor timestamp in `CASE_ANCHOR` inside `apps/web/lib/audit.ts`.
+1. New fixture file in `packages/core/src/fixtures/`.
+2. Register in `packages/core/src/fixtures/index.ts` + `apps/api/gridpassport/fixtures.py`.
+3. Synthetic SiteGeo in `packages/core/src/geo/synthetic.ts`.
+4. Audit anchor timestamp in `CASE_ANCHOR` inside `packages/core/src/audit.ts`.
 
 ## Versions
 
@@ -164,7 +166,7 @@ Add a new case:
 Items in this section are state-of-the-codebase observations that matter to a future session but aren't roadmap-tracked work:
 
 - **No unit/integration tests yet.** The privacy canary is mechanical evidence for the projection layer, but `forecast.ts`, `audit.ts` proper, and the route handlers have no test suite. CLAUDE.md mandates tests for any change touching projections/policy/proofs/traces — wire this before the next round of changes there. Pytest is already in `apps/api/pyproject.toml` dev deps; the TS side needs vitest or a similar pick. (Tracked in roadmap backlog.)
-- **Derivation transparency.** `flexibilityPassport.durationHoursMax = max(2, bessHours)` is the identity for `bessHours ≥ 2`, so the derived field publishes the private input verbatim. Policy permits release, but the derivation should probably bucket to bands. Same audit needed for any other derived-from-private field. (Tracked in roadmap backlog.)
+- **Derivation transparency — partial.** `flexibilityPassport.durationHoursMin/Max` was re-derived as coarse BESS tier bands (2026-04-18), so `bessHours` no longer leaks through that pair. Remaining surfaces with the same "monotone-invertible from a private input" risk: `flexibilityPassport.mwMin/Max`, `firmnessScore`, `expectedPeakMW`. A shared band-design pattern for the remaining derived fields is tracked in the roadmap backlog (`derivation transparency review, part 2`).
 
 ## What this doc is *not*
 

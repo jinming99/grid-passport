@@ -63,7 +63,7 @@ Auditability is not a logging strategy. It is a *property of the wire format*. T
 
 ### 4b. Constrained
 
-The projection layer is a pure function from `(policy, request, role)` to `ProjectedView`. It is implemented in `apps/web/lib/projection.ts`, mirrored canonically in Rego at `packages/policy/grid-passport.rego`, and verified for drift on every commit by `pnpm privacy:canary`. There is no path through the system where a private field reaches a non-applicant projection — this is enforced structurally, not by code review or prompting discipline.
+The projection layer is a pure function from `(policy, request, role)` to `ProjectedView`. It is implemented in `packages/core/src/projection.ts`, mirrored canonically in Rego at `packages/policy/grid-passport.rego`, and verified for drift on every commit by `pnpm privacy:canary`. There is no path through the system where a private field reaches a non-applicant projection — this is enforced structurally, not by code review or prompting discipline.
 
 Agents that produce outputs (Interviewer, Cartographer, Forecaster, Explainer) feed *into* this layer. They cannot bypass it. They cannot release a value the policy classifies as private. The Interviewer Skill's body contains an explicit constraint that says "do not write to `privateProfile` from natural-language prose"; the canary catches it if it ever does. The Explainer Skill consumes only `ProjectedView`, which by construction does not contain raw private inputs.
 

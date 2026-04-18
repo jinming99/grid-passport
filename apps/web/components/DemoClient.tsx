@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { Role } from "@/lib/types";
-import type { ProjectedView } from "@/lib/projection";
-import type { CaseMeta } from "@/lib/fixtures";
+import type { Role } from "@grid-passport/core/types";
+import type { ProjectedView } from "@grid-passport/core/projection";
+import type { CaseMeta } from "@grid-passport/core/fixtures";
 import type { PolicySource } from "@/lib/policy-source";
-import type { AuditEvent } from "@/lib/audit";
-import type { SiteGeo } from "@/lib/geo/types";
+import type { AuditEvent } from "@grid-passport/core/audit";
+import type { SiteGeo } from "@grid-passport/core/geo/types";
 import { RoleToggle } from "./RoleToggle";
 import { RequestView } from "./RequestView";
 import { BenefitPanel } from "./BenefitPanel";
