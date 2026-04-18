@@ -43,8 +43,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unknown case" }, { status: 404 });
   }
 
+  // Counterfactual scenarios are an applicant-only affordance: the slider
+  // exists in the applicant view to let the operator probe their own data.
+  // Non-applicant callers get the baseline projection only — overrides are
+  // silently dropped rather than reflected in derived proofs or audit text.
   const override: ScenarioOverride = {};
-  if (body.flexPercent !== undefined) {
+  if (body.flexPercent !== undefined && body.role === "applicant") {
     override.flexPercent = Math.max(0, Math.min(60, body.flexPercent));
   }
 

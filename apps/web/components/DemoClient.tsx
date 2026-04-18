@@ -10,7 +10,7 @@ import type { AuditEvent } from "@/lib/audit";
 import type { SiteGeo } from "@/lib/geo/types";
 import { RoleToggle } from "./RoleToggle";
 import { RequestView } from "./RequestView";
-import { LeakCounter } from "./LeakCounter";
+import { BenefitPanel } from "./BenefitPanel";
 import { CaseSelector } from "./CaseSelector";
 import { CounterfactualSlider } from "./CounterfactualSlider";
 import { PolicyPanel } from "./PolicyPanel";
@@ -155,7 +155,13 @@ export function DemoClient({
         </div>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 pb-4">
           <CaseSelector currentCaseId={caseId} />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/about"
+              className="text-[11px] uppercase tracking-[0.18em] text-neutral-500 hover:text-neutral-200"
+            >
+              the story →
+            </Link>
             {pending ? (
               <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-lime-400">
                 <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-lime-400" />
@@ -169,7 +175,7 @@ export function DemoClient({
 
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-6">
-          <LeakCounter view={view} />
+          <BenefitPanel view={view} />
         </div>
 
         <div className="mb-6 rounded-md border border-neutral-800 bg-neutral-950 p-5">

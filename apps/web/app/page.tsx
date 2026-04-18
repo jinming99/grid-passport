@@ -8,9 +8,15 @@ export default function Home() {
           <span className="font-mono text-[13px] uppercase tracking-[0.22em] text-neutral-300">
             grid<span className="text-sky-400">·</span>passport
           </span>
-          <span className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-            truth without disclosure
-          </span>
+          <nav className="flex items-center gap-4 text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+            <Link href="/about" className="hover:text-neutral-200">
+              the story
+            </Link>
+            <span className="text-neutral-700">·</span>
+            <Link href="/demo/owl-compute" className="hover:text-neutral-200">
+              demo
+            </Link>
+          </nav>
         </div>
       </header>
 

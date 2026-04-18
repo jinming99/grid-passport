@@ -179,3 +179,17 @@ export const POLICY: Record<FieldPath, PolicyEntry> = {
 export function isVisible(path: FieldPath, role: Role): boolean {
   return POLICY[path].visibleTo.includes(role);
 }
+
+export const PRIVATE_FIELD_COUNT = Object.values(POLICY).filter(
+  (entry) => entry.class === "private",
+).length;
+
+export const DERIVED_FIELD_COUNT = Object.values(POLICY).filter(
+  (entry) => entry.class === "derived",
+).length;
+
+export function countPrivateVisibleTo(role: Role): number {
+  return Object.values(POLICY).filter(
+    (entry) => entry.class === "private" && entry.visibleTo.includes(role),
+  ).length;
+}

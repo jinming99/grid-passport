@@ -162,11 +162,18 @@ export function buildAuditTrail(
   ];
 
   if (override?.flexPercent !== undefined) {
+    // Baseline = input.privateProfile.flexPercent. That's a private field;
+    // it must not appear in audit text shown to non-applicant roles. The
+    // applicant owns it, so they see it.
+    const baselineSegment =
+      role === "applicant"
+        ? `(baseline ${input.privateProfile.flexPercent}%)`
+        : "(baseline sealed)";
     events.push({
       id: eventId(input.caseId, 6),
       timestamp: new Date().toISOString(),
       actor: "forecaster",
-      action: `Counterfactual scenario · flex ${override.flexPercent}% (baseline ${input.privateProfile.flexPercent}%)`,
+      action: `Counterfactual scenario · flex ${override.flexPercent}% ${baselineSegment}`,
       reasonCode: "scenario_override",
       artifactHash: proofHashHex.slice(0, 16),
       policyVersion: POLICY_VERSION,

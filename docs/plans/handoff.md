@@ -8,7 +8,13 @@ Durable record of project state, decisions, and what future work needs to know. 
 - **Tagline:** Truth without disclosure
 - **One-liner:** Confidential coordination workflow for large-load grid interconnection. Applicants submit private load/site/flexibility inputs; utilities and regulators see only policy-approved projections and derived proofs.
 - **Repo:** https://github.com/jinming99/grid-passport (private)
-- **Canonical harness:** `grid-passport-harness/` (8 spec docs + CLAUDE.md + subagent prompts)
+- **Canonical harness:** `grid-passport-harness/` (8 specs + CLAUDE.md + 6 subagent prompts in `.claude/agents/`)
+- **Vision + design choices:** `docs/vision.md` — read this to understand *why this shape*. Includes team & origins (§0), the local-first trust pivot (§5), the reliability triad and "agents propose, humans dispose" framing (§5b–§5c), and why the web demo + Tauri app coexist (§10).
+- **Privacy mechanism case:** `docs/privacy-claim.md` — read this for the mechanical-evidence story.
+- **Agent architecture + Claude Skills + research connection:** `docs/agents.md` — trust principles mapped to the reliability triad (§2), human-AI collaboration framing (§3), agent roster, Claude Agent Skills implementation pattern, eval framework with concrete N-targets and student-handoff task breakdown (§7), Ming Jin's research agenda on calibrating skills for workflow / human-preference / domain-spec alignment (§6).
+- **Story / talk-arc narrative:** `docs/story.md` — single source of truth for both Ming's job talk and the website's `/about` page. Pre-talk it gates on the eval harness landing (§6 placeholder).
+- **Master plan / roadmap:** `docs/plans/roadmap.md` — *what's shipping next, in what order, with mechanical "done" criteria*. Single source of truth for the build queue and the open decision log.
+- **Team:** Ming Jin (faculty mentor, project lead — vision/design/foundation); Bhawuk Luthra (student + Dominion Energy employee — co-conceptualizer + co-developer + hackathon participant); Vikrant Bhati (co-developer + hackathon participant). Bhawuk's Dominion affiliation is the load-bearing credibility anchor for the case studies.
 
 ## Phases
 
@@ -23,7 +29,10 @@ Durable record of project state, decisions, and what future work needs to know. 
 | 2   | MapLibre evidence panel + synthetic GeoJSON · signed audit trail with 5 named actors | done |
 | 3a  | Git init + first commit + private GitHub push | done |
 | 3b  | Vercel deploy | done — https://grid-passport.vercel.app |
-| 4+  | Planned: OPA runtime (WASM), LLM Explainer, eval harness (promptfoo + deepeval), PDF export, real Confidential Space | planned |
+| 3c  | Privacy canary (TS↔Rego↔Python drift, structural, audit-action scan) + `docs/privacy-claim.md` · audit baseline-flex leak fixed | done |
+| 3d  | Vision + trust-model pivot: `docs/vision.md` — local-first applicant tool is the production form; web demo is a teaching artifact; TEE no longer critical-path | done |
+| 3e  | Privacy Benefit Panel (replaces LeakCounter) · `/about` story page v1 — classified-briefing × SCADA design pass via `/frontend-design` plugin skill | done |
+| 4+  | Planned — see `docs/plans/roadmap.md` for current sprint + near-term order (single source of truth) | planned |
 
 ## Architecture
 
@@ -32,13 +41,14 @@ grid-passport/
 ├── apps/
 │   ├── web/                            Next.js 16 · TS · Tailwind 4 · App Router
 │   │   ├── app/
-│   │   │   ├── page.tsx                hero + release-diff teaser
+│   │   │   ├── page.tsx                hero + release-diff teaser + nav to /about, /demo
+│   │   │   ├── about/page.tsx          long-scroll · renders docs/story.md at build time
 │   │   │   ├── demo/
 │   │   │   │   ├── page.tsx            redirects to /demo/owl-compute
 │   │   │   │   └── [caseId]/page.tsx   server component · projects for initial role only
 │   │   │   └── api/scenario/route.ts   POST · returns {view, auditEvents, baselineFlexPercent}
 │   │   ├── components/                 DemoClient, RoleToggle, RequestView, FieldRow,
-│   │   │                               FieldChip, SectionCard, LeakCounter, CaseSelector,
+│   │   │                               FieldChip, SectionCard, BenefitPanel, CaseSelector,
 │   │   │                               CounterfactualSlider, MapPanel, EvidencePanel,
 │   │   │                               AuditTrail, PolicyPanel
 │   │   └── lib/
@@ -50,11 +60,20 @@ grid-passport/
 │   │       ├── audit.ts                buildAuditTrail(case, record, role, override)
 │   │       ├── fixtures/               owl-compute.ts · lantern-cloud.ts · kraken-train.ts · index.ts
 │   │       └── geo/                    synthetic GeoJSON per case
+│   │   └── scripts/
+│   │       └── privacy-canary.ts      structural + audit-action scan + TS↔Rego↔Python drift
 │   └── api/                            FastAPI parity (uv · Python 3.11+) — Phase 2 target
 ├── packages/
 │   └── policy/grid-passport.rego       canonical release policy (source of truth)
-├── grid-passport-harness/              specs + subagent prompts (don't delete)
-├── docs/plans/handoff.md               this file
+├── grid-passport-harness/              specs + .claude/agents/ subagent prompts (don't delete)
+├── docs/
+│   ├── vision.md                       team, big-picture framing, trust pivot, reliability triad, web/desktop coexistence
+│   ├── privacy-claim.md                the case for the privacy claim — read this for stage
+│   ├── agents.md                       agent architecture, Claude Skills, eval targets, research connection
+│   ├── story.md                        talk-arc narrative — renders to website /about, drives the job-talk slides
+│   └── plans/
+│       ├── handoff.md                  this file — state, decisions, what-already-exists
+│       └── roadmap.md                  master plan — what's shipping next, decisions awaited
 ├── CLAUDE.md                           project rules
 └── pnpm-workspace.yaml
 ```
@@ -65,8 +84,10 @@ grid-passport/
 - `apps/web/lib/policy.ts` mirrors it as the runtime (TS). Python mirror lives at `apps/api/gridpassport/policy.py`. **Drift between these three is a bug.**
 - Initial page render at `/demo/[caseId]` projects for one role only (default `utility`). Role switches and counterfactuals go through `/api/scenario`, which returns only the selected role's view.
 - `/api/scenario` returns `baselineFlexPercent` only when `role === "applicant"`. Every other role gets `null`. This was a real fix after a Phase 0 leak where pre-projecting all three roles shipped raw `0.68` to the browser.
+- `/api/scenario` also drops the `flexPercent` override server-side when `role !== "applicant"` (Phase 3c). Defense in depth for `audit.ts` which now redacts the baseline in the override action string for non-applicants.
 - Raw private values exist in browser memory only when the user is actively in the applicant role (they're authorized to see their own data).
 - In the demo we simulate the confidential boundary. The release/policy layer is real; the TEE is not. Stage this honestly.
+- **The full case for the claim lives in `docs/privacy-claim.md`** — mechanism, evidence layers, with/without delta, why NDAs/redacted PDFs/ZK/MPC/TEEs/DP/FL each cover only part of the surface, and what we are *not* claiming.
 
 ## Decisions already made (don't re-litigate)
 
@@ -75,6 +96,9 @@ grid-passport/
 - **Phase 0 deliberately used Next.js only** (no FastAPI). FastAPI added in Phase 1c as a scaffold; swap path documented but not wired.
 - **OPA runtime not wired yet.** Rego is the source, TS is the enforcement. The UI renders the Rego text + sha-256 in regulator mode so the claim is inspectable.
 - **Synthetic fixtures, not real utility data.** Every number is labeled synthetic. Do not imply otherwise on stage.
+- **Production architecture is local-first (Phase 3d).** Per `docs/vision.md` §5: the applicant runs the projection locally; nothing leaves their machine until they explicitly export a signed disclosure bundle. The web demo at https://grid-passport.vercel.app is a teaching artifact only. Don't confuse "the demo is hosted" with "the product is hosted."
+- **TEE is not load-bearing under local-first.** It was originally Phase 4+ (real Confidential Space). Under the pivot it's optional, only relevant for utility-side delegated verification. NDAs compose *on top of* the tool — they cover residual liability; the tool reduces the surface where disclosure can fail.
+- **No time pressure on the build.** Quality > speed for this project. The talk waits for real eval results; the eval harness gets built properly rather than rushed. Don't propose Plan-B-quick-ship-stubs unless explicitly asked.
 
 ## Harness bugs reconciled in code (don't re-introduce)
 
@@ -95,7 +119,7 @@ Add a new field:
 4. Mirror in `apps/api/gridpassport/policy.py`.
 5. Update fixtures (TS + Python).
 6. Run `pnpm typecheck` — catches most TS-side drift.
-7. Add a canary to the privacy smoke check.
+7. Run `pnpm privacy:canary` — checks structural projection, audit-action scan, and TS↔Rego↔Python policy drift. Add the new field's value strings to `privateValueStrings`/`publicValueStrings` in `apps/web/scripts/privacy-canary.ts` if it's a new shape.
 
 Add a new case:
 1. New fixture file in `apps/web/lib/fixtures/`.
@@ -106,12 +130,15 @@ Add a new case:
 ## Versions
 
 - Node 20 · pnpm 10.33.0 · Next.js 16.2.4 · React 19.2.4 · Tailwind 4 · TypeScript 5 · maplibre-gl 5.23.0
+- Story-page render path: react-markdown 10 · remark-gfm 4 · @tailwindcss/typography 0.5
 - Python 3.11+ · FastAPI 0.115+ · pydantic 2.9+ · uv
 
 ## Operational notes
 
 - Dev server: `pnpm dev` → http://localhost:3000
 - Typecheck: `pnpm typecheck` (runs on the web workspace)
+- Lint: `pnpm lint` (eslint, web workspace)
+- Privacy canary: `pnpm privacy:canary` (mechanical privacy check; see `docs/privacy-claim.md` §2c)
 - FastAPI (optional): install uv, then `pnpm api:sync && pnpm api:dev` → http://localhost:8000
 - Repo was initialized with `git init --initial-branch=main`. First commit: `03d8b57 initial hackathon build (phases 0–2)`.
 - Memory files in `~/.claude/projects/...` have been retired in favor of this doc. Don't resume persisting state there for this project.
@@ -132,10 +159,12 @@ Add a new case:
 
 ## Open items
 
-- **OPA WASM runtime** — Rego is canonical, but still evaluated by a TS mirror. Plan: precompile `grid-passport.rego` → WASM, load in-process in the Next.js route handler. Remove the TS mirror once cross-checked.
-- **LLM Explainer agent** — a Claude API call that turns released proofs into role-specific prose ("why this customer is in this treatment band"). Must only consume the ProjectedView, never the raw request. First Python-only agent; motivates the Next.js → FastAPI proxy.
-- **Eval harness** — promptfoo + deepeval per the spec. At minimum: role-leakage tests, counterfactual-responsiveness, evidence recall.
-- **Regulator PDF export** — snapshot of policy + audit + manifest for offline review.
+**The build queue lives in `docs/plans/roadmap.md`.** Don't duplicate it here — it will drift.
+
+Items in this section are state-of-the-codebase observations that matter to a future session but aren't roadmap-tracked work:
+
+- **No unit/integration tests yet.** The privacy canary is mechanical evidence for the projection layer, but `forecast.ts`, `audit.ts` proper, and the route handlers have no test suite. CLAUDE.md mandates tests for any change touching projections/policy/proofs/traces — wire this before the next round of changes there. Pytest is already in `apps/api/pyproject.toml` dev deps; the TS side needs vitest or a similar pick. (Tracked in roadmap backlog.)
+- **Derivation transparency.** `flexibilityPassport.durationHoursMax = max(2, bessHours)` is the identity for `bessHours ≥ 2`, so the derived field publishes the private input verbatim. Policy permits release, but the derivation should probably bucket to bands. Same audit needed for any other derived-from-private field. (Tracked in roadmap backlog.)
 
 ## What this doc is *not*
 

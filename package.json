@@ -11,6 +11,7 @@
     "build": "pnpm --filter @grid-passport/web build",
     "lint": "pnpm --filter @grid-passport/web lint",
     "typecheck": "pnpm --filter @grid-passport/web typecheck",
+    "privacy:canary": "pnpm --filter @grid-passport/web privacy:canary",
     "api:dev": "cd apps/api && uv run uvicorn main:app --reload --port 8000",
     "api:sync": "cd apps/api && uv sync"
   }
