@@ -94,10 +94,13 @@ Installed (user scope, official marketplace):
 - `security-guidance` — worth consulting before touching signed-bundle / audit / policy-enforcement code.
 - `feature-dev`, `pr-review-toolkit`, `commit-commands`, `skill-creator`, `claude-md-management` — workflow tooling.
 
-Flagged for the Tauri track (#4 in the roadmap) — install at the top of that sprint:
-- `dchuk/claude-code-tauri-skills` / skill `tauri-plugins` — Tauri plugin dev (Rust core + JS bindings + platform-specific + permissions + lifecycle). Install: `npx playbooks add skill dchuk/claude-code-tauri-skills --skill tauri-plugins`.
-- `actionbook/rust-skills` — idiomatic Rust patterns for the trust-critical projection path. Install: `/plugin marketplace add actionbook/rust-skills && /plugin install rust-skills@rust-skills`.
-- `P3GLEG/tauri-plugin-mcp` — optional, post-scaffold: embeds an MCP server in the running Tauri app so Claude can drive it for debug/test (screenshots, DOM, input sim).
+Installed for the Tauri track (#4 in the roadmap) as of 2026-04-18:
+- `dchuk/claude-code-tauri-skills` / skill `developing-tauri-plugins` — Tauri plugin dev (Rust core + JS bindings + platform-specific + permissions + lifecycle). The actual skill slug is `developing-tauri-plugins`, not `tauri-plugins` as the `playbooks add` prompt suggests.
+- `actionbook/rust-skills` — idiomatic Rust patterns for the trust-critical projection path. Installs the full `rust-skills:*` family (m01-ownership … m15-anti-pattern, domain-web, domain-cli, domain-embedded, unsafe-checker, rust-code-navigator, etc.). Relevant once the Tauri Rust core starts expanding beyond the scaffold.
+- `rust-analyzer` component — activated via `rustup component add rust-analyzer`. LSP ready.
+
+Not yet installed (optional, post-scaffold):
+- `P3GLEG/tauri-plugin-mcp` — embeds an MCP server in the running Tauri app so Claude can drive it for debug/test (screenshots, DOM, input sim). Useful when iterating on the side-by-side review screen without manual clicking.
 
 ---
 
