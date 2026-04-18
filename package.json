@@ -1,0 +1,17 @@
+{
+  "name": "grid-passport",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @grid-passport/web dev",
+    "build": "pnpm --filter @grid-passport/web build",
+    "lint": "pnpm --filter @grid-passport/web lint",
+    "typecheck": "pnpm --filter @grid-passport/web typecheck",
+    "api:dev": "cd apps/api && uv run uvicorn main:app --reload --port 8000",
+    "api:sync": "cd apps/api && uv sync"
+  }
+}
