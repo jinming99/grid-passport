@@ -51,3 +51,31 @@ SENSITIVITY_WEIGHTS: dict[str, float] = {
     "coords": 0.8,
     "confidence": 0.7,
 }
+
+
+def normalize_field_path(path: str) -> str:
+    """Normalize a field path (camelCase / dotted / snake_case) to a single
+    lowercase string with no separators. Used by direct + trace scorers to
+    match cited-field paths against SENSITIVITY_WEIGHTS keys robustly.
+
+    Examples:
+      'private.workloadMix.trainingShare' -> 'privateworkloadmixtrainingshare'
+      'workload_mix' -> 'workloadmix'
+      'GRID_MW' -> 'gridmw'
+    """
+    import re
+
+    snake = re.sub(r"([a-z])([A-Z])", r"\1_\2", path)
+    return snake.lower().replace("_", "").replace(".", "").replace("-", "")
+
+
+def sensitivity_for_field(cited_field: str) -> float:
+    """Look up the sensitivity weight for a field, handling camelCase /
+    snake_case / dotted FieldPath inputs. Falls back to 0.5 for unknown
+    fields — errs on the "low but non-zero" side to avoid under-counting.
+    """
+    normalized_field = normalize_field_path(cited_field)
+    for key, weight in SENSITIVITY_WEIGHTS.items():
+        if normalize_field_path(key) in normalized_field:
+            return weight
+    return 0.5
