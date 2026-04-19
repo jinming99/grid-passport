@@ -22,7 +22,7 @@ from eval_sim.schemas.judge import Dimension, JudgeOutput, PerDimensionScore
 from eval_sim.schemas.turn import TurnMessage
 
 if TYPE_CHECKING:
-    from anthropic import Anthropic
+    from eval_sim.llm import Transport
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ def _dry_run_output() -> JudgeOutput:
 def invoke_judge(
     *,
     invocation: JudgeInvocation,
-    client: Anthropic | None = None,
+    transport: Transport | None = None,
     model: str = "claude-opus-4-7",
     dry_run: bool = True,
     max_retries: int = 2,
@@ -148,12 +148,13 @@ def invoke_judge(
 
     Pre-§17-lock default is dry_run=True; returns a stub score-3 JudgeOutput
     with T001 citations so the schema validator accepts it. Post-lock, the
-    runner flips the flag and passes a live `Anthropic` client.
+    runner flips the flag and passes a live `Transport` (claude-agent-sdk
+    backend per `eval_sim.llm`).
 
     Malformed-JSON retry per §5d: re-request the same transcript + prompt
     up to `max_retries` times; then flag for human review.
     """
-    if dry_run or client is None:
+    if dry_run or transport is None:
         return _dry_run_output()
 
     prompt = JUDGE_PROMPT_TEMPLATE.format(
@@ -163,12 +164,7 @@ def invoke_judge(
     last_error: Exception | None = None
     for _ in range(max_retries + 1):
         try:
-            response = client.messages.create(
-                model=model,
-                max_tokens=4096,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            raw = "".join(getattr(block, "text", "") for block in response.content)
+            raw = transport.complete(model=model, user=prompt, max_tokens=4096)
             return parse_judge_output(raw)
         except (ValueError, KeyError, json.JSONDecodeError) as err:
             last_error = err
@@ -256,7 +252,7 @@ def judge_with_swap(
     batch_id_2: str,
     batch_position_1: int,
     batch_position_2: int,
-    client: Anthropic | None = None,
+    transport: Transport | None = None,
     model: str = "claude-opus-4-7",
     dry_run: bool = True,
 ) -> SwapAugmentedResult:
@@ -276,8 +272,8 @@ def judge_with_swap(
         batch_position=batch_position_2,
         batch_id=batch_id_2,
     )
-    out_1 = invoke_judge(invocation=inv_1, client=client, model=model, dry_run=dry_run)
-    out_2 = invoke_judge(invocation=inv_2, client=client, model=model, dry_run=dry_run)
+    out_1 = invoke_judge(invocation=inv_1, transport=transport, model=model, dry_run=dry_run)
+    out_2 = invoke_judge(invocation=inv_2, transport=transport, model=model, dry_run=dry_run)
     return SwapAugmentedResult(
         run_1=out_1,
         run_2=out_2,

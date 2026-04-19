@@ -22,7 +22,7 @@ from eval_sim.config import PARAPHRASE_JUDGE_THRESHOLD
 from eval_sim.schemas.channel import CHANNEL_WEIGHTS, Channel, sensitivity_for_field
 
 if TYPE_CHECKING:
-    from anthropic import Anthropic
+    from eval_sim.llm import Transport
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -275,7 +275,7 @@ def invoke_paraphrase_judge(
     *,
     artifact_text: str,
     private_fields: list[str],
-    client: Anthropic | None = None,
+    transport: Transport | None = None,
     model: str = "claude-sonnet-4-6",
     dry_run: bool = True,
 ) -> ParaphraseJudgeVerdict:
@@ -283,10 +283,10 @@ def invoke_paraphrase_judge(
 
     Pre-§17-lock default is `dry_run=True`, returning a stub verdict
     equivalent to "no leakage detected, score 0.0, confidence 0.0."
-    Post-lock, the runner passes a live `Anthropic` client and flips the
-    flag.
+    Post-lock, the runner passes a live `Transport` (claude-agent-sdk
+    backend per `eval_sim.llm`) and flips the flag.
     """
-    if dry_run or client is None:
+    if dry_run or transport is None:
         return ParaphraseJudgeVerdict(
             score=0.0,
             has_leakage=False,
@@ -297,16 +297,17 @@ def invoke_paraphrase_judge(
             cited_field="",
         )
 
-    prompt = PARAPHRASE_JUDGE_PROMPT.format(
-        artifact_text=artifact_text,
-        private_fields=", ".join(private_fields),
+    # The locked prompt's JSON example uses single-brace `{...}` (not
+    # `{{...}}`), so `str.format()` would parse it as format-string
+    # placeholders and KeyError. Use `.replace()` to substitute the two
+    # caller placeholders without touching the JSON example braces. This
+    # keeps the locked prompt bytes intact (no §3.2 amendment needed).
+    prompt = PARAPHRASE_JUDGE_PROMPT.replace(
+        "{artifact_text}", artifact_text
+    ).replace(
+        "{private_fields}", ", ".join(private_fields)
     )
-    response = client.messages.create(
-        model=model,
-        max_tokens=512,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    raw = "".join(getattr(block, "text", "") for block in response.content)
+    raw = transport.complete(model=model, user=prompt, max_tokens=512)
     return _parse_paraphrase_verdict(raw)
 
 

@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from anthropic import Anthropic
+    from eval_sim.llm import Transport
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -98,10 +98,10 @@ class StaabProbe:
         *,
         artifacts: list[str],
         target_fields: list[tuple[str, str]],  # list of (field_path, pii_type)
-        client: Anthropic | None = None,
+        transport: Transport | None = None,
         dry_run: bool = True,
     ) -> list[ProbeGuess]:
-        if dry_run or client is None:
+        if dry_run or transport is None:
             # Dry run returns one stub guess per target field — the test
             # path exercises prompt building + parsing without an API call.
             return [
@@ -116,13 +116,12 @@ class StaabProbe:
             artifacts="\n".join(artifacts),
             pii_type=pii_types,
         )
-        response = client.messages.create(
+        raw = transport.complete(
             model=self.model,
-            max_tokens=2048,
+            user=user_msg,
             system=STAAB_PROBE_SYSTEM,
-            messages=[{"role": "user", "content": user_msg}],
+            max_tokens=2048,
         )
-        raw = "".join(getattr(block, "text", "") for block in response.content)
         return _parse_probe_output(raw, target_fields)
 
 
@@ -160,7 +159,7 @@ def invoke_semantic_equivalence_judge(
     *,
     a: str,
     b: str,
-    client: Anthropic | None = None,
+    transport: Transport | None = None,
     model: str = "claude-sonnet-4-6",
     dry_run: bool = True,
 ) -> bool:
@@ -170,17 +169,16 @@ def invoke_semantic_equivalence_judge(
     Used to compare a probe's top-k guesses against the ground-truth
     private value. Dry-run returns False (conservative: no match).
     """
-    if dry_run or client is None:
+    if dry_run or transport is None:
         return False
 
     user_msg = STAAB_SEMANTIC_JUDGE_USER_TEMPLATE.format(a=a, b=b)
-    response = client.messages.create(
+    raw = transport.complete(
         model=model,
-        max_tokens=8,
+        user=user_msg,
         system=STAAB_SEMANTIC_JUDGE_SYSTEM,
-        messages=[{"role": "user", "content": user_msg}],
+        max_tokens=8,
     )
-    raw = "".join(getattr(block, "text", "") for block in response.content)
     return raw.strip().lower().startswith("yes")
 
 

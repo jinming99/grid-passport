@@ -193,3 +193,75 @@ def test_judge_with_swap_dry_run_yields_two_runs_no_disagreement() -> None:
     assert result.run_2.stakeholder_alignment.score == 3
     assert result.disagreed_dimensions == frozenset()
     assert result.requires_spot_check is False
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Live-path wiring via FakeTransport (no actual LLM calls)
+# ────────────────────────────────────────────────────────────────────────
+
+
+_VALID_JUDGE_JSON: str = """```json
+{
+  "stakeholder_alignment":    {"rationale": "Parties aligned throughout the transcript.", "turn_citations": ["T003"], "score": 4},
+  "planning_defensibility":   {"rationale": "Planning lead routed with one clarification.", "turn_citations": ["T007"], "score": 4},
+  "privacy_integrity":        {"rationale": "No raw value appeared in any cross-org artifact.", "turn_citations": ["T012"], "score": 5},
+  "regulatory_auditability":  {"rationale": "Regulator reconstructs decision from bundle alone.", "turn_citations": ["T020"], "score": 5},
+  "applicant_experience":     {"rationale": "Applicant completed intake in one session.", "turn_citations": ["T001"], "score": 4},
+  "counterfactual": "A clearer flex-class narrative at T007 would have unlocked a 5 on defensibility."
+}
+```"""
+
+
+def test_invoke_judge_uses_transport_and_parses_response() -> None:
+    """Wiring test: with dry_run=False and a FakeTransport, the judge
+    formats the locked prompt, calls transport.complete, and parses the
+    returned JSON into a JudgeOutput.
+    """
+    from eval_sim.llm import FakeTransport
+
+    fake = FakeTransport(responder=lambda _kwargs: _VALID_JUDGE_JSON)
+    invocation = JudgeInvocation(
+        transcript_formatted="[T001][applicant-ch] filing",
+        rubric_text="(rubric body)",
+        batch_position=0,
+        batch_id="b1",
+    )
+    out = invoke_judge(
+        invocation=invocation,
+        transport=fake,
+        dry_run=False,
+    )
+    assert out.privacy_integrity.score == 5
+    assert out.applicant_experience.turn_citations == ["T001"]
+    # Verify the transport saw the locked prompt + correct model.
+    assert len(fake.calls) == 1
+    call = fake.calls[0]
+    assert call["model"] == "claude-opus-4-7"
+    assert "###Task Description:" in call["user"]
+    assert "[T001][applicant-ch] filing" in call["user"]
+    assert "(rubric body)" in call["user"]
+
+
+def test_invoke_judge_retries_on_parse_failure() -> None:
+    """If the first response is malformed, retry; succeed on second try."""
+    from eval_sim.llm import FakeTransport
+
+    responses = iter([
+        "not JSON at all",
+        _VALID_JUDGE_JSON,
+    ])
+    fake = FakeTransport(responder=lambda _kwargs: next(responses))
+    invocation = JudgeInvocation(
+        transcript_formatted="x",
+        rubric_text="x",
+        batch_position=0,
+        batch_id="b1",
+    )
+    out = invoke_judge(
+        invocation=invocation,
+        transport=fake,
+        dry_run=False,
+        max_retries=2,
+    )
+    assert out.privacy_integrity.score == 5
+    assert len(fake.calls) == 2  # one failed, one succeeded

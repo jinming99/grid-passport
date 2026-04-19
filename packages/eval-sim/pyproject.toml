@@ -9,7 +9,6 @@ dependencies = [
   # privacy scorers (direct-leak tier 1)
   "presidio-analyzer>=2.2.355",
   # Claude API (agent / judge / probe)
-  "anthropic>=0.41",
   # statistics (BCa bootstrap, quadratic-weighted kappa, length-residual regression)
   "scipy>=1.13",
   "scikit-learn>=1.5",
@@ -19,6 +18,8 @@ dependencies = [
   # orchestration + typed CLI
   "typer>=0.12",
   "rich>=13.7",
+  "claude-agent-sdk>=0.1.63",
+  "anyio>=4.13.0",
 ]
 
 [dependency-groups]

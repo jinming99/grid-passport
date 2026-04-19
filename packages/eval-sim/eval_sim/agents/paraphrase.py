@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
-    from anthropic import Anthropic
+    from eval_sim.llm import Transport
 
 
 # DO NOT MODIFY POST-§17-LOCK.
@@ -73,7 +73,7 @@ def paraphrase_barrier(
     *,
     loss_rate: float,
     seed_key: str,
-    client: Anthropic | None = None,
+    transport: Transport | None = None,
     model: str = "claude-sonnet-4-6",
     dry_run: bool = True,
 ) -> ParaphraseResult:
@@ -82,15 +82,16 @@ def paraphrase_barrier(
     Pre-§17-lock default is `dry_run=True`: returns a deterministic
     truncation-style stub that compresses the message proportional to
     `loss_rate` using a stable hash-seeded line drop. Post-lock, the
-    runner passes a live Anthropic client that emits the
-    `<SCRATCHPAD>/<ANSWER>` tag structure; we strip the scratchpad.
+    runner passes a live `Transport` (claude-agent-sdk backend per
+    `eval_sim.llm`) that emits the `<SCRATCHPAD>/<ANSWER>` tag
+    structure; we strip the scratchpad.
 
     `seed_key` is usually `"{scenario_id}|{seed_index}|{turn_id}"` so
     the same run + turn always produces the same paraphrase. Adds
     1 simulated day per §5a.
     """
     loss = max(0.0, min(1.0, loss_rate))
-    if dry_run or client is None:
+    if dry_run or transport is None:
         paraphrased = _deterministic_compress(technical_text, loss, seed_key)
         return ParaphraseResult(
             original=technical_text,
@@ -103,12 +104,7 @@ def paraphrase_barrier(
         loss_rate_pct=f"{loss * 100:.0f}",
         technical_text=technical_text,
     )
-    response = client.messages.create(
-        model=model,
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    raw = "".join(getattr(block, "text", "") for block in response.content)
+    raw = transport.complete(model=model, user=prompt, max_tokens=1024)
     match = _TAG_PATTERN.search(raw)
     if not match:
         raise ValueError(

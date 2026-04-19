@@ -22,7 +22,7 @@ from eval_sim.schemas.channel import CHANNEL_WEIGHTS, Channel, sensitivity_for_f
 from eval_sim.schemas.scenario import CITuple
 
 if TYPE_CHECKING:
-    from anthropic import Anthropic
+    from eval_sim.llm import Transport
 
 
 # DO NOT MODIFY POST-§17-LOCK — amendment required per §3.2. Locked 2026-04-19.
@@ -96,12 +96,12 @@ def invoke_trace_classifier(
     channel: Channel,
     ci_tuple: CITuple,
     artifact_text: str,
-    client: Anthropic | None = None,
+    transport: Transport | None = None,
     model: str = "claude-sonnet-4-6",
     dry_run: bool = True,
 ) -> TraceVerdict:
     """Classify one (artifact, field) pair against its CI 5-tuple."""
-    if dry_run or client is None:
+    if dry_run or transport is None:
         return TraceVerdict(
             channel=channel,
             cited_field=ci_tuple.field_path,
@@ -125,12 +125,7 @@ def invoke_trace_classifier(
         ci_transmission_principle=ci_tuple.transmission_principle,
         artifact_text=artifact_text,
     )
-    response = client.messages.create(
-        model=model,
-        max_tokens=512,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    raw = "".join(getattr(block, "text", "") for block in response.content)
+    raw = transport.complete(model=model, user=prompt, max_tokens=512)
     return _parse_trace_verdict(raw, turn_id, channel, ci_tuple.field_path)
 
 

@@ -54,9 +54,19 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**Next action (2026-04-19): Ming signs off `docs/evals/sim-bench-design.md` §17; Week-1 scenario authoring (S2–S7) follows.** Amendment A-1 (same-day) brought the doc to a lock-ready state: Prometheus scoring template lifted verbatim, Staab probe prompt lifted verbatim, Concordia (`pip install gdm-concordia`) + Presidio as the only hard deps, composite privacy scorer specified (~400 LOC to implement against AgentLeak methodology at threshold 0.72), OPR + Savage-regret hybrid locked, 7 scenarios with realized-future ensembles, 5-dimension judge rubric with external-standard grounding. Amendment A-2 (same-day) sharpens thesis framing: §1.2 scopes the claim to substrate-mechanism-for-schema-discipline (not the 5-test filter itself); §1.3 scopes primary claims to non-adversarial regimes with S5 as boundary-test; §1.5 restructured into methodology (5 items) + realism-engineering (1 item); §6e + §8d decompose H-spec.hallucination into pre-validator rate vs in-artifact rate so evidence adjudicates between §3.1 schema-as-safety-case and §3.4 capability-based stories; §9.3 F4 rewritten as pre-registered boundary-test not rescue; new §9.4 pre-registers four thesis-refinement paths (R1 channel / R2 welfare-distribution / R3 projection-as-purity / R4 honest-Oracle-regret) each with evidence trigger. Bhawuk's utility-prompt review is deferred to post-lock amendment per user directive — not a blocker.
+**§17 signed off (2026-04-19). Post-lock implementation in progress (steps 1–3 of 7 complete).** The 7-step plan to live-bench:
 
-**Pre-lock scaffold complete (2026-04-19):** `packages/eval-sim/` is a uv-managed Python 3.12+ workspace package with the full pre-lock scaffold landed in 6 commits (235c29f → 7aacbdd). Every `§N` reference below points at sim-bench-design.md.
+1. ✅ **LLM transport adapter** — `eval_sim/llm.py`: `Transport` Protocol + `ClaudeAgentSDKTransport` (claude-agent-sdk backed) + `FakeTransport` (tests) + lazy singleton. Rides parent Claude Code session auth — no `ANTHROPIC_API_KEY` required (the trick: `os.environ.pop("CLAUDECODE", None)` before each `query()` call so the spawned `claude` subprocess doesn't refuse via nested-session detection; pattern lifted from `agentic_ai_reviewer/scripts/run_claude_batch.py`). Defensive monkeypatch for SDK v0.1.x `MessageParseError` on `rate_limit_event`. Live smoke: `claude-sonnet-4-6` round-trip in 13.7s, returned exact JSON.
+2. ✅ **Scorer flip** — refactored 6 LLM call sites (judge, judge swap, paraphrase judge, Staab probe, semantic-equivalence judge, trace classifier, paraphrase barrier) from `client: Anthropic | None` to `transport: Transport | None`. Dropped `anthropic` SDK dep. Latent bug surfaced + fixed: `PARAPHRASE_JUDGE_PROMPT`'s JSON example block had unescaped `{...}` braces that `str.format()` would have crashed on in the pilot — switched to `.replace()`-based substitution; locked prompt bytes unchanged. Live smoke through real judge (`claude-opus-4-7`, 33.3s) returned a fully-parsed `JudgeOutput` with proper turn citations on every dimension.
+3. ✅ **Concordia agents** — `eval_sim/agents/{language_model,embedder,components,builders}.py`: `TransportLanguageModel(LanguageModel)` adapter routing Concordia's `sample_text`/`sample_choice` through our Transport; `deterministic_embedder` (SHA256-seeded unit-norm 64-dim) for `AssociativeMemoryBank`; three custom `ContextComponent`s — `LockedPersonaInstructions`, `ScenarioContext`, and `ParaphrasedPrivateProfile` (the §1.5.2 #6 realism contribution: holds the raw private profile, runs it through `paraphrase_barrier()` per archetype loss-rate on every `pre_act`, exposes both raw + paraphrased for §8c.iii trace scoring); `build_applicant`/`build_utility`/`build_regulator` factories assembling real `EntityAgentWithLogging`s. Live smoke (S1, Sonnet) produced a structured Dominion intake letter with realistic disclosure discipline; paraphrase barrier visibly executed at 0.15 loss-rate; no raw private values escaped into the outbound artifact.
+4. **Next: four condition Game Masters** (in progress). Concordia GM survey done — `concordia.environment.engines.Sequential` + `prefabs.game_master.dialogic` are themselves LLM-driven (every step the GM uses an LLM to decide whose turn is next, format observations, resolve actions). For our setting that's ~3,360 wasted Sonnet calls in main run (orchestration is deterministic per §6: typed channels, deterministic seed-hashed failure-mode sampler, fixed meeting protocol). Decision: **thin orchestrator** that drives our Concordia `EntityAgent`s without Concordia's `Engine`. Substrate claim ("Concordia `EntityAgent` + `ContextComponent` + `AssociativeMemoryBank`") is preserved; loop is ours.
+5. Cartographer cache generation (1 live SDK run × 7 scenarios; commit + SHA-256).
+6. Pilot — 28 main + 9 fairness = 37 runs.
+7. Main — 140 condition + 35 oracle + 280 judge = 455 runs.
+
+Bhawuk's utility-prompt review is deferred to post-lock amendment per user directive — not a blocker.
+
+**Pre-lock scaffold complete (2026-04-19):** `packages/eval-sim/` is a uv-managed Python 3.12+ workspace package. Pre-lock scaffold in 6 commits (235c29f → 7aacbdd); post-§17 wiring layered on top. Every `§N` reference below points at sim-bench-design.md.
 
 | Module | What's live | Status |
 |---|---|---|
@@ -66,28 +76,34 @@ Durable record of project state, decisions, and what future work needs to know. 
 | `scorers/efficiency.py` | §8a deterministic counts — pure function | ready to run |
 | `scorers/robustness.py` | §8b OPR + Savage regret hybrid with Hurwicz α spectrum — pure function | ready to run |
 | `scorers/mechanical.py` | §8d H-workflow + H-spec decomposition (pre-validator rate vs in-artifact rate) + H-trigger + H-null — pure function | ready to run |
-| `scorers/privacy/direct.py` | §8c.i Presidio recognizer descriptors + substring tier + AgentLeak-threshold LLM judge with locked prompt — dry-run gate | schema ready, LLM gated |
-| `scorers/privacy/inferential.py` | §8c.ii Staab probe verbatim + Presidio-anonymized public-only baseline Δ — dry-run gate | schema ready, LLM gated |
-| `scorers/privacy/trace.py` | §8c.iii channel-weighted CI-violation classifier with locked prompt — dry-run gate | schema ready, LLM gated |
-| `scorers/judge.py` | §5d + §8e Prometheus ABSOLUTE_PROMPT_WO_REF verbatim + turn-tagged transcript + swap augmentation + disagreement detection — dry-run gate | schema ready, LLM gated |
+| `scorers/privacy/direct.py` | §8c.i Presidio recognizer descriptors + substring tier + AgentLeak-threshold LLM judge with locked prompt | **live wired** (dry-run default) |
+| `scorers/privacy/inferential.py` | §8c.ii Staab probe verbatim + Presidio-anonymized public-only baseline Δ | **live wired** (dry-run default) |
+| `scorers/privacy/trace.py` | §8c.iii channel-weighted CI-violation classifier with locked prompt | **live wired** (dry-run default) |
+| `scorers/judge.py` | §5d + §8e Prometheus ABSOLUTE_PROMPT_WO_REF verbatim + turn-tagged transcript + swap augmentation + disagreement detection | **live wired** + smoke-tested (33s, Opus 4.7) |
 | `aggregator.py` | §10.4 + §15 BCa bootstrap + quadratic-weighted κ + length-residual OLS regression — pure statistics | ready to run |
 | `agents/prompts.py` | §5a-§5c five locked role-persona system prompts with regression fences | locked |
-| `agents/paraphrase.py` | §5a+§1.5.2 #6 ParaphraseBarrier pure-function stub + locked LLM prompt | ready to run |
+| `agents/paraphrase.py` | §5a+§1.5.2 #6 ParaphraseBarrier pure-function + locked LLM prompt | **live wired** (dry-run default) |
+| `agents/language_model.py` | §5 Concordia `LanguageModel` adapter routing `sample_text`/`sample_choice` through our Transport | **live wired** + smoke-tested |
+| `agents/embedder.py` | SHA256-seeded unit-norm 64-dim embedder for `AssociativeMemoryBank` (deterministic per scenario+seed) | live |
+| `agents/components.py` | Three Concordia `ContextComponent`s — `LockedPersonaInstructions`, `ScenarioContext`, `ParaphrasedPrivateProfile` (the §1.5.2 #6 realism contribution: paraphrase barrier as Concordia component intercepting technical→contract handoff with both raw + paraphrased exposed for §8c.iii trace scoring) | **live wired** |
+| `agents/builders.py` | `build_applicant`/`build_utility`/`build_regulator` factories returning real `EntityAgentWithLogging`s with locked persona prompts, scenario context, memory bank, paraphrase component (applicant only) | **live wired** + smoke-tested (S1, Sonnet, realistic Dominion intake letter) |
+| `llm.py` | `Transport` Protocol + `ClaudeAgentSDKTransport` (sync + async) + `FakeTransport` + lazy singleton; pops `CLAUDECODE` to ride parent session auth; rate-limit-event monkeypatch; no `ANTHROPIC_API_KEY` required | **live wired** + smoke-tested (13.7s Sonnet round-trip) |
 | `channels/failure_modes.py` | §6a deterministic sampler (SHA-256 seeded) + §6a meeting-trigger state machine | ready to run |
-| `runner.py` | Single-run orchestrator; dry-run returns a synthetic 3-turn ledger routing through C1/C2 | dry-run ready; live gated |
+| `runner.py` | Single-run orchestrator; dry-run returns a synthetic 3-turn ledger routing through C1/C2 | dry-run ready; live multi-turn loop pending step 4 |
 | `scripts/pilot.py` + `scripts/main.py` | typer CLIs · print locked run matrix · dry-run only | ready |
-| `scripts/generate_cartographer_cache.py` | §6e fixture generator · writes stub JSON + SHA-256 manifest in dry-run · live is NotImplementedError pre-lock | ready; live gated |
-| `tests/` | **131 pytest tests** covering schema round-trips · S1-S7 cards · scorer behavior · locked-prompt byte fences · disagreement detection · runner dry-run across every (scenario × condition) pair · cache-hash manifest | all green |
+| `scripts/smoke_llm.py` | manual one-shot transport round-trip via `claude-agent-sdk`; no API key needed | live |
+| `scripts/smoke_judge.py` | manual end-to-end: locked Prometheus prompt + 3-turn synthetic transcript → Opus 4.7 → parsed `JudgeOutput` | live |
+| `scripts/smoke_agents.py` | manual end-to-end: build applicant → live paraphrase barrier → live act; reports paraphrase audit | live |
+| `scripts/generate_cartographer_cache.py` | §6e fixture generator · writes stub JSON + SHA-256 manifest in dry-run · live is NotImplementedError | live SDK run pending step 5 |
+| `tests/` | **178 pytest tests** covering schema round-trips · S1-S7 cards · scorer behavior · locked-prompt byte fences · disagreement detection · runner dry-run across every (scenario × condition) pair · cache-hash manifest · `Transport` protocol · `FakeTransport`-backed live-path wiring for every LLM call site · Concordia agent assembly + paraphrase-barrier component | all green (~3s warm) |
 
 Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff check && uv run pyright` — all green. ~90s first run (BCa bootstrap tests do 10k resamples); warm cached runs under 3s.
 
-**What is NOT yet wired** (requires §17 sign-off):
-- Live LLM calls in any scorer (all have `dry_run=True` default)
-- Concordia EntityAgent + ContextComponent wiring inside `agents/`
-- Four condition-specific Game Masters inside `channels/` (stubs exist but not the full Concordia loop)
-- Live Cartographer cache generation (7 fixtures × 1 live run each)
-- The pilot run (28 + 9 fairness-check = 37 runs)
-- The main run (140 condition + 35 oracle + 280 judge)
+**What is still pending** (steps 4–7 of the post-§17 plan):
+- **Step 4** — four condition Game Masters in `channels/` (Oracle / Email-with-failures / PromptOnlyBundle+liveCarto / SkillBundle+cachedCarto+boundedQuery). Thin orchestrator design (not Concordia's `Engine`); see "Now" §4 above.
+- **Step 5** — live Cartographer cache generation (one SDK run per scenario; commit + SHA-256 manifest)
+- **Step 6** — pilot (28 + 9 fairness-check = 37 runs)
+- **Step 7** — main (140 condition + 35 oracle + 280 judge = 455 runs)
 
 Every locked prompt + locked parameter has a byte-level regression-fence test. Post-lock edits will fail CI unless a matching amendment block lands in sim-bench-design.md §3.2.
 
@@ -200,22 +216,33 @@ grid-passport/
 │       │   └── baselines/prompt-only.md         AUTO-GENERATED; same derivation pipeline as Interviewer
 │       └── priorauth-interviewer/
 │           └── baselines/prompt-only.md         AUTO-GENERATED; HIPAA-domain Skill's prompt-only baseline (for the cross-domain substrate comparison)
-├── packages/eval-sim/                  @grid-passport/eval-sim · uv-managed Python 3.12+ · implementation of docs/evals/sim-bench-design.md (pre-§17 scaffold; no live LLM calls yet)
-│   ├── pyproject.toml                  deps: gdm-concordia + presidio-analyzer + anthropic + scipy/sklearn/statsmodels + pydantic + typer + rich
+├── packages/eval-sim/                  @grid-passport/eval-sim · uv-managed Python 3.12+ · implementation of docs/evals/sim-bench-design.md
+│   ├── pyproject.toml                  deps: gdm-concordia + presidio-analyzer + claude-agent-sdk + anyio + scipy/sklearn/statsmodels + pydantic + typer + rich (no anthropic SDK — Transport rides Claude Code session)
 │   ├── eval_sim/
 │   │   ├── schemas/                    Pydantic models — CaseInput mirror (drift-guard), Condition, Role/Disposition/ModelTier/RoleConfig, Channel + weights, Dimension, JudgeOutput, TurnMessage, ScenarioCard + CITuple + Future
 │   │   ├── config.py                   locked parameters from bench doc (MODEL_TIERS, TURNAROUND_DAYS_{B,D}, FAILURE_RATES_B per archetype, meeting protocol, seeds, statistical protocol, success criteria)
-│   │   ├── scenarios/                  scenario-card registry · S1 Owl-like landed · S2–S7 authored in Week 1
-│   │   ├── agents/                     stubs · §5 Concordia EntityAgent classes + ParaphraseBarrierComponent land in Week 2
-│   │   ├── channels/                   stubs · §6 condition-specific Game Masters land in Week 2
-│   │   ├── scorers/                    stubs · §8 composite privacy scorer (~400 LOC) + robustness (OPR + Savage regret ~50 LOC) + efficiency + mechanical + judge orchestration land in Week 2
-│   │   ├── fixtures/cartographer-cache/  JSON fixtures per scenario (§6e protocol) · populated by a single live run per scenario in Week 2
-│   │   ├── runner.py                   stub · single-run orchestrator (scenario × condition × seed); NotImplementedError pre-lock
-│   │   └── aggregator.py               stub · BCa bootstrap + quadratic-weighted κ + length-residual regression
+│   │   ├── llm.py                      Transport Protocol + ClaudeAgentSDKTransport (sync + async, pops CLAUDECODE to ride parent session auth, rate-limit-event monkeypatch) + FakeTransport (tests) + lazy singleton
+│   │   ├── scenarios/                  scenario-card registry · all 7 cards (S1 Owl, S2 Lantern, S3 Kraken, S4 First-Timer, S5 Adversarial, S6 Multi-Phase, S7 Priorauth/HIPAA)
+│   │   ├── agents/                     §5 Concordia EntityAgent assembly:
+│   │   │   ├── language_model.py       TransportLanguageModel (Concordia LanguageModel ABC over our Transport)
+│   │   │   ├── embedder.py             SHA256-seeded unit-norm 64-dim embedder for AssociativeMemoryBank
+│   │   │   ├── prompts.py              5 locked role-persona system prompts (§5a-§5c) with regression fences
+│   │   │   ├── paraphrase.py           §1.5.2 #6 paraphrase-barrier pure function + locked LLM prompt
+│   │   │   ├── components.py           Concordia ContextComponents — LockedPersonaInstructions, ScenarioContext, ParaphrasedPrivateProfile (the §1.5.2 #6 realism contribution)
+│   │   │   └── builders.py             build_applicant / build_utility / build_regulator factories returning EntityAgentWithLogging
+│   │   ├── channels/                   §6 condition-specific orchestration · failure_modes.py landed (deterministic seeded sampler + meeting-trigger state machine) · 4 GMs (Oracle/Email/PromptOnlyBundle/SkillBundle) land in step 4 as a thin orchestrator (NOT Concordia's Engine — orchestration is deterministic, not LLM-judged; saves ~3,360 wasted Sonnet calls in main run)
+│   │   ├── scorers/                    §8 — efficiency.py (deterministic counts) · robustness.py (OPR + Savage regret + Hurwicz α) · mechanical.py (H-workflow/H-spec/H-trigger/H-null + pre-validator vs in-artifact decomposition) · privacy/{direct,inferential,trace}.py (3-type composite, ~400 LOC, all live-wired through Transport) · judge.py (§5d Prometheus + swap augmentation + disagreement detection, live + smoke-tested 33s Opus) · futures.py · judge_rubric.py
+│   │   ├── fixtures/cartographer-cache/  §6e JSON fixtures per scenario · live SDK populating pending step 5
+│   │   ├── runner.py                   single-run orchestrator (scenario × condition × seed); dry-run returns synthetic 3-turn ledger; live multi-turn loop pending step 4
+│   │   └── aggregator.py               §10.4 + §15 BCa bootstrap (scipy) + quadratic-weighted κ (sklearn) + length-residual OLS regression (statsmodels)
 │   ├── scripts/
-│   │   ├── pilot.py                    typer CLI · 28 main-pilot runs + 9 fairness-pilot runs · dry-run only pre-lock
-│   │   └── main.py                     typer CLI · 140 condition + 35 oracle + 280 judge runs · dry-run only pre-lock
-│   └── tests/                          18 pytest tests · schema round-trips + S1 token-set regression + Cartographer-cache dir existence
+│   │   ├── pilot.py                    typer CLI · 28 main-pilot + 9 fairness-pilot runs · dry-run only until step 4
+│   │   ├── main.py                     typer CLI · 140 condition + 35 oracle + 280 judge runs · dry-run only until step 4
+│   │   ├── smoke_llm.py                manual one-shot transport round-trip via claude-agent-sdk; no API key needed
+│   │   ├── smoke_judge.py              manual end-to-end: locked Prometheus prompt + 3-turn synthetic transcript → Opus 4.7 → parsed JudgeOutput
+│   │   ├── smoke_agents.py             manual end-to-end: build applicant → live paraphrase barrier → live act; reports paraphrase audit
+│   │   └── generate_cartographer_cache.py  §6e fixture generator · dry-run only (live SDK pending step 5)
+│   └── tests/                          178 pytest tests · schema round-trips + all 7 cards + scorer behavior + locked-prompt byte fences + disagreement detection + runner dry-run × every (scenario × condition) + cache-hash manifest + Transport protocol + FakeTransport-backed live-path wiring for every LLM call site + Concordia agent assembly + paraphrase-barrier component
 ├── .claude/
 │   └── skills/                         Claude Agent Skills · authoring + runtime source (spec-compliant path); Tauri bundles these at build time
 │       ├── README.md                   roster + write-scope table + thesis-property map + spec compliance checklist

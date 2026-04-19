@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from eval_sim.agents.paraphrase import (
     PARAPHRASE_BARRIER_PROMPT,
     paraphrase_barrier,
@@ -135,3 +137,52 @@ def test_paraphrase_barrier_deterministic_by_seed_key() -> None:
     r1 = paraphrase_barrier(text, loss_rate=0.5, seed_key="S1|0|T001", dry_run=True)
     r2 = paraphrase_barrier(text, loss_rate=0.5, seed_key="S1|0|T001", dry_run=True)
     assert r1.paraphrased == r2.paraphrased
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Live-path wiring via FakeTransport (no actual LLM calls)
+# ────────────────────────────────────────────────────────────────────────
+
+
+def test_paraphrase_barrier_via_transport_strips_scratchpad() -> None:
+    """With dry_run=False + FakeTransport, the barrier formats the locked
+    prompt, hits the transport, strips the <SCRATCHPAD>, and returns the
+    <ANSWER> body.
+    """
+    from eval_sim.llm import FakeTransport
+
+    canned = (
+        "<SCRATCHPAD>\n"
+        "Compress the precise mix toward class wording; preserve intent.\n"
+        "</SCRATCHPAD>\n"
+        "<ANSWER>\n"
+        "We expect a roughly half/half mix; details on request.\n"
+        "</ANSWER>"
+    )
+    fake = FakeTransport(responder=lambda _k: canned)
+    result = paraphrase_barrier(
+        "Mix is 55/45 training/inference; bess is 4-hour at 30 MW.",
+        loss_rate=0.4,
+        seed_key="S1|0|T002",
+        transport=fake,
+        dry_run=False,
+    )
+    assert result.paraphrased == "We expect a roughly half/half mix; details on request."
+    assert result.added_simulated_days == 1.0
+    assert len(fake.calls) == 1
+    assert fake.calls[0]["model"] == "claude-sonnet-4-6"
+    assert "Target loss rate for this archetype: 40%" in fake.calls[0]["user"]
+
+
+def test_paraphrase_barrier_via_transport_raises_on_missing_answer_tag() -> None:
+    from eval_sim.llm import FakeTransport
+
+    fake = FakeTransport(responder=lambda _k: "no answer tag here")
+    with pytest.raises(ValueError, match="<ANSWER>"):
+        paraphrase_barrier(
+            "Some technical text.",
+            loss_rate=0.5,
+            seed_key="S1|0|T003",
+            transport=fake,
+            dry_run=False,
+        )
