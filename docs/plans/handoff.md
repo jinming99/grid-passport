@@ -54,7 +54,7 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**§17 signed off (2026-04-19). Post-lock implementation: steps 1–4 of 7 complete in 5 commits (`b15a395` → `8fe1f4e`).** The 7-step plan to live-bench:
+**§17 signed off (2026-04-19). Post-lock implementation: steps 1–5 of 7 complete in 7 commits (`b15a395` → `552d898`). Amendment A-3 applied pre-pilot (`ab9ba87`).** The 7-step plan to live-bench:
 
 1. ✅ **LLM transport adapter** (`b15a395`) — `eval_sim/llm.py`: `Transport` Protocol + `ClaudeAgentSDKTransport` + `FakeTransport` + lazy singleton. Rides parent Claude Code session auth — no `ANTHROPIC_API_KEY` (trick: `os.environ.pop("CLAUDECODE", None)` before each `query()`; pattern from `agentic_ai_reviewer`). Defensive monkeypatch for SDK v0.1.x `MessageParseError` on `rate_limit_event`. Live smoke: Sonnet round-trip 13.7s.
 2. ✅ **Scorer flip** (`b15a395`) — 6 LLM call sites refactored from `client: Anthropic | None` to `transport: Transport | None` (judge, judge swap, paraphrase judge, Staab probe, semantic-equivalence, trace classifier, paraphrase barrier). Dropped `anthropic` SDK dep. Latent bug fixed: `PARAPHRASE_JUDGE_PROMPT`'s JSON braces would have crashed `str.format()` in the pilot — switched to `.replace()`-based substitution; locked prompt bytes unchanged. Live judge smoke: 33.3s, fully-parsed `JudgeOutput`.
@@ -66,11 +66,11 @@ Durable record of project state, decisions, and what future work needs to know. 
    - **4d** `email.py` (B; multi-round email + meeting protocol per §6a — 3+ unresolved → 90% accept via separate SHA256 stream). Three meeting leak vectors: attendee broadening, notes-doc forwarding (when `meeting_notes_reuse` fires), verbal-to-text paraphrase. System-level failure modes from `failure_modes.py` applied at routing layer (`wrong_cc` adds planning-lead; `scheduler_assistant_cc` adds DL marker on `artifact_refs`). Loop-bug fix: exit BEFORE applicant's reply once trigger threshold reached.
    - **4e** `runner.py` — `run(scenario, condition, seed, *, dry_run, transport, max_turns)` dispatches to the right channel by Condition. Per-condition agent tier per §5e + §4.1: applicant uses Opus for A/C/D, Sonnet for B; utility + regulator universally Sonnet. Circular-import guard: `failure_modes` import moved to function body.
    - **Architectural call** (recorded in `eval_sim/channels/base.py` docstring): we use Concordia's `EntityAgent`/`ContextComponent`/`AssociativeMemoryBank` substrate but **not** `concordia.environment.engines.Sequential` — the latter is itself LLM-driven (~3,360 wasted Sonnet calls in main run with no decision-theoretic content). Substrate claim per §1.4 is preserved; loop is ours.
-5. **Live Cartographer cache generation** — 1 SDK run × 7 scenarios; commit JSON fixtures + SHA-256 manifest at `eval_sim/fixtures/cartographer-cache/`. The runner already SHA-256s whatever's at the path; this step writes the real fixtures.
+5. ✅ **Live Cartographer cache generation** (`552d898`) — `scripts/generate_cartographer_cache.py` now wires `_invoke_live_cartographer()` through `ClaudeAgentSDKTransport` (Opus 4.7, product-agent tier). System prompt = SKILL.md + SOURCES.md; user prompt carries scenario identity + a canonical-URL whitelist extracted from SOURCES.md's `**URL:**` rows. 3-attempt retry loop with in-loop TS-CI-validator subprocess — schema AND URL-whitelist failures both feed back as corrective nudges. 7 fixtures committed at `eval_sim/fixtures/cartographer-cache/`: 6 grid scenarios (all passed validator on attempt 1/3) + S7 priorauth sentinel (`{domain:'priorauth',cache_applicable:false}`). `cache-hashes.json` manifest carries all 7 SHA-256 digests per §15.5. Live smoke of dispatch (`scripts/smoke_runner_dispatch.py`, ab9ba87) separately validated R1 meeting-day fix + R2 Oracle cartographer_mode tag on the real SDK path.
 6. **Pilot** — 28 main + 9 fairness-check = 37 runs. Validate scorer + role-prompt behavior; amend if surfaced; re-lock.
 7. **Main** — 140 condition + 35 oracle + 280 judge = 455 runs. Aggregate via `aggregator.py` (BCa CIs, weighted κ, length-residual). Generate `docs/evals/sim-bench-results.md`.
 
-**Suggested next-session smoke before step 5:** loop `from eval_sim.runner import run` over all 4 conditions on S1 with seed=0 to validate dispatch end-to-end. Wall-clock estimate ~5–10 min total at Sonnet for the user-sim side. Per-channel smokes already shipped (`scripts/smoke_channel_oracle.py` + `scripts/smoke_channel_skill_bundle.py`) — Email + PromptOnly smokes haven't been written yet but the structural tests cover them.
+**Amendment A-3 (pre-pilot, `ab9ba87`):** reconciled four items surfaced by the step-4 code review — §6a meeting turnaround to 4d (table wins over bullet; `MEETING_DURATION_DAYS` removed; `email.py` verbal turns now 0.5d each); §5e row 1 clarified (applicant follows per-condition product-agent tier: B Sonnet; A/C/D Opus — the code already did this, doc now matches); §6a vector-3 verbal-to-text documented as parallel-draws simplification in v1; §6a `scheduler_assistant_cc` documented as unconditional-firing in v1. Pricing check (Opus ~1.67× Sonnet) noted but unifying to all-Opus would collapse the §5d/§14 #9 self-preference mitigation so tiered design retained. No runs initiated; no data invalidated. Same commit: `channels/oracle.py` gained `cartographer_mode='cached'` scorer_input; stale "pending step 4X" markers removed.
 
 Bhawuk's utility-prompt review is deferred to post-lock amendment per user directive — not a blocker.
 
@@ -107,29 +107,18 @@ Bhawuk's utility-prompt review is deferred to post-lock amendment per user direc
 | `scripts/smoke_llm.py` | manual one-shot transport round-trip via `claude-agent-sdk`; no API key needed | live |
 | `scripts/smoke_judge.py` | manual end-to-end: locked Prometheus prompt + 3-turn synthetic transcript → Opus 4.7 → parsed `JudgeOutput` | live |
 | `scripts/smoke_agents.py` | manual end-to-end: build applicant → live paraphrase barrier → live act; reports paraphrase audit | live |
-| `scripts/generate_cartographer_cache.py` | §6e fixture generator · writes stub JSON + SHA-256 manifest in dry-run · live is NotImplementedError | live SDK run pending step 5 |
+| `scripts/generate_cartographer_cache.py` | §6e fixture generator · SKILL.md+SOURCES.md system prompt · canonical-URL whitelist in user prompt · 3-attempt retry with in-loop TS-CI validator · S7 priorauth sentinel path · writes to `card.public_evidence_cache_path` + SHA-256 manifest | **live wired** + 7 fixtures committed on attempt 1/3 each |
 | `scripts/smoke_channel_oracle.py` | manual end-to-end Oracle channel run (3 LLM calls) | live |
 | `scripts/smoke_channel_skill_bundle.py` | manual end-to-end SkillBundle channel run (5–7 LLM calls; up to 2 bounded-query rounds) | live |
-| `tests/` | **218 pytest tests** covering schema round-trips · S1-S7 cards · scorer behavior · locked-prompt byte fences · disagreement detection · runner dry-run + live dispatch (4 conditions) · cache-hash manifest · `Transport` protocol · `FakeTransport`-backed live-path wiring for every LLM call site · Concordia agent assembly + paraphrase-barrier component · all four channels (Oracle/SkillBundle/PromptOnly/Email) under FakeTransport · failure-mode routing application · meeting-trigger threshold · loop bounds + sentinel detection + max-rounds cap | all green (~3s warm) |
+| `tests/` | **222 pytest tests** covering schema round-trips · S1-S7 cards · scorer behavior · locked-prompt byte fences · disagreement detection · runner dry-run + live dispatch (4 conditions) · cache-hash manifest (committed + fallback-marker) · `Transport` protocol · `FakeTransport`-backed live-path wiring for every LLM call site · Concordia agent assembly + paraphrase-barrier component · all four channels (Oracle/SkillBundle/PromptOnly/Email) under FakeTransport · failure-mode routing application · meeting-trigger threshold · loop bounds + sentinel detection + max-rounds cap · Oracle cartographer-mode tag · canonical-URL whitelist parse · S7 sentinel shape · priorauth-domain guard | all green (~3s warm) |
 
 Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff check && uv run pyright` — all green. ~90s first run (BCa bootstrap tests do 10k resamples); warm cached runs under 3s.
 
-**What is still pending** (steps 5–7 of the post-§17 plan):
-- **Step 5** — live Cartographer cache generation (one SDK run per scenario; commit + SHA-256 manifest at `eval_sim/fixtures/cartographer-cache/`). The runner already SHA-256s whatever is at the path; this step writes the real fixtures.
-- **Step 6** — pilot (28 + 9 fairness-check = 37 runs). Includes the §6e fairness pilot — 3 seeds on S1/S3/S7 where both C and D hit the live SDK to isolate cache-vs-no-cache effect from substrate effect.
+**What is still pending** (steps 6–7 of the post-§17 plan):
+- **Step 6** — pilot (28 + 9 fairness-check = 37 runs; ~5–6 hrs wall-clock at step-5 observed rates; ~$50–100 SDK cost). Includes the §6e fairness pilot — 3 seeds on S1/S3/S7 where both C and D hit the live SDK to isolate cache-vs-no-cache effect from substrate effect.
 - **Step 7** — main (140 condition + 35 oracle + 280 judge = 455 runs). Aggregate via `aggregator.py` (BCa CIs, weighted κ, length-residual) → `docs/evals/sim-bench-results.md` → talk slide.
 
-**Suggested first action in next session:** run a 4-condition × S1 × seed=0 live smoke (~5–10 min wall-clock at Sonnet) to validate the runner-dispatch path end-to-end before committing to step-5 cache generation. Trivial harness:
-
-```python
-from eval_sim.runner import run
-from eval_sim.scenarios import S1
-from eval_sim.schemas.condition import Condition
-
-for cond in Condition:
-    ledger = run(S1, cond, seed=0, dry_run=False)
-    print(cond.value, len(ledger.transcript), ledger.transcript[-1].simulated_day)
-```
+**Suggested first action in next session:** start the pilot run against `scripts/pilot.py --live` (currently dry-run only; Week-2 wiring to dispatch through `runner.py` + persist per-run ledgers + aggregate scorer-input summaries is the remaining bench-engine work). Expect ~5–10 min per run × 37 runs ≈ 5 hrs; run over a single shell session so transcripts land in one batch for human spot-check.
 
 Every locked prompt + locked parameter has a byte-level regression-fence test. Post-lock edits will fail CI unless a matching amendment block lands in sim-bench-design.md §3.2.
 

@@ -277,27 +277,28 @@ Inside the Tauri app, a persistent "trust" panel that shows: "this app makes 0 n
 
 Generates plain-English narration of a `ProjectedView`, conditioned on the requesting role. Implemented as a Skill at `packages/agents/explainer/` with a `ROLE_VOICES.md` resource describing how to address applicants vs utilities vs regulators. Packaging follows the #7 convention: local-SDK on desktop, hosted-API on the web demo. **Trust constraint:** consumes only `ProjectedView`, never the raw `CaseInput` — by construction cannot leak. **Calibration angle:** does the Skill produce role-appropriate prose that scores well against a graded human-preference rubric (per `docs/agents.md` §6b)? This agent is the cleanest evaluation target for the human-preference-alignment dimension of the research.
 
-### 14. Stakeholder-alignment simulation bench — *§17 signed off 2026-04-19; steps 1–4 of 7 complete; cache + pilot + main runs remain*
+### 14. Stakeholder-alignment simulation bench — *§17 signed off 2026-04-19; steps 1–5 of 7 complete; pilot + main runs remain*
 
 > The empirical-results slide for Ming's job talk. Multi-agent simulation of the applicant ↔ utility ↔ regulator workflow under four conditions — **(A) Oracle** (upper bound), **(B) NDA-email** (status-quo lower bound), **(C) Prompt-only AI agent**, **(D) Grid Passport (Skill-based)** — scoring efficiency, outcome-preservation vs oracle, privacy leakage (direct / inferential / trace), mechanical compliance, and stakeholder-alignment quality (Opus-as-judge with pre-registered rubric) across 7 diverse applicant archetypes (S1–S6 grid + S7 HIPAA priorauth cross-domain).
 
 **Full design + pre-registration: `docs/evals/sim-bench-design.md`.** Read that before starting work. Pre-registration locked 2026-04-19 with Amendments A-1 + A-2; post-lock changes require a §3.2 amendment.
 
-**Implementation status (2026-04-19, post-§17, steps 1–4 of 7 complete in 5 commits):**
+**Implementation status (2026-04-19, post-§17, steps 1–5 of 7 complete in 7 commits; Amendment A-3 applied pre-pilot):**
 
 | Step | Subject | Status |
 |---|---|---|
 | 1 | LLM transport (`eval_sim/llm.py`) — claude-agent-sdk; rides parent Claude Code session, no API key | ✅ done · live smoke 13.7s Sonnet |
 | 2 | Flip 6 LLM-gated scorers + paraphrase barrier to use Transport | ✅ done · live smoke 33s Opus judge |
 | 3 | Concordia agents (`eval_sim/agents/{language_model,embedder,components,builders}.py`) — `EntityAgent` + `ContextComponent` + `AssociativeMemoryBank` substrate, with `ParaphrasedPrivateProfile` as the §1.5.2 #6 realism component | ✅ done · live smoke realistic Dominion intake letter |
-| 4 | Four condition Game Masters (`eval_sim/channels/{base,oracle,skill_bundle,prompt_bundle,email}.py`) — thin orchestrator, NOT Concordia's `Engine`; runner dispatch | ✅ done in 5 sub-commits · live smokes Oracle 3 turns + SkillBundle 7 turns |
-| 5 | Live Cartographer cache generation (1 SDK run per scenario; SHA-256 manifest committed) | pending |
-| 6 | Pilot (28 main + 9 fairness = 37 runs) | pending |
+| 4 | Four condition Game Masters (`eval_sim/channels/{base,oracle,skill_bundle,prompt_bundle,email}.py`) — thin orchestrator, NOT Concordia's `Engine`; runner dispatch | ✅ done in 5 sub-commits · live smokes Oracle 3 turns + SkillBundle 7 turns + 4-condition dispatch 27 min |
+| — | Amendment A-3 — pre-pilot reconciliation (meeting-day 4d; §5e applicant tier clarified; v1 simplifications of §6a vectors 3 + scheduler_assistant_cc documented) + Oracle `cartographer_mode='cached'` fix | ✅ done (`ab9ba87`) |
+| 5 | Live Cartographer cache generation (`scripts/generate_cartographer_cache.py` wired via `ClaudeAgentSDKTransport`; in-loop TS-CI validator; 7 fixtures at `eval_sim/fixtures/cartographer-cache/` + SHA-256 manifest committed) | ✅ done (`552d898`) · all 7 scenarios validated on attempt 1/3 |
+| 6 | Pilot (28 main + 9 fairness = 37 runs; ~5–6 hrs wall-clock; needs `scripts/pilot.py --live` wiring to dispatch through `runner.py` + persist per-run ledgers) | pending |
 | 7 | Main (140 condition + 35 oracle + 280 judge = 455 runs) | pending |
 
 **Architectural call made during step 4** (recorded in `docs/plans/handoff.md` Now §4 + `eval_sim/channels/base.py` docstring): we use Concordia's `EntityAgent` substrate but **not** `concordia.environment.engines.Sequential` — the latter is itself LLM-driven (every step uses an LLM to decide whose turn is next, format observations, resolve actions), which would add ~3,360 wasted Sonnet calls in main run with no decision-theoretic content for our deterministic-routing setting (§6 specifies typed channels + seed-hashed failure-mode sampling + fixed meeting protocol). Substrate claim per §1.4 is preserved; loop is ours. Reviewers can `pip install gdm-concordia` and verify `EntityAgent`/`ContextComponent`/`AssociativeMemoryBank` are real Concordia subclasses.
 
-**Tests: 218 pass, ruff + pyright clean** as of `8fe1f4e`. Every scorer + agent + channel call site has a `FakeTransport`-backed wiring test so the suite stays at ~3 seconds wall-clock + catches structural regressions.
+**Tests: 222 pass, ruff + pyright clean** as of `552d898` (was 218 at `8fe1f4e`; +1 Oracle cartographer_mode + +3 cache-generator/whitelist-parse/sentinel/fallback-marker). Every scorer + agent + channel call site has a `FakeTransport`-backed wiring test so the suite stays at ~3 seconds wall-clock + catches structural regressions.
 
 **Why re-scoped from the prior substrate-only design.** A pointed review (Ming, 2026-04-19) flagged that the earlier rubric-based design (`docs/evals/rubric.md`, `docs/evals/owner-briefs.md`) measured substrate *properties* on canned fixtures. What the talk actually needs is the *system outcome*: does Grid Passport compress the real applicant↔utility↔regulator workflow, close more of the gap to the no-privacy-constraint ideal, and reduce on-record leakage that today accumulates in email threads despite NDA? The old 4-axis rubric is not discarded — it is folded into §8d of the new design as the "mechanical compliance" axis, scored on live simulation turns rather than canned inputs. The shipped substrate metrics at `packages/agents/metrics.md` become the *leading-indicator* side; this bench is the *behavioral* side.
 
