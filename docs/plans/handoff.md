@@ -56,9 +56,40 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 **Next action (2026-04-19): Ming signs off `docs/evals/sim-bench-design.md` §17; Week-1 scenario authoring (S2–S7) follows.** Amendment A-1 (same-day) brought the doc to a lock-ready state: Prometheus scoring template lifted verbatim, Staab probe prompt lifted verbatim, Concordia (`pip install gdm-concordia`) + Presidio as the only hard deps, composite privacy scorer specified (~400 LOC to implement against AgentLeak methodology at threshold 0.72), OPR + Savage-regret hybrid locked, 7 scenarios with realized-future ensembles, 5-dimension judge rubric with external-standard grounding. Amendment A-2 (same-day) sharpens thesis framing: §1.2 scopes the claim to substrate-mechanism-for-schema-discipline (not the 5-test filter itself); §1.3 scopes primary claims to non-adversarial regimes with S5 as boundary-test; §1.5 restructured into methodology (5 items) + realism-engineering (1 item); §6e + §8d decompose H-spec.hallucination into pre-validator rate vs in-artifact rate so evidence adjudicates between §3.1 schema-as-safety-case and §3.4 capability-based stories; §9.3 F4 rewritten as pre-registered boundary-test not rescue; new §9.4 pre-registers four thesis-refinement paths (R1 channel / R2 welfare-distribution / R3 projection-as-purity / R4 honest-Oracle-regret) each with evidence trigger. Bhawuk's utility-prompt review is deferred to post-lock amendment per user directive — not a blocker.
 
-**Scaffold landed 2026-04-19:** `packages/eval-sim/` is a uv-managed Python 3.12+ workspace package with the typed Pydantic schemas (CaseInput mirror, Condition, Role/Disposition/ModelTier, Channel+weights, Dimension, JudgeOutput, TurnMessage, ScenarioCard+CITuple+Future), the locked-parameter config module (MODEL_TIERS, TURNAROUND_DAYS, FAILURE_RATES_B per archetype, meeting protocol, seeds, statistical protocol, success criteria), the S1 Owl-like scenario card, typer-based pilot.py + main.py CLI stubs with dry-run-only mode, and 18 pytest tests covering schema round-trips + S1 token-set regression + Cartographer-cache dir. Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff check && uv run pyright` — all green. Engine modules (agents/, channels/, scorers/) are stubs with docstrings pointing at bench-doc sections; live wiring lands in Week 2 after §17 sign-off.
+**Pre-lock scaffold complete (2026-04-19):** `packages/eval-sim/` is a uv-managed Python 3.12+ workspace package with the full pre-lock scaffold landed in 6 commits (235c29f → 7aacbdd). Every `§N` reference below points at sim-bench-design.md.
 
-One deliberate TBD remains: §7 S4 private-token set (placeholder values in-doc) to concretize during Week-1 scenario-authoring. Implementation track under `packages/eval-sim/` is Python-first (Concordia is Python-only); results export as JSON for TypeScript consumption.
+| Module | What's live | Status |
+|---|---|---|
+| `schemas/` | CaseInput mirror · Condition · Role/Disposition/ModelTier · Channel+weights+sensitivity helper · Dimension+JudgeOutput · TurnMessage · ScenarioCard+CITuple+Future · PriorAuthProfile+SafeHarborIdentifiers (S7) | locked |
+| `config.py` | MODEL_TIERS · TURNAROUND_DAYS_{B,D} · FAILURE_RATES_B per archetype · meeting protocol · seeds · paraphrase-judge 0.72 threshold · bootstrap protocol · success criteria | locked |
+| `scenarios/s{1-7}_*.py` | All 7 cards authored, S4 private-token set concretized | locked |
+| `scorers/efficiency.py` | §8a deterministic counts — pure function | ready to run |
+| `scorers/robustness.py` | §8b OPR + Savage regret hybrid with Hurwicz α spectrum — pure function | ready to run |
+| `scorers/mechanical.py` | §8d H-workflow + H-spec decomposition (pre-validator rate vs in-artifact rate) + H-trigger + H-null — pure function | ready to run |
+| `scorers/privacy/direct.py` | §8c.i Presidio recognizer descriptors + substring tier + AgentLeak-threshold LLM judge with locked prompt — dry-run gate | schema ready, LLM gated |
+| `scorers/privacy/inferential.py` | §8c.ii Staab probe verbatim + Presidio-anonymized public-only baseline Δ — dry-run gate | schema ready, LLM gated |
+| `scorers/privacy/trace.py` | §8c.iii channel-weighted CI-violation classifier with locked prompt — dry-run gate | schema ready, LLM gated |
+| `scorers/judge.py` | §5d + §8e Prometheus ABSOLUTE_PROMPT_WO_REF verbatim + turn-tagged transcript + swap augmentation + disagreement detection — dry-run gate | schema ready, LLM gated |
+| `aggregator.py` | §10.4 + §15 BCa bootstrap + quadratic-weighted κ + length-residual OLS regression — pure statistics | ready to run |
+| `agents/prompts.py` | §5a-§5c five locked role-persona system prompts with regression fences | locked |
+| `agents/paraphrase.py` | §5a+§1.5.2 #6 ParaphraseBarrier pure-function stub + locked LLM prompt | ready to run |
+| `channels/failure_modes.py` | §6a deterministic sampler (SHA-256 seeded) + §6a meeting-trigger state machine | ready to run |
+| `runner.py` | Single-run orchestrator; dry-run returns a synthetic 3-turn ledger routing through C1/C2 | dry-run ready; live gated |
+| `scripts/pilot.py` + `scripts/main.py` | typer CLIs · print locked run matrix · dry-run only | ready |
+| `scripts/generate_cartographer_cache.py` | §6e fixture generator · writes stub JSON + SHA-256 manifest in dry-run · live is NotImplementedError pre-lock | ready; live gated |
+| `tests/` | **131 pytest tests** covering schema round-trips · S1-S7 cards · scorer behavior · locked-prompt byte fences · disagreement detection · runner dry-run across every (scenario × condition) pair · cache-hash manifest | all green |
+
+Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff check && uv run pyright` — all green. ~90s first run (BCa bootstrap tests do 10k resamples); warm cached runs under 3s.
+
+**What is NOT yet wired** (requires §17 sign-off):
+- Live LLM calls in any scorer (all have `dry_run=True` default)
+- Concordia EntityAgent + ContextComponent wiring inside `agents/`
+- Four condition-specific Game Masters inside `channels/` (stubs exist but not the full Concordia loop)
+- Live Cartographer cache generation (7 fixtures × 1 live run each)
+- The pilot run (28 + 9 fairness-check = 37 runs)
+- The main run (140 condition + 35 oracle + 280 judge)
+
+Every locked prompt + locked parameter has a byte-level regression-fence test. Post-lock edits will fail CI unless a matching amendment block lands in sim-bench-design.md §3.2.
 
 **Recently shipped (substrate side, 2026-04-18): #7 Interviewer v0 + #8 Cartographer v0 + HIPAA substrate-transfer demo + research-grade substrate metrics panel.** The substrate side is in good shape for the talk; the remaining pre-talk effort is the behavioral side (sim bench) + one more Skill (Explainer #13) if the bench wants a prose-output test condition.
 
