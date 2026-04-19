@@ -1,0 +1,35 @@
+{
+  "floodRisk": "low",
+  "notes": [
+    "FEMA NFHL panels for the Ashburn East area show parcel LOU-400-CAMPUS outside the 500-yr overlay (Zone X unshaded); tier classified low (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA DEQ air-permit docket indicates a Tier-2 minor-source permit would be required for a 400 MW campus generator fleet at this scale; no issued permit on file and 14\u201322 month processing runway expected; tier classified high (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Loudoun County post-March-2025 rule change removed by-right data-center development outside designated overlays; parcel LOU-400-CAMPUS sits outside the designated data-center overlay and would require special-exception review; tier classified high (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Loudoun land-records index shows a recorded option-to-purchase in Lighthouse Campus Partners' name for parcel LOU-400-CAMPUS, satisfying site-control evidence (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Dominion Facility Interconnection Requirements apply \u2014 400 MW request in Ashburn corridor falls under GS-5 large-load queue-plan procedures per current SCC docket (synthetic scenario; URL shape from SOURCES.md, record not live-fetched)."
+  ],
+  "permitRisk": "high",
+  "siteControlEvidence": true,
+  "sourceRefs": [
+    {
+      "label": "FEMA National Flood Hazard Layer",
+      "url": "https://www.fema.gov/flood-maps/national-flood-hazard-layer"
+    },
+    {
+      "label": "VA DEQ \u2014 Issued Air Permits for Data Centers",
+      "url": "https://www.deq.virginia.gov/news-info/shortcuts/permits/air/issued-air-permits-for-data-centers"
+    },
+    {
+      "label": "Loudoun County GIS (LOGIS)",
+      "url": "https://logis.loudoun.gov/"
+    },
+    {
+      "label": "Dominion Facility Interconnection Requirements",
+      "url": "https://www.dominionenergy.com/-/media/content/large-business-services/pdfs/virginia/facility-interconnection-requirements.pdf"
+    },
+    {
+      "label": "VA SCC \u2014 Data Center Initiatives Fact Sheet",
+      "url": "https://www.scc.virginia.gov/media/sccvirginiagov-home/about-the-scc/fact-sheets/scc-data-center-initiatives-02-2026.pdf"
+    }
+  ],
+  "zoningRisk": "high"
+}

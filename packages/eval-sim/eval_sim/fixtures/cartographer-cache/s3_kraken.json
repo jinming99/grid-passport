@@ -1,0 +1,41 @@
+{
+  "floodRisk": "low",
+  "notes": [
+    "FEMA NFHL shows parcel KRAKEN-240MW-P1 outside the 500-yr overlay; Manassas West uplands sit on Piedmont terrace above Broad Run floodplain (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA DEQ air-permit docket indicates a Tier-2 permit in pending/under-review status for a 240 MW data-center load of this scale; published DEQ runway for Tier-2 is typically 14\u201322 months, creating a medium permit-risk classification (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Prince William County GIS shows parcel in by-right M-1/M-2 industrial zoning consistent with the county's data-center overlay; no special-use permit required (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Prince William County land records show a recorded deed/instrument in Kraken Train's name for parcel KRAKEN-240MW-P1, establishing site control (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Operator listed in EPRI DCFlex Flex MOSAIC registry for demand-response participation, relevant context for flexibility posture but not a risk-tier input (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Dominion Facility Interconnection Requirements apply; site is in Dominion territory and subject to standard large-load study process (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA SCC Data Center Initiatives fact sheet context: 240 MW request falls within GS-5 large-load rate-class review scope (synthetic scenario; URL shape from SOURCES.md, record not live-fetched)."
+  ],
+  "permitRisk": "medium",
+  "siteControlEvidence": true,
+  "sourceRefs": [
+    {
+      "label": "FEMA National Flood Hazard Layer",
+      "url": "https://www.fema.gov/flood-maps/national-flood-hazard-layer"
+    },
+    {
+      "label": "VA DEQ \u2014 Issued Air Permits for Data Centers",
+      "url": "https://www.deq.virginia.gov/news-info/shortcuts/permits/air/issued-air-permits-for-data-centers"
+    },
+    {
+      "label": "Prince William County GIS \u2014 Parcel Viewer",
+      "url": "https://gisweb.pwcgov.org/"
+    },
+    {
+      "label": "Dominion \u2014 Facility Interconnection Requirements",
+      "url": "https://www.dominionenergy.com/-/media/content/large-business-services/pdfs/virginia/facility-interconnection-requirements.pdf"
+    },
+    {
+      "label": "EPRI DCFlex \u2014 Flex MOSAIC registry",
+      "url": "https://dcflex.epri.com/flex-mosaic"
+    },
+    {
+      "label": "VA SCC \u2014 Data Center Initiatives Fact Sheet",
+      "url": "https://www.scc.virginia.gov/media/sccvirginiagov-home/about-the-scc/fact-sheets/scc-data-center-initiatives-02-2026.pdf"
+    }
+  ],
+  "zoningRisk": "low"
+}

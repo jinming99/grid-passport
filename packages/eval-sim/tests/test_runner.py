@@ -19,14 +19,45 @@ def test_dry_run_returns_ledger_with_transcript() -> None:
     assert ledger.scorer_inputs["private_tokens"]
 
 
-def test_dry_run_cache_hash_surfaces_not_yet_generated_marker() -> None:
-    """Cartographer cache fixtures aren't generated pre-lock; runner reports
-    a deterministic placeholder hash so the ledger-write path still has a
-    value downstream scorers can log.
+def test_dry_run_cache_hash_is_committed_sha256_when_fixture_present() -> None:
+    """Post-step-5 the Cartographer cache fixtures are committed at
+    `eval_sim/fixtures/cartographer-cache/`. Runner's `_cache_hash_for`
+    returns the SHA-256 of the on-disk bytes so the ledger carries the
+    reproducibility tag §15.5 requires.
     """
     s1 = scenarios.get("S1")
     ledger = run(s1, Condition.A_ORACLE, seed=0, dry_run=True)
-    assert ledger.cache_hash.startswith("not-yet-generated:")
+    # 64-char hex digest — not the pre-step-5 "not-yet-generated:" marker.
+    assert len(ledger.cache_hash) == 64
+    assert all(c in "0123456789abcdef" for c in ledger.cache_hash)
+
+
+def test_dry_run_cache_hash_falls_back_to_marker_when_fixture_missing(
+    tmp_path, monkeypatch
+) -> None:
+    """Guard: if a future scenario ships without its cache fixture yet
+    committed, the runner must still emit a deterministic marker rather
+    than failing, so downstream scorers' ledger-write path keeps working.
+    """
+    # Point the fixture root at an empty tmp dir so no fixture exists.
+    monkeypatch.setattr(
+        "eval_sim.runner.Path",
+        type(tmp_path),  # the `Path` symbol used inside _cache_hash_for
+    )
+    # Easier: monkeypatch _cache_hash_for's resolver to use the empty dir
+    # directly — the function resolves `Path(__file__) / .. / fixtures /
+    # cartographer-cache`, so point `__file__`'s parent chain by moving
+    # the whole function onto the empty dir.
+    monkeypatch.chdir(tmp_path)
+    # The simplest assertion: if we ask for a bogus scenario-cache-path
+    # that doesn't exist, the function returns the fallback marker.
+    from eval_sim.runner import _cache_hash_for
+
+    class _FakeCard:
+        public_evidence_cache_path = "_definitely_not_present.json"
+
+    result = _cache_hash_for(_FakeCard())  # type: ignore[arg-type]
+    assert result.startswith("not-yet-generated:")
 
 
 def test_dry_run_b_samples_failure_modes_deterministically() -> None:

@@ -1,0 +1,7 @@
+{
+  "cache_applicable": false,
+  "domain": "priorauth",
+  "notes": [
+    "S7 is HIPAA prior-auth; the gridpassport-cartographer Skill is grid-specific (FEMA flood + VA DEQ permits + county GIS + EPRI DCFlex) and does not apply. \u00a78d H-spec Cartographer axis should skip S7 rows; other axes score normally. Per Amendment A-3."
+  ]
+}

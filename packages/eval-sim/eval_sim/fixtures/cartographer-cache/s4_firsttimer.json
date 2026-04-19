@@ -1,0 +1,36 @@
+{
+  "floodRisk": "low",
+  "notes": [
+    "FEMA NFHL query for parcel PW-007-4421 would show the site outside the 500-yr shaded overlay, consistent with upland terrain typical of the Quantico Ridge area (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA DEQ data-center air-permit docket would show a Tier-2 minor-source permit pending for a 55 MW load; published DEQ timelines indicate a 14\u201322 month processing runway (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Prince William County GIS would classify parcel PW-007-4421 as M-1/M-2 light industrial, a by-right zoning district for data-center use with no SUP required (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Prince William County land records would show a recorded deed of trust in Harbor Light AI's name for parcel PW-007-4421, establishing site control (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Dominion Facility Interconnection Requirements apply; 55 MW request falls within the large-load study threshold with standard redundancy conventions (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA SCC data-center initiatives fact sheet indicates GS-5 rate-class applicability and active queue-plan docket relevant to a Q3 2028 COD (synthetic scenario; URL shape from SOURCES.md, record not live-fetched)."
+  ],
+  "permitRisk": "medium",
+  "siteControlEvidence": true,
+  "sourceRefs": [
+    {
+      "label": "FEMA National Flood Hazard Layer",
+      "url": "https://www.fema.gov/flood-maps/national-flood-hazard-layer"
+    },
+    {
+      "label": "VA DEQ \u2014 Issued Air Permits for Data Centers",
+      "url": "https://www.deq.virginia.gov/news-info/shortcuts/permits/air/issued-air-permits-for-data-centers"
+    },
+    {
+      "label": "Prince William County GIS \u2014 Parcel Viewer",
+      "url": "https://gisweb.pwcgov.org/"
+    },
+    {
+      "label": "Dominion \u2014 Facility Interconnection Requirements",
+      "url": "https://www.dominionenergy.com/-/media/content/large-business-services/pdfs/virginia/facility-interconnection-requirements.pdf"
+    },
+    {
+      "label": "VA SCC \u2014 Data Center Initiatives Fact Sheet",
+      "url": "https://www.scc.virginia.gov/media/sccvirginiagov-home/about-the-scc/fact-sheets/scc-data-center-initiatives-02-2026.pdf"
+    }
+  ],
+  "zoningRisk": "low"
+}

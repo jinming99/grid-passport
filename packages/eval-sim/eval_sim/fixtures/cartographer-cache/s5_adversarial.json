@@ -1,0 +1,42 @@
+{
+  "floodRisk": "low",
+  "notes": [
+    "Parcel FAU-PHANTOM-01 sits on upland terrain north of Warrenton, outside mapped 100-yr and 500-yr flood zones per FEMA NFHL panel coverage of northern Fauquier (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "No Cedar Run or Broad Run tributary overlay intersects the parcel footprint at the scale shown on the NFHL viewer (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "No Tier-2 air permit appears on the VA DEQ issued-data-center list for this parcel; a 320 MW load with on-site generator backup would place the project on the Tier-2 runway (typically 14\u201322 months) once filed (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "No VPDES/VWP water permit actions are docketed for the parcel; cooling-water strategy is not yet on record (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Fauquier County GIS shows the Warrenton-North corridor as predominantly agricultural/rural with service-district transitional zoning; a data-center use at this scale would require a special-exception (SpEx) action, none of which is currently pending on the parcel (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Fauquier land records show no recorded deed, option, or lease instrument naming Talon Compute Capital on parcel FAU-PHANTOM-01; site control is therefore not evidenced in the public record (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Site falls within Dominion service territory; Facility Interconnection Requirements apply for a 320 MW request and would drive the study-queue pathway (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA SCC data-center initiatives fact sheet frames the GS-5 rate-class and queue-plan docket context relevant to a Q4 2027 COD at this scale (synthetic scenario; URL shape from SOURCES.md, record not live-fetched)."
+  ],
+  "permitRisk": "medium",
+  "siteControlEvidence": false,
+  "sourceRefs": [
+    {
+      "label": "FEMA National Flood Hazard Layer",
+      "url": "https://www.fema.gov/flood-maps/national-flood-hazard-layer"
+    },
+    {
+      "label": "VA DEQ Issued Air Permits for Data Centers",
+      "url": "https://www.deq.virginia.gov/news-info/shortcuts/permits/air/issued-air-permits-for-data-centers"
+    },
+    {
+      "label": "VA DEQ Water Permits",
+      "url": "https://www.deq.virginia.gov/permits/water"
+    },
+    {
+      "label": "Fauquier County GIS",
+      "url": "https://www.fauquiercounty.gov/government/departments-h-z/gis"
+    },
+    {
+      "label": "Dominion Facility Interconnection Requirements",
+      "url": "https://www.dominionenergy.com/-/media/content/large-business-services/pdfs/virginia/facility-interconnection-requirements.pdf"
+    },
+    {
+      "label": "VA SCC Data Center Initiatives Fact Sheet",
+      "url": "https://www.scc.virginia.gov/media/sccvirginiagov-home/about-the-scc/fact-sheets/scc-data-center-initiatives-02-2026.pdf"
+    }
+  ],
+  "zoningRisk": "medium"
+}
