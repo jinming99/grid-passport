@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { POLICY_VERSION } from "./policy";
+import { sha256Hex } from "./crypto";
 import type {
   CaseInput,
   DerivedProof,
@@ -19,12 +19,19 @@ export type AuditActor =
 export type AuditReason =
   | "case_created"
   | "evidence_refreshed"
+  | "sealed_raw_input"
   | "proof_generated"
   | "policy_evaluated"
   | "role_projection"
   | "scenario_override";
 
+/**
+ * Tamper-evident audit-log entry. `prevHash` is the SHA-256 of the
+ * JCS-canonicalized prior event (including its own prevHash), or null for the
+ * first event. See docs/design/signed-bundle.md §3.5.
+ */
 export interface AuditEvent {
+  seq: number;
   id: string;
   timestamp: string;
   actor: AuditActor;
@@ -33,12 +40,7 @@ export interface AuditEvent {
   artifactHash: string;
   policyVersion: string;
   details: Record<string, string | number | null>;
-}
-
-function sha256(value: unknown): string {
-  return createHash("sha256")
-    .update(typeof value === "string" ? value : JSON.stringify(value))
-    .digest("hex");
+  prevHash: string | null;
 }
 
 const CASE_ANCHOR: Record<string, string> = {
@@ -56,8 +58,8 @@ function eventId(caseId: string, seq: number): string {
   return `audit_${caseId}_${seq.toString().padStart(3, "0")}`;
 }
 
-function proofHash(proof: DerivedProof): string {
-  return sha256({
+async function proofHash(proof: DerivedProof): Promise<string> {
+  return sha256Hex({
     firmnessScore: proof.firmnessScore,
     expectedPeakMW: proof.expectedPeakMW,
     flexibilityPassport: proof.flexibilityPassport,
@@ -68,23 +70,62 @@ function proofHash(proof: DerivedProof): string {
   });
 }
 
-export function buildAuditTrail(
+type RawEvent = Omit<AuditEvent, "seq" | "prevHash">;
+
+/**
+ * Compose events in order, then link them into a hash chain. Each event's
+ * prevHash is the SHA-256 of the JCS(previous-event). The chain is covered
+ * by the bundle signature in bundle.ts, so any tamper reveals itself at
+ * verification.
+ */
+async function chainLink(raws: RawEvent[]): Promise<AuditEvent[]> {
+  const out: AuditEvent[] = [];
+  let prevHash: string | null = null;
+  for (let i = 0; i < raws.length; i++) {
+    const full: AuditEvent = {
+      seq: i + 1,
+      ...raws[i],
+      prevHash,
+    };
+    out.push(full);
+    prevHash = `sha256:${await sha256Hex(full)}`;
+  }
+  return out;
+}
+
+export async function buildAuditTrail(
   input: CaseInput,
   record: RequestRecord,
   role: Role,
   override: ScenarioOverride | undefined,
-): AuditEvent[] {
+): Promise<AuditEvent[]> {
   const anchor = CASE_ANCHOR[input.caseId] ?? new Date().toISOString();
-  const proofHashHex = proofHash(record.derivedProof);
-  const evidenceHash = sha256(input.publicEvidence).slice(0, 16);
-  const requestHash = sha256({
-    id: input.id,
-    requestedMW: input.requestedMW,
-    targetCOD: input.targetCOD,
-    phases: input.phases,
-  }).slice(0, 16);
+  const proofHashHex = await proofHash(record.derivedProof);
+  const evidenceHash = (await sha256Hex(input.publicEvidence)).slice(0, 16);
+  const requestHash = (
+    await sha256Hex({
+      id: input.id,
+      requestedMW: input.requestedMW,
+      targetCOD: input.targetCOD,
+      phases: input.phases,
+    })
+  ).slice(0, 16);
+  const sealedHash = (
+    await sha256Hex({
+      sealedClasses: [
+        "flexPercent",
+        "redundancyShiftPercent",
+        "backupGenMW",
+        "bessMW",
+        "internalScheduleConfidence",
+        "workloadMix",
+      ],
+    })
+  ).slice(0, 16);
+  const policyEvalHash = (await sha256Hex({ role, policy: POLICY_VERSION })).slice(0, 16);
+  const roleRenderHash = (await sha256Hex({ role, proofHashHex })).slice(0, 16);
 
-  const events: AuditEvent[] = [
+  const raws: RawEvent[] = [
     {
       id: eventId(input.caseId, 1),
       timestamp: anchor,
@@ -118,17 +159,8 @@ export function buildAuditTrail(
       timestamp: isoMinus(anchor, -123),
       actor: "notary",
       action: "Private profile sealed into confidential path",
-      reasonCode: "sealed_raw_input" as unknown as AuditReason,
-      artifactHash: sha256({
-        sealedClasses: [
-          "flexPercent",
-          "redundancyShiftPercent",
-          "backupGenMW",
-          "bessMW",
-          "internalScheduleConfidence",
-          "workloadMix",
-        ],
-      }).slice(0, 16),
+      reasonCode: "sealed_raw_input",
+      artifactHash: sealedHash,
       policyVersion: input.policyVersion,
       details: {
         sealedFieldCount: 8,
@@ -153,7 +185,7 @@ export function buildAuditTrail(
       actor: "referee",
       action: `Release policy evaluated · projection for ${role}`,
       reasonCode: "policy_evaluated",
-      artifactHash: sha256({ role, policy: POLICY_VERSION }).slice(0, 16),
+      artifactHash: policyEvalHash,
       policyVersion: POLICY_VERSION,
       details: {
         role,
@@ -162,15 +194,12 @@ export function buildAuditTrail(
   ];
 
   if (override?.flexPercent !== undefined) {
-    // Baseline = input.privateProfile.flexPercent. That's a private field;
-    // it must not appear in audit text shown to non-applicant roles. The
-    // applicant owns it, so they see it.
     const baselineSegment =
       role === "applicant"
         ? `(baseline ${input.privateProfile.flexPercent}%)`
         : "(baseline sealed)";
-    events.push({
-      id: eventId(input.caseId, 6),
+    raws.push({
+      id: eventId(input.caseId, raws.length + 1),
       timestamp: new Date().toISOString(),
       actor: "forecaster",
       action: `Counterfactual scenario · flex ${override.flexPercent}% ${baselineSegment}`,
@@ -185,18 +214,18 @@ export function buildAuditTrail(
     });
   }
 
-  events.push({
-    id: eventId(input.caseId, events.length + 1),
+  raws.push({
+    id: eventId(input.caseId, raws.length + 1),
     timestamp: new Date().toISOString(),
     actor: "referee",
     action: `Role projection rendered · ${role}`,
     reasonCode: "role_projection",
-    artifactHash: sha256({ role, proofHashHex }).slice(0, 16),
+    artifactHash: roleRenderHash,
     policyVersion: POLICY_VERSION,
     details: {
       role,
     },
   });
 
-  return events;
+  return chainLink(raws);
 }

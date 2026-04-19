@@ -205,15 +205,15 @@ function fingerprintRegex(fp: string): RegExp {
   return new RegExp(`(^|[^0-9.])${escapeRegExp(fp)}([^0-9.]|$)`);
 }
 
-function scanAuditActions(
+async function scanAuditActions(
   input: CaseInput,
   role: Role,
   flexOverride: number | undefined,
-): void {
+): Promise<void> {
   const override =
     flexOverride !== undefined ? { flexPercent: flexOverride } : undefined;
   const record = buildRecord(input, override);
-  const events: AuditEvent[] = buildAuditTrail(input, record, role, override);
+  const events: AuditEvent[] = await buildAuditTrail(input, record, role, override);
   const fingerprints = leakFingerprints(input, record);
   for (const ev of events) {
     for (const fp of fingerprints) {
@@ -307,10 +307,10 @@ function compareMirrors(
 
 interface Section {
   name: string;
-  run: () => void;
+  run: () => void | Promise<void>;
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const sections: Section[] = [
     {
       name: "structural projection",
@@ -321,18 +321,18 @@ function main(): void {
     },
     {
       name: "audit action scan (baseline)",
-      run: () => {
+      run: async () => {
         for (const input of listCases())
           for (const role of NON_APPLICANT_ROLES)
-            scanAuditActions(input, role, undefined);
+            await scanAuditActions(input, role, undefined);
       },
     },
     {
       name: "audit action scan (with flex override)",
-      run: () => {
+      run: async () => {
         for (const input of listCases())
           for (const role of NON_APPLICANT_ROLES)
-            scanAuditActions(input, role, SCENARIO_OVERRIDE_FLEX);
+            await scanAuditActions(input, role, SCENARIO_OVERRIDE_FLEX);
       },
     },
     {
@@ -349,7 +349,7 @@ function main(): void {
 
   for (const s of sections) {
     const before = findings.length;
-    s.run();
+    await s.run();
     const added = findings.length - before;
     const status = added === 0 ? "pass" : `${added} finding(s)`;
     process.stdout.write(`[canary] ${s.name}: ${status}\n`);
@@ -374,4 +374,7 @@ function main(): void {
   process.exit(1);
 }
 
-main();
+main().catch((err) => {
+  process.stderr.write(`[canary] unexpected error: ${err}\n`);
+  process.exit(1);
+});

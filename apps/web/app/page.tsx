@@ -30,6 +30,10 @@ export default function Home() {
               demo
             </Link>
             <span className="text-neutral-700">·</span>
+            <Link href="/protocol" className="hover:text-neutral-200">
+              protocol
+            </Link>
+            <span className="text-neutral-700">·</span>
             <Link href="/downloads" className="hover:text-neutral-200">
               desktop
             </Link>
@@ -144,6 +148,62 @@ export default function Home() {
         </section>
 
         <section className="mt-20">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-[11px] uppercase tracking-[0.22em] text-neutral-500">
+              verifiable protocol · don't take our word for it
+            </h2>
+            <Link
+              href="/protocol"
+              className="text-[11px] uppercase tracking-[0.18em] text-neutral-500 hover:text-neutral-200"
+            >
+              read the spec →
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-5">
+              <div className="font-mono text-[11px] uppercase tracking-widest text-lime-300">
+                RFC 8785 · JCS
+              </div>
+              <h3 className="mt-2 text-[15px] font-medium text-neutral-100">
+                Canonical JSON
+              </h3>
+              <p className="mt-2 text-[12px] leading-relaxed text-neutral-400">
+                Every bundle hashes to the same bytes regardless of producer.
+                Tested against the RFC author's six official vectors including
+                the emoji surrogate-pair case.
+              </p>
+            </div>
+            <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-5">
+              <div className="font-mono text-[11px] uppercase tracking-widest text-lime-300">
+                RFC 8032 · Ed25519
+              </div>
+              <h3 className="mt-2 text-[15px] font-medium text-neutral-100">
+                Signed by the applicant
+              </h3>
+              <p className="mt-2 text-[12px] leading-relaxed text-neutral-400">
+                Private key lives in the OS keychain and never crosses the
+                Tauri IPC boundary. Counterparty pins the public key
+                once — same trust bootstrap as SSH.
+              </p>
+            </div>
+            <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-5">
+              <div className="font-mono text-[11px] uppercase tracking-widest text-lime-300">
+                Three-stack parity
+              </div>
+              <h3 className="mt-2 text-[15px] font-medium text-neutral-100">
+                TS ⇌ Rust ⇌ Python agree
+              </h3>
+              <p className="mt-2 text-[12px] leading-relaxed text-neutral-400">
+                Independent signers in @noble/ed25519, ed25519-dalek, and PyCA
+                produce byte-identical signatures; all three verifiers accept
+                each other&apos;s bundles and reject every tamper —{" "}
+                <code className="font-mono text-neutral-300">pnpm canary:roundtrip</code>.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-20">
           <h2 className="mb-6 text-[11px] uppercase tracking-[0.22em] text-neutral-500">
             crew
           </h2>
@@ -216,6 +276,10 @@ export default function Home() {
             <span className="text-neutral-700">·</span>
             <Link href="/demo/owl-compute" className="hover:text-neutral-300">
               demo
+            </Link>
+            <span className="text-neutral-700">·</span>
+            <Link href="/protocol" className="hover:text-neutral-300">
+              protocol
             </Link>
             <span className="text-neutral-700">·</span>
             <a

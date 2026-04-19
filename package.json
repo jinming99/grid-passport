@@ -17,6 +17,13 @@
     "desktop:dev": "pnpm --filter @grid-passport/desktop tauri:dev",
     "desktop:build": "pnpm --filter @grid-passport/desktop tauri:build",
     "desktop:typecheck": "pnpm --filter @grid-passport/desktop typecheck",
-    "canary:desktop": "pnpm --filter @grid-passport/desktop canary"
+    "canary:desktop": "pnpm --filter @grid-passport/desktop canary",
+    "canary:bundle": "pnpm --filter @grid-passport/verifier canary",
+    "canary:roundtrip": "bash scripts/demo-bundle-roundtrip.sh",
+    "demo:bundle": "bash scripts/demo-bundle-roundtrip.sh",
+    "desktop:test": "bash -lc 'source ~/.cargo/env 2>/dev/null; cd apps/desktop/src-tauri && cargo test --lib'",
+    "core:test": "pnpm --filter @grid-passport/core test",
+    "verifier:test": "pnpm --filter @grid-passport/verifier test",
+    "verifier:typecheck": "pnpm --filter @grid-passport/verifier typecheck"
   }
 }

@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   const record = buildRecord(input, override);
   const view = projectForRole(record, body.role);
-  const auditEvents = buildAuditTrail(input, record, body.role, override);
+  const auditEvents = await buildAuditTrail(input, record, body.role, override);
 
   return NextResponse.json({
     caseId: body.caseId,

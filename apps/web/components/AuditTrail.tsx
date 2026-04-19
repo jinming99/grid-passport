@@ -12,6 +12,7 @@ const ACTOR_TONE: Record<AuditActor, string> = {
 const REASON_LABEL: Record<AuditReason, string> = {
   case_created: "case_created",
   evidence_refreshed: "evidence_refreshed",
+  sealed_raw_input: "sealed_raw_input",
   proof_generated: "proof_generated",
   policy_evaluated: "policy_evaluated",
   role_projection: "role_projection",

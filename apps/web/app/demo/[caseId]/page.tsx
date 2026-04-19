@@ -26,7 +26,7 @@ export default async function CaseDemoPage({
 
   const baselineRecord = buildRecord(input);
   const initialView = projectForRole(baselineRecord, INITIAL_ROLE);
-  const initialAuditEvents = buildAuditTrail(
+  const initialAuditEvents = await buildAuditTrail(
     input,
     baselineRecord,
     INITIAL_ROLE,

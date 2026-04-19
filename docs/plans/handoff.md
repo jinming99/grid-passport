@@ -11,6 +11,9 @@ Durable record of project state, decisions, and what future work needs to know. 
 - **Canonical harness:** `grid-passport-harness/` (8 specs + CLAUDE.md + 6 subagent prompts in `.claude/agents/`)
 - **Vision + design choices:** `docs/vision.md` — read this to understand *why this shape*. Includes team & origins (§0), the schema-justification 5-test filter (§4b) — read before adding any new `CaseInput` field, the local-first trust pivot (§5), the reliability triad and "agents propose, humans dispose" framing (§5b–§5c), and why the web demo + Tauri app coexist (§10).
 - **Privacy mechanism case:** `docs/privacy-claim.md` — read this for the mechanical-evidence story.
+- **Signed disclosure bundle protocol (rationale):** `docs/design/signed-bundle.md` — threat model, 8 design decisions with IETF/W3C citations + rejected alternatives, 10-Q demo defense, post-quantum migration path. Read for *why*.
+- **Signed disclosure bundle protocol (normative spec):** `docs/design/signed-bundle-spec.md` — RFC 2119 wire format, sign/verify algorithms, canonical test vectors, conformance checklist for new implementations, versioning policy, reproducibility commands. Read for *what*.
+- **Public-facing protocol page:** `/protocol` route (`apps/web/app/protocol/page.tsx`) — surfaces threat model + primitives + verify-it-yourself commands. Not swept under the carpet: linked from landing nav, footer, and `/about` header.
 - **Agent architecture + Claude Skills + research connection:** `docs/agents.md` — trust principles mapped to the reliability triad (§2), human-AI collaboration framing (§3), agent roster, Claude Agent Skills implementation pattern, eval framework with concrete N-targets and student-handoff task breakdown (§7), Ming Jin's research agenda on calibrating skills for workflow / human-preference / domain-spec alignment (§6).
 - **Story / talk-arc narrative:** `docs/story.md` — single source of truth for both Ming's job talk and the website's `/about` page. Pre-talk it gates on the eval harness landing (§6 placeholder).
 - **Master plan / roadmap:** `docs/plans/roadmap.md` — *what's shipping next, in what order, with mechanical "done" criteria*. Single source of truth for the build queue and the open decision log.
@@ -34,7 +37,8 @@ Durable record of project state, decisions, and what future work needs to know. 
 | 3e  | Privacy Benefit Panel (replaces LeakCounter) · `/about` story page v1 — classified-briefing × SCADA design pass via `/frontend-design` plugin skill | done |
 | 3f  | Landing page v1 (`/` problem-first hero + BenefitPanel teaser + pain cards + crew + desktop CTA) + `/downloads` placeholder · decision sweep (AGPL v3 license · Interviewer LLM = Claude Code session/SDK host · Dominion as first utility partner) · eval rubric approved & promoted to `docs/evals/rubric.md` · owner briefs for §14 harness | done |
 | 4   | Tauri shell v0 — scaffold (`apps/desktop/`), Tauri dialog + fs plugins, local-file case loader with structural validate, three-column side-by-side review (applicant / utility / regulator), export bundle JSON (v0 unsigned — signing in #6), desktop canary, macOS build artifact | done |
-| 5+  | Planned — see `docs/plans/roadmap.md`. Next: **#6 Signed disclosure bundle protocol** (Ed25519 + audit-chain inclusion; Dominion intake as the counterparty), or **#14 Eval harness** for Ming's job talk (parallel track, 3 student owners already briefed) | planned |
+| 5   | Signed disclosure bundle protocol v1 — JCS (RFC 8785) canonicalization, Ed25519 signatures, hash-chained audit, dual policy hash; OS-keychain-backed signer via Tauri IPC; `packages/verifier/` zero-dep standalone verifier; 10 tamper tests; `pnpm canary:bundle` end-to-end. Design justified in `docs/design/signed-bundle.md`. | done |
+| 6+  | Planned — see `docs/plans/roadmap.md`. Next: **#7 Interviewer agent** (natural continuation of schema-justification work — Interviewer owns the squishy `internalScheduleConfidence` field per vision §4b), **#14 Eval harness** for Ming's job talk (parallel track, 3 student owners already briefed), **Dominion onboarding handshake** (non-code; §9 seams in the signed-bundle doc) | planned |
 
 ## Architecture
 
@@ -61,23 +65,28 @@ grid-passport/
 │   │   └── scripts/
 │   │       └── privacy-canary.ts       structural + audit-action scan + TS↔Rego↔Python drift
 │   ├── api/                            FastAPI parity (uv · Python 3.11+) — Phase 2 target
+│   ├── verifier-py/                    Python reference verifier · single file · PyCA cryptography + stdlib only · demonstrates protocol portability
 │   └── desktop/                        Tauri 2.x shell · Vite + React + TS frontend · Rust core
 │       ├── src/
 │       │   ├── App.tsx                 top-level: two-mode (work/review) · case picker · file loader · review gate + export terminus
 │       │   ├── components/             ReviewColumn (work|review variant), MiniBenefit, ProjectionSections (bucket-tiered with ⓘ tooltips)
 │       │   ├── lib/
 │       │   │   ├── case-loader.ts      dialog.open + fs.readTextFile + structural validate against CaseInput
-│       │   │   └── bundle.ts           DisclosureBundle shape (v0) + dialog.save + fs.writeTextFile
+│       │   │   ├── signer.ts           tauriSigner() → BundleSigner via applicant_public_key + applicant_sign IPC
+│       │   │   └── bundle.ts           buildAndSignBundle() · signs v1 bundle with OS-keychain-backed Ed25519 · dialog.save + fs.writeTextFile
 │       │   ├── styles.css              terminal-flavored vanilla CSS (no Tailwind on desktop yet)
 │       │   └── main.tsx
 │       ├── scripts/canary-desktop.ts   asserts @grid-passport/core imports + 3-case × 3-role projection invariant
 │       ├── vite.config.ts              port 1420 · strictPort · TAURI_ENV_* env · esnext target
 │       └── src-tauri/                  Rust crate `grid-passport-desktop` (lib `grid_passport_desktop_lib`)
 │           ├── tauri.conf.json         identifier app.gridpassport.desktop · window 1180×760
-│           ├── Cargo.toml              tauri 2.10 · tauri-plugin-{log,dialog,fs} 2 · AGPL-3.0-or-later
+│           ├── Cargo.toml              tauri 2.10 · tauri-plugin-{log,dialog,fs} 2 · keyring 3 · ed25519-dalek 2 · serde_json_canonicalizer · [[bin]] gp-sign · AGPL-3.0-or-later
 │           ├── capabilities/default.json  dialog + fs read/write scoped to `**` (narrow for prod in #12)
 │           ├── icons/                  generated via `cargo tauri icon` from a placeholder source
-│           └── src/{main.rs,lib.rs}    Tauri builder · dialog + fs + log plugins registered
+│           └── src/
+│               ├── {main.rs,lib.rs}    Tauri builder · dialog/fs/log plugins · applicant_public_key + applicant_sign commands
+│               ├── signer.rs            Ed25519 keypair in OS keychain via `keyring` crate + `ed25519-dalek`; OnceLock-cached Entry; mock-keychain unit test exercises the full round-trip
+│               └── bin/gp-sign.rs       Standalone Rust signer CLI · JCS via serde_json_canonicalizer · proves Rust primitives produce verifier-compatible output
 ├── packages/
 │   ├── core/                           @grid-passport/core · subpath exports · shared across web + desktop
 │   │   └── src/
@@ -85,17 +94,34 @@ grid-passport/
 │   │       ├── policy.ts               POLICY table (runtime mirror of the Rego) · enforcement
 │   │       ├── projection.ts           projectForRole(req, role) → ProjectedView
 │   │       ├── forecast.ts             forecast(case, override?) → DerivedProof
-│   │       ├── audit.ts                buildAuditTrail(case, record, role, override)
+│   │       ├── audit.ts                async buildAuditTrail(case, record, role, override) · hash-chained via prevHash
+│   │       ├── bundle.ts               DisclosureBundle v1.0.0 · signBundle() · localSigner() · newBundleId()
+│   │       ├── crypto.ts               inline RFC 8785 JCS · WebCrypto SHA-256 · base64/hex helpers
+│   │       ├── crypto.test.ts          RFC 8785 official test vectors (Erdtman's cyberphone/json-canonicalization testdata)
 │   │       ├── ask-reasons.ts          FieldPath → {bucket, why} · UX layer (tooltips, tier labels)
 │   │       ├── fixtures/               owl-compute · lantern-cloud · kraken-train · index
 │   │       └── geo/                    synthetic GeoJSON per case
+│   ├── verifier/                       @grid-passport/verifier · standalone zero-framework-dep bundle verifier
+│   │   ├── src/
+│   │   │   ├── index.ts                verifyBundle(bytes, pubkey) → {ok, reasons, payload, policyHash}
+│   │   │   ├── index.test.ts           10 tamper-detection tests (T1–T4, schema drift, malformed, keyId)
+│   │   │   └── fuzz.test.ts            2000-iteration random-mutation fuzz; zero false positives
+│   │   ├── bin/verify.js               CLI: grid-passport-verify <bundle.json> <pubkey.b64|hex>
+│   │   └── scripts/
+│   │       ├── bundle-canary.ts        end-to-end sign → verify → tamper → reject across all 3 cases
+│   │       └── emit-fixture.ts         emit signed bundle + pubkey + secret to disk for cross-impl testing
 │   └── policy/grid-passport.rego       canonical release policy (source of truth)
+├── scripts/
+│   └── demo-bundle-roundtrip.sh        stage-ready: TS sign → TS verify → Python verify → tamper → both reject (pnpm canary:roundtrip)
 ├── grid-passport-harness/              specs + .claude/agents/ subagent prompts (don't delete)
 ├── docs/
 │   ├── vision.md                       team, big-picture framing, trust pivot, reliability triad, web/desktop coexistence
 │   ├── privacy-claim.md                the case for the privacy claim — read this for stage
 │   ├── agents.md                       agent architecture, Claude Skills, eval targets, research connection
 │   ├── story.md                        talk-arc narrative — renders to website /about, drives the job-talk slides
+│   ├── design/
+│   │   ├── signed-bundle.md            design rationale — threat model, 8 decisions w/ alternatives + citations, 10-Q demo defense
+│   │   └── signed-bundle-spec.md       normative spec — RFC 2119 wire format, sign/verify algs, conformance checklist, reproducibility
 │   ├── evals/
 │   │   ├── rubric.md                   APPROVED 2026-04-18 · human-preference axis rubric (Explainer Skill)
 │   │   └── owner-briefs.md             per-owner briefs for the §14 eval harness (students A/B/C)
@@ -174,6 +200,15 @@ Add a new case:
 - Desktop build: `pnpm desktop:build` (produces unsigned DMG + .app on macOS; MSI/AppImage on other platforms — untested for v0)
 - Desktop typecheck: `pnpm desktop:typecheck`
 - Desktop canary: `pnpm canary:desktop` (asserts apps/desktop imports `@grid-passport/core` and projection invariant holds on bundled fixtures)
+- Bundle canary: `pnpm canary:bundle` (sign → verify → tamper → reject across all 3 cases — end-to-end gate for the signed-bundle protocol)
+- Cross-language roundtrip: `pnpm canary:roundtrip` (TS + Rust signers × TS + Python verifiers — 3-way agreement on valid bundles, 3-way rejection of tampered bundles)
+- Desktop keychain test: `pnpm desktop:test` (Rust unit test using `keyring::mock` backend — exercises generate → persist → reload → sign → verify on the exact production code path)
+- Core tests: `pnpm core:test` (6 official RFC 8785 JCS test vectors from the spec author's repo, byte-for-byte match)
+- Verifier tests: `pnpm verifier:test` (10 tamper cases + 2000-iteration fuzz; zero false positives)
+- Verifier typecheck: `pnpm verifier:typecheck`
+- Standalone verifier CLI (TS): `pnpm --filter @grid-passport/verifier exec tsx bin/verify.js <bundle.json> <pubkey>`
+- Standalone verifier CLI (Python): `python3 apps/verifier-py/grid_passport_verifier.py <bundle.json> <pubkey.b64|hex>` (requires `cryptography`; single-file reference implementation, see `apps/verifier-py/README.md`)
+- Demo script: `pnpm demo:bundle` (same as `canary:roundtrip`; narrated, ~60s total)
 - Repo was initialized with `git init --initial-branch=main`. First commit: `03d8b57 initial hackathon build (phases 0–2)`.
 - Memory files in `~/.claude/projects/...` have been retired in favor of this doc. Don't resume persisting state there for this project.
 
@@ -199,7 +234,7 @@ Items in this section are state-of-the-codebase observations that matter to a fu
 
 - **No unit/integration tests yet.** The privacy canary is mechanical evidence for the projection layer, but `forecast.ts`, `audit.ts` proper, and the route handlers have no test suite. CLAUDE.md mandates tests for any change touching projections/policy/proofs/traces — wire this before the next round of changes there. Pytest is already in `apps/api/pyproject.toml` dev deps; the TS side needs vitest or a similar pick. (Tracked in roadmap backlog.)
 - **Derivation transparency — partial.** `flexibilityPassport.durationHoursMin/Max` was re-derived as coarse BESS tier bands (2026-04-18), so `bessHours` no longer leaks through that pair. Remaining surfaces with the same "monotone-invertible from a private input" risk: `flexibilityPassport.mwMin/Max`, `firmnessScore`, `expectedPeakMW`. A shared band-design pattern for the remaining derived fields is tracked in the roadmap backlog (`derivation transparency review, part 2`).
-- **Desktop v0 has audit trail stubbed out of the export bundle.** `@grid-passport/core/audit` uses `node:crypto` (sync SHA-256) which doesn't bundle cleanly into the Vite webview. v0 `DisclosureBundle` contains projections + policy version + timestamp only. Audit-chain inclusion + Ed25519 signing land together in #6 (signed bundle protocol) — the right place to design the on-wire format once rather than twice.
+- **Desktop bundles are now signed v1.** Shipped 2026-04-18 with #6. `@grid-passport/core/audit` swapped to async WebCrypto (no more `node:crypto` dep); audit chain has `prevHash` links; Tauri app signs the JCS-canonicalized payload via OS-keychain-backed Ed25519 (`keyring` crate + `ed25519-dalek`); `packages/verifier/` validates any produced bundle. One small remaining surface: `policyHash.rego` is a placeholder on desktop because Vite doesn't currently ship `packages/policy/grid-passport.rego` as a loadable asset — the runtime TS hash *is* computed correctly. Add Rego-asset loading to desktop Vite config in the packaging-polish pass so both halves of the dual hash (§3.6 of the design doc) are real.
 - **Desktop icon is a placeholder** upscaled from the generated 256×256 PNG; bake a real branded icon before distribution (see roadmap backlog: `desktop packaging polish`).
 - **Desktop fs capabilities are scoped to `**`.** OK for local dev where the dialog gates file selection, not OK for a shipped binary. Narrow to user-selected dir + app data dir before distribution (see roadmap backlog: `desktop packaging polish`).
 

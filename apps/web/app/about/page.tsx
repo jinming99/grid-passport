@@ -110,6 +110,13 @@ function SiteHeader() {
             demo
           </Link>
           <span className="text-neutral-700">/</span>
+          <Link
+            href="/protocol"
+            className="transition-colors hover:text-neutral-200"
+          >
+            protocol
+          </Link>
+          <span className="text-neutral-700">/</span>
           <span className="text-neutral-200">the story</span>
         </nav>
       </div>
@@ -234,9 +241,30 @@ function CanaryTelltale() {
           <dt className="text-neutral-600">audit scan</dt>
           <dd className="text-neutral-200">pass</dd>
         </div>
+        <div>
+          <dt className="text-neutral-600">rfc 8785 vectors</dt>
+          <dd className="text-neutral-200">6 / 6</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-600">tamper fuzz</dt>
+          <dd className="text-neutral-200">2000 / 2000 rejected</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-600">ts⇌rust⇌py</dt>
+          <dd className="text-neutral-200">3-way parity</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-600">bundle canary</dt>
+          <dd className="text-neutral-200">3 / 3 cases</dd>
+        </div>
+        <div>
+          <dt className="text-neutral-600">keychain round-trip</dt>
+          <dd className="text-neutral-200">rust unit test</dd>
+        </div>
       </dl>
       <p className="mt-4 border-t border-neutral-900 pt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-neutral-500">
-        verified per commit · `pnpm privacy:canary`
+        verified per commit · <code>pnpm privacy:canary</code> · <code>pnpm core:test</code> · <code>pnpm verifier:test</code> · <code>pnpm canary:roundtrip</code> · <code>pnpm desktop:test</code> · see{" "}
+        <Link href="/protocol" className="text-lime-300 hover:text-lime-200">the protocol page →</Link>
       </p>
     </aside>
   );

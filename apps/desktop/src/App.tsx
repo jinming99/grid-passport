@@ -13,7 +13,7 @@ import {
   loadCaseFromFile,
   type LoadedCase,
 } from "./lib/case-loader";
-import { buildBundle, exportBundle } from "./lib/bundle";
+import { buildAndSignBundle, exportBundle } from "./lib/bundle";
 import { ReviewColumn } from "./components/ReviewColumn";
 
 const ROLES: Role[] = ["applicant", "utility", "regulator"];
@@ -81,7 +81,11 @@ export function App() {
   const onExport = useCallback(async () => {
     setStatus({ kind: "exporting" });
     try {
-      const bundle = buildBundle(loaded.input, projections);
+      const bundle = await buildAndSignBundle(
+        loaded.input,
+        projections,
+        loaded.input.applicantOrg,
+      );
       const result = await exportBundle(bundle);
       if (!result) {
         setStatus({ kind: "idle" });
@@ -247,8 +251,8 @@ export function App() {
           <div className="rt-copy">
             <div className="rt-title">export this disclosure</div>
             <div className="rt-sub">
-              bundle writes to disk as JSON · audit chain + signature land in
-              #6
+              bundle v1 · Ed25519 signed · audit chain included · verify with{" "}
+              <span className="mono">pnpm canary:bundle</span>
             </div>
           </div>
           <div className="rt-actions">
@@ -259,8 +263,8 @@ export function App() {
               disabled={status.kind === "exporting"}
             >
               {status.kind === "exporting"
-                ? "writing…"
-                : "export bundle.json"}
+                ? "signing + writing…"
+                : "export signed bundle.json"}
             </button>
           </div>
           {status.kind === "error" ? (
@@ -284,8 +288,8 @@ export function App() {
           <span className="mono">{projections.applicant.requestId}</span>
         </span>
         <span className="dim">
-          all data synthetic · simulated confidential boundary · bundle v0 is
-          not signed (see #6)
+          all data synthetic · simulated confidential boundary · bundle v1 ·
+          Ed25519
         </span>
       </footer>
     </div>

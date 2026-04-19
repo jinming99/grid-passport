@@ -1,43 +1,64 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { buildAuditTrail } from "@grid-passport/core/audit";
+import { buildRecord } from "@grid-passport/core/forecast";
+import { sha256Hex, jcs } from "@grid-passport/core/crypto";
+import { POLICY, POLICY_VERSION } from "@grid-passport/core/policy";
+import {
+  newBundleId,
+  signBundle,
+  type DisclosureBundle,
+} from "@grid-passport/core/bundle";
 import type { CaseInput, Role } from "@grid-passport/core/types";
 import type { ProjectedView } from "@grid-passport/core/projection";
+import { tauriSigner } from "./signer";
 
-export interface DisclosureBundle {
-  schema: "grid-passport/bundle";
-  version: "0.0.1-v0";
-  caseId: string;
-  requestId: string;
-  policyVersion: string;
-  generatedAt: string;
-  projections: Record<Role, ProjectedView>;
-  note: string;
-}
-
-export function buildBundle(
+/**
+ * Build + sign a disclosure bundle v1 from a loaded case, using the
+ * applicant's OS-keychain-backed Ed25519 key via Tauri IPC.
+ * Spec: docs/design/signed-bundle.md.
+ */
+export async function buildAndSignBundle(
   input: CaseInput,
   projections: Record<Role, ProjectedView>,
-): DisclosureBundle {
-  return {
-    schema: "grid-passport/bundle",
-    version: "0.0.1-v0",
-    caseId: input.caseId,
-    requestId: input.id,
-    policyVersion: input.policyVersion,
-    generatedAt: new Date().toISOString(),
-    projections,
-    // Audit chain + Ed25519 signature land in #6 (signed disclosure bundle
-    // protocol). v0 exports are for local inspection only — not verifiable.
-    note:
-      "v0 disclosure draft. Signed audit chain + signature arrive in #6 (signed bundle protocol). Do not rely on this bundle for production disclosure.",
+  issuerLabel: string,
+): Promise<DisclosureBundle> {
+  const record = buildRecord(input);
+  const auditChain = await buildAuditTrail(input, record, "utility", undefined);
+
+  // Dual policy hash (D-6). Runtime = hash of JCS(POLICY table).
+  // `rego` hash is left as a known placeholder in the desktop build because
+  // Vite cannot ship the .rego file as a loadable asset without extra plumbing;
+  // it will be computed from the bundled Rego file once we add asset loading
+  // (tracked in roadmap).
+  const runtimeHash = await sha256Hex(jcs(POLICY));
+  const policyHash = {
+    rego: "sha256:unknown-desktop-v0",
+    runtime: `sha256:${runtimeHash}`,
   };
+
+  const signer = await tauriSigner();
+
+  return signBundle(
+    {
+      bundleId: newBundleId(),
+      caseId: input.caseId,
+      requestId: input.id,
+      issuerLabel,
+      policyHash,
+      policyVersion: POLICY_VERSION,
+      projections,
+      auditChain,
+    },
+    signer,
+  );
 }
 
 export async function exportBundle(
   bundle: DisclosureBundle,
 ): Promise<{ path: string } | null> {
   const path = await save({
-    defaultPath: `${bundle.caseId}-bundle.json`,
+    defaultPath: `${bundle.payload.caseId}-bundle.json`,
     filters: [{ name: "Grid Passport Bundle", extensions: ["json"] }],
   });
   if (!path) return null;

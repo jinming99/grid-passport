@@ -23,3 +23,20 @@ tauri = { version = "2.10.3", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+# Signer (docs/design/signed-bundle.md §3.4):
+# - `keyring` stores the 32-byte Ed25519 secret in the OS secure store
+#   (macOS Keychain / Windows Credential Manager / Linux Secret Service).
+# - `ed25519-dalek` is the signing primitive. Pair compiles to a narrow
+#   FFI: two Tauri commands, no private-key bytes crossing the IPC seam.
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand = "0.8"
+base64 = "0.22"
+# JCS canonicalization (RFC 8785) for the standalone Rust signer binary
+# `gp-sign`. Matches the behavior of packages/core/src/crypto.ts jcs().
+serde_json_canonicalizer = "0.3"
+
+
+[[bin]]
+name = "gp-sign"
+path = "src/bin/gp-sign.rs"
