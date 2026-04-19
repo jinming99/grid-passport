@@ -31,6 +31,7 @@ from eval_sim.channels.base import (
     observe,
     strip_agent_name_prefix,
 )
+from eval_sim.channels.email import EmailChannel
 from eval_sim.channels.failure_modes import (
     FailureModeSample,
     MeetingTriggerState,
@@ -43,6 +44,7 @@ from eval_sim.channels.skill_bundle import SkillBundleChannel
 __all__ = [
     "AgentBundle",
     "Channel",
+    "EmailChannel",
     "FailureModeSample",
     "MeetingTriggerState",
     "OracleChannel",

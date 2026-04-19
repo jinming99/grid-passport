@@ -43,7 +43,7 @@ def main() -> int:
 
     try:
         ledger = channel.run(scenario=S1, seed=0, agents=agents)
-    except Exception as err:  # noqa: BLE001
+    except Exception as err:
         dt = time.monotonic() - t0
         print(f"FAIL  ({dt:.2f}s): {err}", file=sys.stderr)
         return 1

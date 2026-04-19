@@ -3,18 +3,18 @@
 A run is parameterized by (scenario_id, condition, seed). This module:
 
 1. Loads the scenario card from `eval_sim.scenarios`.
-2. Selects the condition-specific channel from `eval_sim.channels`.
-3. Spawns the role personas (applicant × 2 personas, utility × 2
-   personas, regulator) with locked system prompts from
-   `eval_sim.agents.prompts`.
-4. Drives the sim loop to termination (tier-routing decision + regulator
-   sign-off, or a per-condition step-count cap).
-5. Emits a typed `RunLedger` — transcript + artifacts + cache-hash +
+2. Builds the per-role Concordia EntityAgents at the right model tier
+   (Opus 4.7 for product agents under A/C/D per §4.1+§5e; Sonnet 4.6
+   for everything else under B + the user-sim side everywhere).
+3. Selects the condition-specific channel from `eval_sim.channels`
+   and drives its multi-turn loop to termination.
+4. Emits a typed `RunLedger` — transcript + artifacts + cache-hash +
    scorer inputs.
 
-The non-dry-run path is **not wired** until §17 sign-off + Concordia
-integration (Week 2). The dry-run path below returns a small synthetic
-ledger that downstream scorers can exercise end-to-end.
+Dry-run mode (`dry_run=True`) skips agent build + LLM calls and
+returns the synthetic 3-turn ledger used by the pre-lock scorer
+plumbing tests. Live mode requires a `Transport` (default:
+`get_default_transport()` → claude-agent-sdk).
 """
 
 from __future__ import annotations
@@ -22,14 +22,16 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from eval_sim.channels.failure_modes import FailureModeSample, sample_failure_modes
 from eval_sim.schemas.channel import Channel
 from eval_sim.schemas.condition import Condition
 from eval_sim.schemas.role import Role
 from eval_sim.schemas.scenario import ScenarioCard
 from eval_sim.schemas.turn import TurnMessage
+
+if TYPE_CHECKING:
+    from eval_sim.channels.failure_modes import FailureModeSample
 
 
 @dataclass(frozen=True)
@@ -112,14 +114,23 @@ def run(
     *,
     dry_run: bool = True,
     failure_rate_scale: float = 1.0,
+    transport: object | None = None,
+    max_turns: int = 12,
 ) -> RunLedger:
     """Execute one sim run.
 
-    Pre-§17-lock default is `dry_run=True` — returns a synthetic ledger
-    that exercises scorer plumbing without any LLM calls. Post-lock, the
-    runner instantiates Concordia EntityAgents + condition-specific
-    Game Masters and drives a live multi-turn loop.
+    `dry_run=True` returns a synthetic 3-turn ledger (scorer plumbing
+    tests). `dry_run=False` builds the right per-condition channel +
+    EntityAgents and drives a live multi-turn loop.
+
+    `transport` is a `eval_sim.llm.Transport`; if `None` and
+    `dry_run=False`, the default claude-agent-sdk transport is used.
     """
+    # Lazy-import the failure-mode sampler so the channels package isn't
+    # eagerly loaded at runner-import time (channels.base imports back
+    # from this module — would form a circular import otherwise).
+    from eval_sim.channels.failure_modes import sample_failure_modes
+
     key = RunKey(scenario_id=scenario.scenario_id, condition=condition, seed=seed)
     failure_modes = (
         sample_failure_modes(scenario.scenario_id, seed, scale=failure_rate_scale)
@@ -141,8 +152,73 @@ def run(
             failure_modes=failure_modes,
         )
 
-    raise NotImplementedError(
-        "live eval_sim.runner.run requires §17 sign-off and Week-2 Concordia wiring. "
-        "Pre-lock, call with dry_run=True for scorer plumbing tests."
+    # Live path — lazy imports to keep dry-run paths cheap.
+    from eval_sim.agents.builders import (
+        build_applicant,
+        build_regulator,
+        build_utility,
     )
+    from eval_sim.channels import (
+        AgentBundle,
+        EmailChannel,
+        OracleChannel,
+        PromptOnlyBundleChannel,
+        SkillBundleChannel,
+    )
+    from eval_sim.config import MODEL_TIERS
+    from eval_sim.llm import get_default_transport
+
+    if transport is None:
+        transport = get_default_transport()
+    # Transport is a structural Protocol; we don't isinstance-check it here.
+
+    # Per §5e: product-agent tier (Opus) for A/C/D applicants; Sonnet for
+    # the user-sim side (utility, regulator) and for B's applicant (no
+    # AI intermediary; the agent role-plays the contract handler at the
+    # user-sim tier).
+    user_sim_tier = str(MODEL_TIERS["user-sim"])
+    product_tier = str(MODEL_TIERS["product-agent"])
+    applicant_tier = product_tier if condition is not Condition.B_NDA_EMAIL else user_sim_tier
+
+    cache_hash = _cache_hash_for(scenario)
+    agents = AgentBundle(
+        applicant=build_applicant(
+            scenario=scenario,
+            transport=transport,  # type: ignore[arg-type]
+            seed_index=seed,
+            dry_run=False,
+            model_tier=applicant_tier,
+        ),
+        utility=build_utility(
+            scenario=scenario,
+            transport=transport,  # type: ignore[arg-type]
+            model_tier=user_sim_tier,
+        ),
+        regulator=build_regulator(
+            scenario=scenario,
+            transport=transport,  # type: ignore[arg-type]
+            model_tier=user_sim_tier,
+        ),
+    )
+
+    if condition is Condition.A_ORACLE:
+        channel = OracleChannel(cache_hash=cache_hash)
+    elif condition is Condition.B_NDA_EMAIL:
+        channel = EmailChannel(failure_rate_scale=failure_rate_scale)
+    elif condition is Condition.C_PROMPT_ONLY:
+        channel = PromptOnlyBundleChannel(cache_hash=cache_hash)
+    elif condition is Condition.D_GRID_PASSPORT:
+        channel = SkillBundleChannel(cache_hash=cache_hash)
+    else:
+        raise ValueError(f"unknown condition: {condition!r}")
+
+    ledger = channel.run(
+        scenario=scenario,
+        seed=seed,
+        agents=agents,
+        max_turns=max_turns,
+    )
+    if failure_modes is not None:
+        ledger.failure_modes = failure_modes
+    return ledger
 
