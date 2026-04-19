@@ -1,0 +1,64 @@
+[project]
+name = "grid-passport-eval-sim"
+version = "0.0.0"
+description = "Simulation bench for Grid Passport's #14 eval harness. Pre-registered at docs/evals/sim-bench-design.md."
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  # engine
+  "gdm-concordia>=1.8.0",
+  # privacy scorers (direct-leak tier 1)
+  "presidio-analyzer>=2.2.355",
+  # Claude API (agent / judge / probe)
+  "anthropic>=0.41",
+  # statistics (BCa bootstrap, quadratic-weighted kappa, length-residual regression)
+  "scipy>=1.13",
+  "scikit-learn>=1.5",
+  "statsmodels>=0.14",
+  # typed scenario cards + judge output
+  "pydantic>=2.9",
+  # orchestration + typed CLI
+  "typer>=0.12",
+  "rich>=13.7",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.7",
+  "pyright>=1.1.380",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "RUF"]
+ignore = [
+  "E501",  # line-length — enforced by formatter; RUF handles long-string cases.
+  # Docstrings mirror sim-bench-design.md and use Unicode math (× — ≥ ≤ —);
+  # keeping them intact is deliberate. See `docs/evals/sim-bench-design.md`.
+  "RUF001",  # ambiguous Unicode chars in strings
+  "RUF002",  # ambiguous Unicode chars in docstrings
+  "RUF003",  # ambiguous Unicode chars in comments
+]
+
+[tool.ruff.lint.per-file-ignores]
+# CaseInput mirror deliberately preserves TypeScript camelCase field names to
+# keep cross-repo drift visible. See `eval_sim/schemas/caseinput.py` docstring.
+"eval_sim/schemas/caseinput.py" = ["N815"]
+"eval_sim/schemas/scenario.py" = ["N815"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+reportMissingTypeStubs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-q", "--strict-markers"]
