@@ -153,158 +153,201 @@ class SkillBundleChannel:
         agents: AgentBundle,
         max_turns: int = 12,
     ) -> RunLedger:
-        builder = TranscriptBuilder(
-            key=RunKey(
-                scenario_id=scenario.scenario_id,
-                condition=self.condition,
-                seed=seed,
-            ),
+        return run_bundle_workflow(
+            scenario=scenario,
+            seed=seed,
+            agents=agents,
+            condition=self.condition,
             cache_hash=self.cache_hash,
+            max_query_rounds=self.max_query_rounds,
+            max_turns=max_turns,
+            cartographer_mode="cached",
         )
-        builder.scorer_inputs.update(
-            {
-                "private_tokens": list(scenario.private_token_set),
-                "ci_tuples": [t.model_dump() for t in scenario.ci_tuples],
-                "condition": self.condition.value,
-                "max_query_rounds": self.max_query_rounds,
-            }
-        )
-        bounded_query_rounds = 0
 
-        # ── T001 — applicant bundle send + cover note ──
-        applicant_action = _act(
-            agents.applicant, _BUNDLE_SEND_PROMPT, builder, agent_kind="applicant"
+
+def run_bundle_workflow(
+    *,
+    scenario: ScenarioCard,
+    seed: int,
+    agents: AgentBundle,
+    condition: Condition,
+    cache_hash: str,
+    max_query_rounds: int,
+    max_turns: int,
+    cartographer_mode: str,
+) -> RunLedger:
+    """Shared bundle-workflow loop used by both `SkillBundleChannel`
+    (Condition D, cartographer_mode='cached') and
+    `PromptOnlyBundleChannel` (Condition C, cartographer_mode='live').
+
+    The two conditions share this loop because they share the wire
+    protocol (bundle + bounded-query channel) per §6b/§6c. What differs
+    between C and D is the agent-build layer (prompt-only Skill content
+    vs structured Skill substrate) — which is set when the runner
+    constructs the AgentBundle, not here.
+
+    The Cartographer mode is recorded in `scorer_inputs` so §8d
+    H-spec.hallucination can split pre-validator-rate vs in-artifact
+    rate per the §6e fairness pilot decomposition.
+    """
+    builder = TranscriptBuilder(
+        key=RunKey(
+            scenario_id=scenario.scenario_id,
+            condition=condition,
+            seed=seed,
+        ),
+        cache_hash=cache_hash,
+    )
+    builder.scorer_inputs.update(
+        {
+            "private_tokens": list(scenario.private_token_set),
+            "ci_tuples": [t.model_dump() for t in scenario.ci_tuples],
+            "condition": condition.value,
+            "max_query_rounds": max_query_rounds,
+            "cartographer_mode": cartographer_mode,
+        }
+    )
+    bounded_query_rounds = 0
+
+    # ── T001 — applicant bundle send + cover note ──
+    applicant_action = _act(
+        agents.applicant, _BUNDLE_SEND_PROMPT, builder, agent_kind="applicant"
+    )
+    builder.add_turn(
+        speaker=Role.APPLICANT_CH,
+        recipients=[Role.UTILITY_INTAKE],
+        content=applicant_action,
+        channel=ChannelEnum.C1_FINAL_OUTPUT,
+        day_advance=_BUNDLE_PREPARATION_DAYS,
+        artifact_refs=["bundle:disclosure-v1.0.0.json"],
+    )
+    builder.artifacts["bundle:disclosure-v1.0.0.json"] = {
+        "policy_hash": "v1.0.0",
+        "signed_by": agents.applicant.name,
+        "cover_note": applicant_action,
+        # The bundle carries projected views — by construction the
+        # scenario's pre-registered private_token_set RAW would NOT
+        # appear here. Trace scorer verifies on the live transcript.
+    }
+
+    # ── T002 — utility verify + clarifying query ──
+    observe(
+        agents.utility,
+        (
+            f"Received signed disclosure bundle (policy v1.0.0) from "
+            f"{agents.applicant.name}.\n\nCover note:\n{applicant_action}"
+        ),
+    )
+    utility_query = _act(
+        agents.utility, _UTILITY_VERIFY_AND_QUERY_PROMPT, builder, agent_kind="utility"
+    )
+    builder.add_turn(
+        speaker=Role.UTILITY_INTAKE,
+        recipients=[Role.APPLICANT_CH],
+        content=utility_query,
+        channel=ChannelEnum.C1_FINAL_OUTPUT,
+        day_advance=_BUNDLE_VERIFICATION_DAYS,
+    )
+
+    # ── Bounded-query loop (0..max_query_rounds) ──
+    utility_round_text = utility_query
+    while (
+        bounded_query_rounds < max_query_rounds
+        and not _no_clarification(utility_round_text)
+        and len(builder.turns) + 2 <= max_turns
+    ):
+        # Applicant response.
+        observe(
+            agents.applicant,
+            f"Bounded-query from utility intake:\n{utility_round_text}",
+        )
+        applicant_response = _act(
+            agents.applicant,
+            _BOUNDED_QUERY_RESPONSE_PROMPT,
+            builder,
+            agent_kind="applicant",
         )
         builder.add_turn(
             speaker=Role.APPLICANT_CH,
             recipients=[Role.UTILITY_INTAKE],
-            content=applicant_action,
+            content=applicant_response,
             channel=ChannelEnum.C1_FINAL_OUTPUT,
-            day_advance=_BUNDLE_PREPARATION_DAYS,
-            artifact_refs=["bundle:disclosure-v1.0.0.json"],
+            day_advance=_BOUNDED_QUERY_ROUND_DAYS,
+            artifact_refs=["bounded-query:exchange.json"],
         )
-        builder.artifacts["bundle:disclosure-v1.0.0.json"] = {
-            "policy_hash": "v1.0.0",
-            "signed_by": agents.applicant.name,
-            "cover_note": applicant_action,
-            # The bundle carries projected views — represented here as the
-            # scenario's pre-registered private_token_set RAW would NOT
-            # appear in this artifact by construction. Trace scorer will
-            # verify on the live transcript.
-        }
+        bounded_query_rounds += 1
 
-        # ── T002 — utility verify + clarifying query ──
+        if bounded_query_rounds >= max_query_rounds:
+            break
+
+        # Utility may ask another query (or write the sentinel).
         observe(
             agents.utility,
-            (
-                f"Received signed disclosure bundle (policy v1.0.0) from "
-                f"{agents.applicant.name}.\n\nCover note:\n{applicant_action}"
-            ),
+            f"Applicant bounded-query response:\n{applicant_response}",
         )
-        utility_query = _act(
-            agents.utility, _UTILITY_VERIFY_AND_QUERY_PROMPT, builder, agent_kind="utility"
+        utility_round_text = _act(
+            agents.utility,
+            _UTILITY_VERIFY_AND_QUERY_PROMPT,
+            builder,
+            agent_kind="utility",
         )
         builder.add_turn(
             speaker=Role.UTILITY_INTAKE,
             recipients=[Role.APPLICANT_CH],
-            content=utility_query,
+            content=utility_round_text,
             channel=ChannelEnum.C1_FINAL_OUTPUT,
-            day_advance=_BUNDLE_VERIFICATION_DAYS,
+            day_advance=_BOUNDED_QUERY_ROUND_DAYS / 2,
         )
 
-        # ── Bounded-query loop (0..max_query_rounds) ──
-        utility_round_text = utility_query
-        while (
-            bounded_query_rounds < self.max_query_rounds
-            and not _no_clarification(utility_round_text)
-            and len(builder.turns) + 2 <= max_turns
-        ):
-            # Applicant response.
-            observe(
-                agents.applicant,
-                f"Bounded-query from utility intake:\n{utility_round_text}",
-            )
-            applicant_response = _act(
-                agents.applicant,
-                _BOUNDED_QUERY_RESPONSE_PROMPT,
-                builder,
-                agent_kind="applicant",
-            )
-            builder.add_turn(
-                speaker=Role.APPLICANT_CH,
-                recipients=[Role.UTILITY_INTAKE],
-                content=applicant_response,
-                channel=ChannelEnum.C1_FINAL_OUTPUT,
-                day_advance=_BOUNDED_QUERY_ROUND_DAYS,
-                artifact_refs=["bounded-query:exchange.json"],
-            )
-            bounded_query_rounds += 1
+    # ── Tier-routing decision (utility-planning) ──
+    observe(
+        agents.utility,
+        "All bounded-query exchanges complete. Issuing the routing decision now.",
+    )
+    utility_decision = _act(
+        agents.utility, _UTILITY_TIER_ROUTING_PROMPT, builder, agent_kind="utility"
+    )
+    builder.add_turn(
+        speaker=Role.UTILITY_PLANNING,
+        recipients=[Role.APPLICANT_CH, Role.REGULATOR],
+        content=utility_decision,
+        channel=ChannelEnum.C1_FINAL_OUTPUT,
+        day_advance=_BUNDLE_VERIFICATION_DAYS,
+    )
 
-            if bounded_query_rounds >= self.max_query_rounds:
-                break
+    # ── Regulator audit ──
+    observe(
+        agents.regulator,
+        (
+            f"Bundle workflow transcript ({condition.value}):\n"
+            f"- Applicant cover note: {applicant_action[:300]}…\n"
+            f"- Bounded-query rounds: {bounded_query_rounds}\n"
+            f"- Utility decision: {utility_decision}"
+        ),
+    )
+    regulator_action = _act(
+        agents.regulator, _REGULATOR_AUDIT_PROMPT, builder, agent_kind="regulator"
+    )
+    builder.add_turn(
+        speaker=Role.REGULATOR,
+        recipients=[],
+        content=regulator_action,
+        channel=ChannelEnum.C1_FINAL_OUTPUT,
+        day_advance=_REGULATOR_VERIFICATION_DAYS,
+    )
 
-            # Utility may ask another query (or write the sentinel).
-            observe(
-                agents.utility,
-                f"Applicant bounded-query response:\n{applicant_response}",
-            )
-            utility_round_text = _act(
-                agents.utility,
-                _UTILITY_VERIFY_AND_QUERY_PROMPT,
-                builder,
-                agent_kind="utility",
-            )
-            builder.add_turn(
-                speaker=Role.UTILITY_INTAKE,
-                recipients=[Role.APPLICANT_CH],
-                content=utility_round_text,
-                channel=ChannelEnum.C1_FINAL_OUTPUT,
-                day_advance=_BOUNDED_QUERY_ROUND_DAYS / 2,
-            )
-
-        # ── Tier-routing decision (utility-planning) ──
-        observe(
-            agents.utility,
-            "All bounded-query exchanges complete. Issuing the routing decision now.",
-        )
-        utility_decision = _act(
-            agents.utility, _UTILITY_TIER_ROUTING_PROMPT, builder, agent_kind="utility"
-        )
-        builder.add_turn(
-            speaker=Role.UTILITY_PLANNING,
-            recipients=[Role.APPLICANT_CH, Role.REGULATOR],
-            content=utility_decision,
-            channel=ChannelEnum.C1_FINAL_OUTPUT,
-            day_advance=_BUNDLE_VERIFICATION_DAYS,
-        )
-
-        # ── Regulator audit ──
-        observe(
-            agents.regulator,
-            (
-                f"Grid Passport workflow transcript:\n"
-                f"- Applicant cover note: {applicant_action[:300]}…\n"
-                f"- Bounded-query rounds: {bounded_query_rounds}\n"
-                f"- Utility decision: {utility_decision}"
-            ),
-        )
-        regulator_action = _act(
-            agents.regulator, _REGULATOR_AUDIT_PROMPT, builder, agent_kind="regulator"
-        )
-        builder.add_turn(
-            speaker=Role.REGULATOR,
-            recipients=[],
-            content=regulator_action,
-            channel=ChannelEnum.C1_FINAL_OUTPUT,
-            day_advance=_REGULATOR_VERIFICATION_DAYS,
-        )
-
-        builder.artifacts["d_summary"] = {
-            "bounded_query_rounds": bounded_query_rounds,
-            "utility_decision": utility_decision,
-            "regulator_verdict": regulator_action,
-        }
-        return builder.to_ledger()
+    # Backwards-compat key `d_summary` is preserved for the existing
+    # SkillBundle tests; new callers should read `bundle_summary`.
+    summary = {
+        "bounded_query_rounds": bounded_query_rounds,
+        "utility_decision": utility_decision,
+        "regulator_verdict": regulator_action,
+        "cartographer_mode": cartographer_mode,
+    }
+    builder.artifacts["bundle_summary"] = summary
+    if condition is Condition.D_GRID_PASSPORT:
+        builder.artifacts["d_summary"] = summary
+    return builder.to_ledger()
 
 
 # ────────────────────────────────────────────────────────────────────────

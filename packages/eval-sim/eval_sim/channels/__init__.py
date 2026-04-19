@@ -37,6 +37,7 @@ from eval_sim.channels.failure_modes import (
     sample_failure_modes,
 )
 from eval_sim.channels.oracle import OracleChannel
+from eval_sim.channels.prompt_bundle import PromptOnlyBundleChannel
 from eval_sim.channels.skill_bundle import SkillBundleChannel
 
 __all__ = [
@@ -45,6 +46,7 @@ __all__ = [
     "FailureModeSample",
     "MeetingTriggerState",
     "OracleChannel",
+    "PromptOnlyBundleChannel",
     "SkillBundleChannel",
     "TranscriptBuilder",
     "free_action_spec",
