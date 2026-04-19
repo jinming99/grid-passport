@@ -119,15 +119,42 @@ The schema is not the demo. It's the product shape.
 
 ---
 
-## 6. Empirical results — *placeholder until eval harness ships*
+## 6. Empirical results
 
-> When the eval harness lands (target: 2-3 weeks pre-talk per `docs/plans/roadmap.md`), this section becomes a load-bearing slide showing concrete numbers.
+Two layers of evidence. The substrate layer is measured and shippable today; the behavioral layer lands when the #14 eval harness runs. Both point at the same claim.
 
-The plan: evaluate three Skills (Interviewer, Cartographer, Explainer) on N=20 cases each across four dimensions (workflow alignment, human-preference alignment, domain-spec compliance, role-leakage). Compare against a baseline of the same agents implemented as ad-hoc prompts without the Skill scaffolding. Report a 4×3 score matrix plus the baseline delta.
+### 6a. Substrate-property metrics — shipped, replicates across independent Skills
 
-The hypothesis to test: *the Skill packaging (explicit `SKILL.md` constraints + bundled domain references + scripted validators) produces measurably higher workflow / preference / spec alignment than prompt-only baselines, with the gap widening as the domain spec evolves.*
+The load-bearing research move is: hold content fixed, vary packaging, measure the delta. `packages/agents/interviewer/baselines/prompt-only.md` is the Interviewer Skill flattened into a single 32KB system prompt *mechanically* (no hand-tuning — drift gate fails CI if the committed baseline diverges from the Skill source). Cartographer has its own 35KB baseline. Both measured against the live Skill substrate. Full report at `packages/agents/metrics.md`; headline numbers below. The pattern replicating *across two independent Skills* is what lets these numbers support a substrate claim rather than a single-Skill fluke.
 
-The forward result, if the hypothesis lands: skill-as-substrate is a generalizable methodology for agent reliability in workflows where the policy is real, the stakes are high, and the spec changes faster than model retraining cycles can keep up.
+| Metric (per-Skill, vs mechanically-derived prompt-only baseline) | Interviewer | Cartographer |
+|---|---:|---:|
+| **Context-cost delta** — upfront tokens carried by Claude on every call | **−95.8%** (341 vs 8,141 tok) | **−96.4%** (316 vs 8,871 tok) |
+| **Context-cost delta** — tokens once the Skill is actively engaged | **−66.9%** (2,697 vs 8,141 tok) | **−65.6%** (3,057 vs 8,871 tok) |
+| **Discovery signals** (frontmatter fields: `name`/`description`/`when_to_use` with explicit NOT-use-for) | **3 vs 0** | **3 vs 0** |
+| **Write-scope "never" clauses** enforced across the Skill surface | **6** | **6** |
+| **Write-scope "halt" clauses** | **6** | **9** |
+| **Contract-violations refused by paired CI validator** | **3** (publicEvidence-leak · derivedProof-bleed · workloadMix sum-check) | **4** (privateProfile-leak · derivedProof-bleed · empty-sourceRefs · unknown-source-url) |
+| **Navigable files in the Skill directory** | 5 | 5 |
+| **Source-URL whitelist size** (provenance contract — every evidence URL must match) | n/a | **11 endpoints** |
+
+Read these as leading indicators, not behavioral outcomes:
+- The **context-cost delta** makes the substrate claim non-rhetorical. Progressive disclosure is worth measuring *because* 96% less upfront token pressure is what lets a host route among many Skills at low cost — the thing a flat prompt makes impossible.
+- The **discovery-signal row** is the reason #14's H-trigger (Skill invokes correctly; prompt-only lacks routing signal) has a structural prior: one substrate *has* a trigger metadata layer, the other *does not*.
+- The **write-scope density rows** are the schema-discipline claim (§3.1 of the research thesis) made countable. Each clause is a thing the substrate refuses by construction, not a thing it advises against. 6 "never"s + 6–9 "halt"s is a crowded refusal surface; the paired CI validator refuses 3–4 additional contract violations at the artifact boundary. The flat prompt has the same textual content but zero paired validator.
+
+### 6b. Behavioral metrics — the #14 4-axis × 2-Skill bench
+
+When #14's harness runs (2–3 weeks, 20-case grid per axis per Skill), the behavioral results slot in here. The hypotheses being tested — each derived from a substrate-property metric above — are:
+
+- **H-workflow.** Skill version stays in its declared write-scope more reliably than prompt-only. Predicted by the 6×never / 6–9×halt / 3–4 validator-refused-violations rows above.
+- **H-spec.** Skill version cites `FieldPath` buckets + ask-reasons / `SOURCES.md` correctly more often. Predicted by the navigable-structure row — on-demand references vs homogenized prompt.
+- **H-trigger.** Skill version invokes at the right times (and not the wrong ones) more reliably. Predicted by the discovery-signal row.
+- **H-null (leak).** Both substrates should hold the zero-leakage floor. Either leaking competitive fields without explicit confirmation would collapse the whole claim; the privacy canary would have caught us long before this point.
+
+The hypothesis the slide tests: *Skill-as-substrate beats prompt-as-substrate on workflow and domain-spec alignment, with mechanically-derived baselines keeping the comparison fair. The substrate-property deltas (§6a) predict the behavioral deltas (§6b).*
+
+The forward claim, if the data land: *the packaging is the safety case.* Skill-bound writing + policy-bound projection + signed-bundle attestation is a generalizable recipe for agent reliability in workflows where the policy is real, the stakes are high, and the spec changes faster than model retraining cycles can keep up. Grid interconnection is the testbed; HIPAA prior-authorization and financial-rails disclosure are where the recipe should travel next (see §7).
 
 ---
 
@@ -142,6 +169,8 @@ A *multi-stakeholder workflow* with *privacy and competitive constraints*, an *e
 - **Securities filings** between issuer, underwriter, and regulator. The policy layer is SEC disclosure rules; the derivation layer is risk factors and pro-forma statements; the human gatekeeper is the issuer.
 
 Each of these domains has the same shape. Each is a candidate for the next testbed in the research program. The methodology — projection layer + Skills with explicit constraints + mechanical evals + human-confirmed handoffs — is the durable contribution. Grid Passport is the first instance.
+
+**First substrate-transfer proof shipped (2026-04-18).** `priorauth-interviewer` is a working HIPAA prior-authorization Skill built on the same recipe as the grid Interviewer — write-scope contract, non-coaching rule, sibling-agent refusal messages, 5-check trust-constraint checklist, worked example of a cardiac-cath intake that demonstrates pseudonymization-at-intake plus refusal of a strategic-language coaching request. The metrics panel in `packages/agents/metrics.md` now spans three Skills across two domains; all three show the same substrate advantage (context-cost delta −93.8% to −96.4% upfront; 5–6 "never" clauses; 5–9 "halt" clauses; explicit `when_to_use` with NOT-use-for list). The substrate claim is no longer domain-specific — it's methodological. That's the generalization step from "Grid Passport is a neat app" to "the substrate recipe travels."
 
 ---
 

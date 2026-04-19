@@ -19,5 +19,13 @@ __pycache__
 
 .vercel
 
-# claude code local state (per-project)
-.claude/
+# claude code: ship project-shared config (skills/, agents/, commands/, settings.json);
+# keep per-user local state out. Update the allowlist if we add new shared subdirs.
+.claude/*
+!.claude/skills/
+!.claude/skills/**
+!.claude/agents/
+!.claude/agents/**
+!.claude/commands/
+!.claude/commands/**
+!.claude/settings.json

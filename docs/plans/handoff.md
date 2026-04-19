@@ -8,8 +8,9 @@ Durable record of project state, decisions, and what future work needs to know. 
 2. Read the "Now" block at the end of §Phases — it points to the single next item and flags any gating concerns.
 3. Read `docs/plans/roadmap.md` near-term section for the expanded breakdown of the next item.
 4. Before touching the bundle/signer/verifier/audit code, read `docs/design/signed-bundle.md` + `docs/design/signed-bundle-spec.md`.
-5. Before adding a new `CaseInput` field, read `docs/vision.md` §4b (5-test filter) and add an entry to `packages/core/src/ask-reasons.ts`.
-6. Run all gates to confirm the tree is clean: `pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:desktop && pnpm core:test && pnpm verifier:test && pnpm canary:bundle && pnpm canary:roundtrip && pnpm desktop:test` — ~10s wall-clock.
+5. Before scoping a new agent or adding a `CaseInput` field, read `docs/design/research-thesis.md` — the "schema is the safety case" framing is load-bearing and should shape write-scope, SKILL.md constraints, and eval targets. `docs/vision.md` §4b (5-test filter) is the upstream check for any new field; also add an entry to `packages/core/src/ask-reasons.ts`.
+6. **If working on the eval harness (#14, simulation bench):** `docs/evals/sim-bench-design.md` is the single source of truth — it is the pre-registration document, currently pending Ming's §17 sign-off (Amendments A-1 and A-2 both applied 2026-04-19; A-2 is a pre-lock thesis-framing sharpening that scopes the claim, restructures §1.5 into methodology + realism-engineering, decomposes H-spec.hallucination, and adds §9.4 thesis-refinement paths). All implementation lives under `packages/eval-sim/` (to be created). The earlier `docs/evals/rubric.md` + `docs/evals/owner-briefs.md` are superseded and retained as historical artifacts; do not build against them.
+7. Run all gates to confirm the tree is clean: `pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:desktop && pnpm core:test && pnpm verifier:test && pnpm canary:bundle && pnpm canary:roundtrip && pnpm desktop:test && pnpm agents:typecheck && pnpm agents:validate && pnpm agents:baseline:check && pnpm agents:metrics:check` — ~13s wall-clock.
 
 ## Identity
 
@@ -22,9 +23,11 @@ Durable record of project state, decisions, and what future work needs to know. 
 - **Privacy mechanism case:** `docs/privacy-claim.md` — read this for the mechanical-evidence story.
 - **Signed disclosure bundle protocol (rationale):** `docs/design/signed-bundle.md` — threat model, 8 design decisions with IETF/W3C citations + rejected alternatives, 10-Q demo defense, post-quantum migration path. Read for *why*.
 - **Signed disclosure bundle protocol (normative spec):** `docs/design/signed-bundle-spec.md` — RFC 2119 wire format, sign/verify algorithms, canonical test vectors, conformance checklist for new implementations, versioning policy, reproducibility commands. Read for *what*.
+- **Research thesis (living):** `docs/design/research-thesis.md` — "the schema is the safety case"; four claims tied to literature gaps (schema-as-safety-case · agent-as-non-strategic-intermediary · projection-as-purity · write-scope contracts as capability-based security); per-agent write-scope table; three spin-out research questions; honest gap inventory of what #14 needs to measure; adjacent communities to cite + engage. Load-bearing for the job talk — re-read before scoping a new agent or eval.
 - **Public-facing protocol page:** `/protocol` route (`apps/web/app/protocol/page.tsx`) — surfaces threat model + primitives + verify-it-yourself commands. Not swept under the carpet: linked from landing nav, footer, and `/about` header.
 - **Agent architecture + Claude Skills + research connection:** `docs/agents.md` — trust principles mapped to the reliability triad (§2), human-AI collaboration framing (§3), agent roster, Claude Agent Skills implementation pattern, eval framework with concrete N-targets and student-handoff task breakdown (§7), Ming Jin's research agenda on calibrating skills for workflow / human-preference / domain-spec alignment (§6).
 - **Story / talk-arc narrative:** `docs/story.md` — single source of truth for both Ming's job talk and the website's `/about` page. Pre-talk it gates on the eval harness landing (§6 placeholder).
+- **Simulation bench pre-registration (the #14 eval harness):** `docs/evals/sim-bench-design.md` — pre-registered multi-agent simulation of applicant ↔ utility ↔ regulator interconnection workflow under 4 conditions (Oracle / NDA-email / prompt-only AI / Grid Passport) × 7 scenarios (S1–S6 grid + S7 HIPAA priorauth) × 5 seeds. OPR + Savage-regret hybrid outcome metric; three-type composite privacy scorer (direct / inferential / trace); Prometheus-style 5-grade rubric across 5 dimensions grounded against external standards (FERC Order 2023, SOC 2 TSC, NERC CMEP). Supersedes `docs/evals/rubric.md` + `docs/evals/owner-briefs.md` (kept as historical). Amendment A-1 applied 2026-04-19 — pending §17 sign-off before implementation can start.
 - **Master plan / roadmap:** `docs/plans/roadmap.md` — *what's shipping next, in what order, with mechanical "done" criteria*. Single source of truth for the build queue and the open decision log.
 - **Team:** Ming Jin (faculty mentor, project lead — vision/design/foundation); Bhawuk Luthra (student + Dominion Energy employee — co-conceptualizer + co-developer + hackathon participant); Vikrant Bhati (co-developer + hackathon participant). Bhawuk's Dominion affiliation is the load-bearing credibility anchor for the case studies.
 
@@ -51,14 +54,28 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**Next shipping item: #7 Interviewer agent (first Claude Agent Skill).** Natural continuation of the phase-3f/4 schema-justification work — Interviewer is the owner of squishy fields like `internalScheduleConfidence` per `docs/vision.md` §4b. Shipping it also unblocks #14's workflow-alignment eval axis with a concrete target.
+**Next action (2026-04-19): Ming signs off `docs/evals/sim-bench-design.md` §17 and starts implementing the simulation bench.** Amendment A-1 (same-day) brought the doc to a lock-ready state: Prometheus scoring template lifted verbatim, Staab probe prompt lifted verbatim, Concordia (`pip install gdm-concordia`) + Presidio as the only hard deps, composite privacy scorer specified (~400 LOC to implement against AgentLeak methodology at threshold 0.72), OPR + Savage-regret hybrid locked, 7 scenarios with realized-future ensembles, 5-dimension judge rubric with external-standard grounding. Amendment A-2 (same-day) sharpens thesis framing: §1.2 scopes the claim to substrate-mechanism-for-schema-discipline (not the 5-test filter itself); §1.3 scopes primary claims to non-adversarial regimes with S5 as boundary-test; §1.5 restructured into methodology (5 items) + realism-engineering (1 item); §6e + §8d decompose H-spec.hallucination into pre-validator rate vs in-artifact rate so evidence adjudicates between §3.1 schema-as-safety-case and §3.4 capability-based stories; §9.3 F4 rewritten as pre-registered boundary-test not rescue; new §9.4 pre-registers four thesis-refinement paths (R1 channel / R2 welfare-distribution / R3 projection-as-purity / R4 honest-Oracle-regret) each with evidence trigger. Bhawuk's utility-prompt review is deferred to post-lock amendment per user directive — not a blocker. Implementation track under `packages/eval-sim/` is Python-first (Concordia is Python-only); results export as JSON for TypeScript consumption. One deliberate TBD remains: §7 S4 private-token set (placeholder values in-doc) to concretize during week-1 scenario-authoring.
 
-**Gating concern to check first:** has the Bhawuk→Dominion intro happened? If it has or is imminent (≤2 weeks), #6's key-identity handshake (§9 of the signed-bundle design doc) benefits from Dominion co-design before we sink a full week on #7. Ask before deep work on #7.
+**Recently shipped (substrate side, 2026-04-18): #7 Interviewer v0 + #8 Cartographer v0 + HIPAA substrate-transfer demo + research-grade substrate metrics panel.** The substrate side is in good shape for the talk; the remaining pre-talk effort is the behavioral side (sim bench) + one more Skill (Explainer #13) if the bench wants a prose-output test condition.
+
+**Research-support headline:** three Skills across two domains, all mechanically compared against prompt-only baselines, all independently showing **−93.8% to −96.4% upfront context saving** + dense write-scope enforcement clouds (5–6 "never" clauses; 5–9 "halt" clauses; 2–12 "refuse" clauses; 3–4 contract-violations refused by paired CI validator; 11-URL source whitelist on Cartographer). Full table in `packages/agents/metrics.md` (auto-generated; drift-gated at gate 14); slide-ready version in `docs/story.md` §6; research-thesis framing in `docs/design/research-thesis.md` §6a + §6.
+
+**In-flight details, updated 2026-04-18:**
+
+Two shipping Skills now live at `.claude/skills/<name>/` (auto-discovered by Claude Code per [agentskills.io](https://agentskills.io); invoked as `/gridpassport-interviewer` and `/gridpassport-cartographer` with live reload). Each SKILL.md carries frontmatter (`name` · `description` · `when_to_use` with trigger phrases + explicit NOT-use-for list pointing at sibling Skills) + explicit write-scope contract + anti-adversary rule (non-coaching for Interviewer, non-fabrication + source-whitelist for Cartographer) + workflow + trust-constraint checklist. Bundled references: Interviewer's `REFERENCE.md` mirrors `@grid-passport/core/ask-reasons`; Cartographer's `SOURCES.md` is the authoritative source-URL whitelist enforced by the validator (URLs not in SOURCES.md → contract violation). 3 canonical examples per Skill (Owl Compute · Lantern Cloud · Kraken Train), each demonstrating a different contract edge. CI validators at `packages/agents/<name>/scripts/` — Interviewer has 3+3 self-tests (publicEvidence-leak · derivedProof-bleed · workloadMix sum-check); Cartographer has 3+4 (privateProfile-leak · derivedProof-bleed · empty-sourceRefs · unknown-source-url). All green.
+
+**Research case-study artifact: the prompt-only baseline.** `packages/agents/interviewer/baselines/prompt-only.md` (32KB, ~600 lines) is mechanically derived from `.claude/skills/interviewer/{SKILL.md, REFERENCE.md, examples/*.md}` via `pnpm agents:baseline`. Drift gate at `pnpm agents:baseline:check` (gate 13) fails if the committed baseline doesn't match Skill source. This is the **fair-comparison artifact** for the #14 Skill-vs-prompt empirical test of research-thesis §3.1 (schema-as-safety-case). The case-study framing, methodology, and honest-limits list live at `packages/agents/interviewer/baselines/README.md` — read that before talking about this on stage. Research thesis §6b elaborates. Cartographer + Explainer baselines follow the same pattern when those Skills ship.
+
+**Tauri bundling wired:** `tauri.conf.json` includes `.claude/skills/**/*.md` under `bundle.resources → skills/`, so the packaged binary ships with the Skill source. `pnpm canary:desktop` now has a skills-bundle guard that fails if a shipping Skill's SKILL.md is missing. Runtime SDK integration (Claude Code session or Agent SDK as LLM transport, path-resolution via `@tauri-apps/api/path`) is the last remaining chunk under #7 — non-trivial since it requires the LLM-routing decision from the roadmap Decision Log (resolved: no direct API key UX; run inside Claude Code session or SDK).
+
+**Gating concern:** the Bhawuk→Dominion intro status. If imminent (≤2 weeks), pause #7 runtime wiring and instead use the scaffold to drive the §9 signed-bundle handshake conversation with Dominion — the Skills' write-scope contracts are exactly the kind of artifact a utility counterparty can review + critique before we lock the intake shape.
+
+**Gating concern to check:** has the Bhawuk→Dominion intro happened? If it has or is imminent (≤2 weeks), #6's key-identity handshake (§9 of the signed-bundle design doc) benefits from Dominion co-design — bundle #7's desktop wiring pass and the Dominion handshake into a single sprint if the timing aligns.
 
 **Parallel tracks that don't need sprint attention:**
-- **#14 Eval harness** — students already briefed in `docs/evals/owner-briefs.md` against approved rubric (`docs/evals/rubric.md`). They can start independently; ping when student output lands.
+- **#14 Eval harness (re-scoped)** — the simulation bench at `docs/evals/sim-bench-design.md` supersedes `docs/evals/rubric.md` + `docs/evals/owner-briefs.md`. Student owners from the original brief should be re-scoped to the Week-2 engine work in §12.2 of the bench doc; see §13.1 for the scope-shift addendum. The earlier 4-axis rubric is folded into §8d (mechanical compliance axis). No prior work is discarded; scope expands from per-Skill canned fixtures to multi-agent simulation with realized-future ensembles and composite privacy scoring.
 - **#2 Open-source the repo** — parked. Revisit when green-lit; note that `/protocol` page has public-facing GitHub links that 404 until the repo is public, so landing credibility improves once this lands.
-- **Dominion onboarding handshake** — non-code, gated on Bhawuk intro. See §9 of `docs/design/signed-bundle.md` for the agenda items.
+- **Dominion onboarding handshake** — non-code, gated on Bhawuk intro. See §9 of `docs/design/signed-bundle.md` for the agenda items. The sim-bench utility-prompt review (§10.1 of the bench doc) is a natural companion to this handshake — both happen post-lock.
 
 ## Architecture
 
@@ -130,7 +147,39 @@ grid-passport/
 │   │   └── scripts/
 │   │       ├── bundle-canary.ts        end-to-end sign → verify → tamper → reject across all 3 cases
 │   │       └── emit-fixture.ts         emit signed bundle + pubkey + secret to disk for cross-impl testing
-│   └── policy/grid-passport.rego       canonical release policy (source of truth)
+│   ├── policy/grid-passport.rego       canonical release policy (source of truth)
+│   └── agents/                         @grid-passport/agents · CI validators + baseline-derivation + substrate-metrics infra (not Skill authoring source)
+│       ├── README.md                   split rationale · validator roster · how to add one
+│       ├── metrics.md                  AUTO-GENERATED; substrate-property metrics across all shipping Skills (context-cost delta · discovery-signal density · write-scope enforcement density · navigable-structure count); drift-gated; the slide source for docs/story.md §6
+│       ├── metrics.json                same metrics as machine-readable JSON (for #14 harness + future cross-domain comparisons)
+│       ├── scripts/
+│       │   ├── export_prompt_only.ts   generic Skill → prompt-only baseline derivation; takes skill name (or --all); drift gate at `pnpm agents:baseline:check`
+│       │   └── compute_metrics.ts      measures each Skill's substrate properties + produces metrics.md + metrics.json; drift gate at `pnpm agents:metrics:check`
+│       ├── interviewer/
+│       │   ├── scripts/validate_caseinput.ts   structural + write-scope contract validator; 3 positive + 3 negative self-tests
+│       │   └── baselines/
+│       │       ├── prompt-only.md              AUTO-GENERATED; research case-study artifact; content-hashed drift gate
+│       │       └── README.md                   case-study framing · methodology · what the comparison does and does not prove (applies to all Skill baselines)
+│       ├── cartographer/
+│       │   ├── scripts/validate_publicevidence.ts   structural + write-scope + provenance-whitelist validator; 3 positive + 4 negative self-tests
+│       │   └── baselines/prompt-only.md         AUTO-GENERATED; same derivation pipeline as Interviewer
+│       └── priorauth-interviewer/
+│           └── baselines/prompt-only.md         AUTO-GENERATED; HIPAA-domain Skill's prompt-only baseline (for the cross-domain substrate comparison)
+├── .claude/
+│   └── skills/                         Claude Agent Skills · authoring + runtime source (spec-compliant path); Tauri bundles these at build time
+│       ├── README.md                   roster + write-scope table + thesis-property map + spec compliance checklist
+│       ├── interviewer/                NL → CaseInput elicitation · #7 v0
+│       │   ├── SKILL.md                frontmatter (name · description · when_to_use) + write-scope contract + non-coaching rule + workflow + trust-constraint checklist
+│       │   ├── REFERENCE.md            field catalog mirrored from @grid-passport/core/ask-reasons
+│       │   └── examples/               3 canonical intakes (Owl Compute · Lantern Cloud · Kraken Train), each demoing a different contract edge
+│       ├── cartographer/               public-evidence fetch → CaseInput.publicEvidence · #8 v0
+│       │   ├── SKILL.md                write-scope contract + non-fabrication rule + workflow + source-whitelist enforcement + 6-check trust-constraint checklist
+│       │   ├── SOURCES.md              endpoint registry (whitelist): FEMA NFHL · VA DEQ air/water · county GIS · VA Land Records · EPRI DCFlex · Dominion FIR · SCC fact sheet · Google DCFlex primary disclosure
+│       │   └── examples/               3 canonical public-evidence transcripts (Owl · Lantern · Kraken), each demoing a different retrieval pattern (baseline + no-adjacent-context; multi-source-disagreement + stale-record; multi-topic + applicant-upload)
+│       └── priorauth-interviewer/      HIPAA prior-auth intake · substrate-transfer demo (2026-04-18)
+│           ├── SKILL.md                same recipe as gridpassport-interviewer (write-scope + non-coaching + 5-check checklist) applied to PA intake; PHI-paste refusal built in
+│           ├── REFERENCE.md            minimal PriorAuthCase field catalog (identity + clinical-justification buckets; PHI/payer-decision/billing-code non-writable)
+│           └── examples/cardiac-cath-intake.md   one worked transcript demonstrating pseudonymization-at-intake + non-coaching refusal on medical-necessity phrasing + out-of-scope refusal (appeal drafting)
 ├── scripts/
 │   └── demo-bundle-roundtrip.sh        stage-ready: TS sign → TS verify → Python verify → tamper → both reject (pnpm canary:roundtrip)
 ├── grid-passport-harness/              specs + .claude/agents/ subagent prompts (don't delete)
@@ -143,8 +192,9 @@ grid-passport/
 │   │   ├── signed-bundle.md            design rationale — threat model, 8 decisions w/ alternatives + citations, 10-Q demo defense
 │   │   └── signed-bundle-spec.md       normative spec — RFC 2119 wire format, sign/verify algs, conformance checklist, reproducibility
 │   ├── evals/
-│   │   ├── rubric.md                   APPROVED 2026-04-18 · human-preference axis rubric (Explainer Skill)
-│   │   └── owner-briefs.md             per-owner briefs for the §14 eval harness (students A/B/C)
+│   │   ├── sim-bench-design.md         PRE-REGISTRATION · simulation bench for #14 · 7 scenarios × 4 conditions × 5 seeds · OPR + Savage regret · 3-type privacy scorer · Prometheus-style rubric · Amendment A-1 applied 2026-04-19 · pending §17 sign-off before implementation
+│   │   ├── rubric.md                   SUPERSEDED 2026-04-19 (folded into sim-bench-design.md §8d) · human-preference axis rubric (Explainer Skill) · historical
+│   │   └── owner-briefs.md             SUPERSEDED 2026-04-19 · original per-owner briefs for #14 · historical; see sim-bench-design.md §13.1 for the scope-shift addendum
 │   └── plans/
 │       ├── handoff.md                  this file — state, decisions, what-already-exists
 │       └── roadmap.md                  master plan — what's shipping next, decisions awaited
@@ -225,10 +275,14 @@ Add a new case:
 | 8 | `pnpm canary:roundtrip` | TS + Rust signers × TS + Python verifiers — 3-way parity on valid + tampered |
 | 9 | `pnpm desktop:test` | Rust keyring round-trip (generate → persist → reload → sign → verify), mock backend |
 | 10 | `(cd apps/desktop/src-tauri && cargo check)` | Rust signer + gp-sign binary compile clean |
+| 11 | `pnpm agents:typecheck` | All Skill-validator + baseline-derivation scripts compile under strict TS |
+| 12 | `pnpm agents:validate` | Write-scope contracts for all shipping Skills: Interviewer (3+3) + Cartographer (3+4 — privateProfile-leak · derivedProof-bleed · empty-sourceRefs · unknown-source-url) |
+| 13 | `pnpm agents:baseline:check` | Prompt-only baselines (all 3 shipping Skills) match current Skill source byte-for-byte; catches uncommitted Skill edits that would contaminate the Skill-vs-prompt comparison for #14 |
+| 14 | `pnpm agents:metrics:check` | Substrate-metrics report (`packages/agents/metrics.md` + `metrics.json`) matches current Skill source; the table is the slide — if a Skill edit changes the clause counts, the committed metrics should reflect it |
 
-One-liner for a full sweep (~10s on M1):
+One-liner for a full sweep (~13s on M1):
 ```bash
-pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:desktop && pnpm core:test && pnpm verifier:test && pnpm canary:bundle && pnpm canary:roundtrip && pnpm desktop:test
+pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:desktop && pnpm core:test && pnpm verifier:test && pnpm canary:bundle && pnpm canary:roundtrip && pnpm desktop:test && pnpm agents:typecheck && pnpm agents:validate && pnpm agents:baseline:check && pnpm agents:metrics:check
 ```
 
 ### Dev + build

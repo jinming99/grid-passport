@@ -192,37 +192,47 @@ us four properties we need:
 
 ### 5a. Directory layout
 
-Each agent ships as a Skill directory:
+Agent Skills are split across two locations, deliberately:
+
+- **`.claude/skills/<name>/`** at repo root — authoring + runtime source. Claude Code auto-discovers Skills here per the [Agent Skills open standard](https://agentskills.io); the Tauri app will bundle this directory at packaging time; the web demo uploads SKILL.md files to the Claude API. Markdown-only (SKILL.md · REFERENCE.md · examples/).
+- **`packages/agents/<name>/scripts/`** in the pnpm workspace — per-Skill CI validators. They need `@grid-passport/core` type imports, which is why they can't live inside the Skill directory. The Skill's SKILL.md references them as shell invocations (`pnpm agents:validate`), which Claude Code executes via bash — validator source never enters Skill context.
 
 ```
-packages/agents/
+.claude/skills/
+├── README.md                               # roster + spec-compliance checklist + thesis-property table
 ├── interviewer/
-│   ├── SKILL.md                           # frontmatter + workflow instructions
-│   ├── REFERENCE.md                       # field schema, units, common mistakes
-│   ├── examples/
-│   │   ├── owl-compute-intake.md          # NL → CaseInput examples
-│   │   ├── lantern-cloud-intake.md
-│   │   └── kraken-train-intake.md
-│   └── scripts/
-│       └── validate_caseinput.ts          # type-check the agent's output
-├── cartographer/
-│   ├── SKILL.md
-│   ├── SOURCES.md                         # endpoint registry: VA DEQ, FEMA, county GIS
-│   └── scripts/
-│       ├── fetch_deq_permits.ts
-│       ├── fetch_fema_overlay.ts
-│       └── fetch_county_zoning.ts
-├── notary/
-│   ├── SKILL.md
-│   └── scripts/
-│       └── seal_audit.ts
-├── explainer/
-│   ├── SKILL.md
-│   ├── ROLE_VOICES.md                     # how to explain to applicant vs utility vs regulator
+│   ├── SKILL.md                            # frontmatter + write-scope contract + non-coaching rule + workflow
+│   ├── REFERENCE.md                        # field catalog mirrored from @grid-passport/core/ask-reasons
 │   └── examples/
-│       └── ...
-└── README.md                              # which agents ship, when each loads
+│       ├── owl-compute-intake.md           # sensitive-bucket acknowledgment + non-coaching rule
+│       ├── lantern-cloud-intake.md         # write-scope refusal + honest low-confidence preserved
+│       └── kraken-train-intake.md          # prose-to-number refusal under self-flattering prose
+├── cartographer/                           # #8 lands here
+│   ├── SKILL.md
+│   ├── SOURCES.md                          # endpoint registry: VA DEQ, FEMA, county GIS
+│   └── examples/
+├── notary/                                 # later
+│   └── SKILL.md
+├── explainer/                              # #13 lands here
+│   ├── SKILL.md
+│   ├── ROLE_VOICES.md                      # role-conditioned prose patterns
+│   └── examples/
+└── switchboard/                            # stretch; only ships if write-scope is defensible
+
+packages/agents/
+├── README.md                               # split rationale; validator roster; how to add one
+├── package.json                            # @grid-passport/agents; devDeps tsx + @types/node
+├── tsconfig.json                           # strict TS
+└── interviewer/
+    └── scripts/
+        └── validate_caseinput.ts           # 3 positive (fixture-derived) + 3 negative (write-scope) self-tests
 ```
+
+**Frontmatter conventions** (per the [Claude Code skills docs](https://code.claude.com/docs/en/skills) + [best-practices guide](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)):
+- `name` — lowercase + hyphens, ≤ 64 chars, no "anthropic"/"claude" reserved. Namespaced with `gridpassport-` to avoid collision with user-level skills.
+- `description` — third-person, ≤ 1024 chars, includes *what* + *when*. Front-loaded key use cases because the listing truncates at 1,536 chars (combined with `when_to_use`).
+- `when_to_use` — explicit trigger phrases + **explicit NOT-use-for list** pointing at the right sibling Skill (Interviewer not to be used for fetching public records; Cartographer not to be used for private fields; etc.). This is where the write-scope contract becomes self-reinforcing.
+- All other frontmatter fields (`allowed-tools`, `paths`, `disable-model-invocation`, `context: fork`) are left unset unless a Skill demonstrably needs them — per the research-thesis discipline that safety is in the schema, not in the runtime gates.
 
 ### 5b. SKILL.md frontmatter convention
 
@@ -393,20 +403,61 @@ Total bench: 60 cases for role-leakage and Cartographer domain-spec; 20
 per-Skill for workflow alignment; 60 (20×3) for human-preference. About
 160 evaluations on the eval grid.
 
-### 7b. Baseline comparison
+### 7b. Baseline comparison — mechanically-derived to stay fair
 
 The talk's headline claim — "Skill-as-substrate beats prompt-only" —
-requires a baseline. For each of the three near-term Skills
-(Interviewer, Cartographer, Explainer):
+requires a fair-comparison baseline. *Hand-maintained* baselines let the
+Skill author tune one side preferentially; any measured delta is then
+attributable to author effort rather than substrate. The load-bearing
+methodological move is **mechanical derivation**.
 
-- **Skill version**: ships with `SKILL.md` + bundled `REFERENCE.md` + scripts + examples.
-- **Prompt-only baseline**: same model, same task, single system prompt that flattens the SKILL.md content into one block; no progressive disclosure, no scripts, no bundled references.
+For each shipping Skill, a script at
+`packages/agents/<name>/scripts/export_prompt_only.ts` concatenates, in
+deterministic order:
 
-Run both versions on the same 160-case grid. Report deltas per category.
+1. SKILL.md frontmatter (`description` → role preamble; `when_to_use` → trigger context)
+2. SKILL.md body
+3. REFERENCE.md (inlined under its own H1)
+4. `examples/*.md` in lexicographic order (inlined under its own H1 each)
 
-The hypothesis: Skill version scores measurably higher on workflow
-alignment and domain-spec compliance, comparable on human-preference
-alignment, and identical on role-leakage (both must be 0%).
+Output lives at `packages/agents/<name>/baselines/prompt-only.md`. No
+paraphrasing, no editorial decisions. A drift gate
+(`pnpm agents:baseline:check`, wired into the 14-gate sweep as gate 13)
+fails CI if the committed baseline no longer matches the Skill source.
+This is how the comparison stays honest across Skill edits.
+
+**What the comparison isolates.** Same model, same inputs, same output
+format, two substrates. The only thing that differs is packaging:
+filesystem-based progressive disclosure + frontmatter metadata +
+file-boundary semantics vs. a single flat instruction block. That is
+the substrate question, cleanly isolated.
+
+**Per-Skill runs on the same 160-case grid.** Report deltas per
+category (workflow alignment · human-preference alignment ·
+domain-spec compliance · role-leakage). The hypothesis: Skill version
+scores measurably higher on workflow alignment and domain-spec
+compliance, comparable on human-preference alignment, and identical on
+role-leakage (both must be 0%).
+
+**First case study shipped (Interviewer).** Authoring source at
+`.claude/skills/interviewer/` → mechanically-derived baseline at
+`packages/agents/interviewer/baselines/prompt-only.md` (32KB, ~600
+lines); case-study framing + methodology + honest-limits list at
+`packages/agents/interviewer/baselines/README.md`; research-thesis
+framing at `docs/design/research-thesis.md` §6b. Cartographer + Explainer
+baselines follow the same pattern when #8 / #13 ship — the 4×3 eval
+matrix in the talk uses 3 Skills × 4 metrics × {Skill, prompt-only} =
+24 comparisons, all fair by construction.
+
+**Scope limits (include these in the talk for honesty):**
+- One domain (grid interconnection). Healthcare + financial-rails
+  replications are future work (`docs/design/research-thesis.md` §6).
+- Same model on both sides; the delta isolates substrate, not
+  intelligence.
+- Output quality only. Token efficiency is a separate benchmark; don't
+  fold the two claims together.
+- Empirical, not formal. The revelation-principle argument is still
+  §7 gap #2 of the research thesis.
 
 ### 7c. Student-handoff task breakdown
 

@@ -24,6 +24,16 @@
     "desktop:test": "bash -lc 'source ~/.cargo/env 2>/dev/null; cd apps/desktop/src-tauri && cargo test --lib'",
     "core:test": "pnpm --filter @grid-passport/core test",
     "verifier:test": "pnpm --filter @grid-passport/verifier test",
-    "verifier:typecheck": "pnpm --filter @grid-passport/verifier typecheck"
+    "verifier:typecheck": "pnpm --filter @grid-passport/verifier typecheck",
+    "agents:validate": "pnpm --filter @grid-passport/agents validate:interviewer && pnpm --filter @grid-passport/agents validate:cartographer",
+    "agents:validate:interviewer": "pnpm --filter @grid-passport/agents validate:interviewer",
+    "agents:validate:cartographer": "pnpm --filter @grid-passport/agents validate:cartographer",
+    "agents:typecheck": "pnpm --filter @grid-passport/agents exec tsc -p .",
+    "agents:baseline": "pnpm --filter @grid-passport/agents baseline",
+    "agents:baseline:check": "pnpm --filter @grid-passport/agents baseline:check",
+    "agents:metrics": "pnpm --filter @grid-passport/agents metrics",
+    "agents:metrics:check": "pnpm --filter @grid-passport/agents metrics:check",
+    "agents:baseline:interviewer": "pnpm --filter @grid-passport/agents baseline:interviewer",
+    "agents:baseline:cartographer": "pnpm --filter @grid-passport/agents baseline:cartographer"
   }
 }
