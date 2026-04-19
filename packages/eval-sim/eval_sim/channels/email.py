@@ -57,7 +57,6 @@ from eval_sim.channels.failure_modes import (
 )
 from eval_sim.config import (
     MEETING_ACCEPT_BASE_RATE,
-    MEETING_DURATION_DAYS,
     MEETING_TRIGGER_UNRESOLVED_ROUNDS,
     TURNAROUND_DAYS_B,
 )
@@ -382,7 +381,12 @@ class EmailChannel:
                     recipients=[Role.UTILITY_INTAKE, Role.UTILITY_PLANNING],
                     content=applicant_meeting,
                     channel=ChannelEnum.C7_ARTIFACTS,
-                    day_advance=MEETING_DURATION_DAYS / 2,
+                    # Split the §6a "meeting + notes distribution" day
+                    # across the two verbal turns (0.5 + 0.5 = 1.0d);
+                    # combined with the 3d scheduling turn above, the
+                    # full meeting sequence lands at 4d per §6a table
+                    # (Amendment A-3 reconciliation).
+                    day_advance=TURNAROUND_DAYS_B["meeting_plus_notes"] / 2,
                     artifact_refs=meeting_notes_refs,
                 )
                 # Utility verbal contribution (planning-lead attends).
@@ -397,7 +401,7 @@ class EmailChannel:
                     recipients=[Role.APPLICANT_CH, Role.UTILITY_INTAKE],
                     content=utility_meeting,
                     channel=ChannelEnum.C7_ARTIFACTS,
-                    day_advance=MEETING_DURATION_DAYS / 2,
+                    day_advance=TURNAROUND_DAYS_B["meeting_plus_notes"] / 2,
                     artifact_refs=meeting_notes_refs,
                 )
                 meeting_held = True

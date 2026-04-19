@@ -63,9 +63,12 @@ TURNAROUND_DAYS_D: Final[dict[str, float]] = {
 # ────────────────────────────────────────────────────────────────────────
 
 MEETING_TRIGGER_UNRESOLVED_ROUNDS: Final[int] = 3
-MEETING_DURATION_DAYS: Final[float] = 5.0
 MEETING_EQUIVALENT_EMAIL_ROUNDS: Final[float] = 2.0
 MEETING_ACCEPT_BASE_RATE: Final[float] = 0.90
+# §6a turnaround: 3d scheduling (TURNAROUND_DAYS_B["meeting_scheduling"])
+# + 1d meeting+notes distribution (TURNAROUND_DAYS_B["meeting_plus_notes"])
+# = 4d per meeting total (matches §6a table row; supersedes the earlier
+# 5d bullet text per Amendment A-3).
 
 # ────────────────────────────────────────────────────────────────────────
 # §6a — Archetype-specific failure-mode base rates. Locked; sensitivity

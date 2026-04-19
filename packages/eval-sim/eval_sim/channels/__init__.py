@@ -4,19 +4,16 @@ Each channel encapsulates one condition's full orchestration logic:
 turn-routing, message format, failure-mode application, termination.
 The runner dispatches to the right channel by `Condition`.
 
-Channels (post-§17 status):
+Channels (all live as of post-§17 step 4):
 - `OracleChannel`            (A) — shared-state; cached Cartographer;
                                     3-turn deterministic loop; §4.1 + §6d
 - `EmailChannel`             (B) — typed Email + Meeting; archetype-
                                     specific failure-mode sampler +
                                     3+-round meeting trigger; §6a
-                                    *(pending step 4d)*
 - `PromptOnlyBundleChannel`  (C) — bundle + live Cartographer with
-                                    hallucination risk; §6c
-                                    *(pending step 4c)*
+                                    hallucination risk; §4.3 + §6c
 - `SkillBundleChannel`       (D) — bundle + cached Cartographer +
-                                    bounded-query channel; §6b + §6e
-                                    *(pending step 4b)*
+                                    bounded-query channel; §4.4 + §6b + §6e
 
 Common surface: `Channel.run(scenario, seed, agents, max_turns) -> RunLedger`
 per `eval_sim.channels.base.Channel`.

@@ -268,7 +268,7 @@ grid-passport/
 │   │   ├── smoke_judge.py              manual end-to-end: locked Prometheus prompt + 3-turn synthetic transcript → Opus 4.7 → parsed JudgeOutput
 │   │   ├── smoke_agents.py             manual end-to-end: build applicant → live paraphrase barrier → live act; reports paraphrase audit
 │   │   └── generate_cartographer_cache.py  §6e fixture generator · dry-run only (live SDK pending step 5)
-│   └── tests/                          178 pytest tests · schema round-trips + all 7 cards + scorer behavior + locked-prompt byte fences + disagreement detection + runner dry-run × every (scenario × condition) + cache-hash manifest + Transport protocol + FakeTransport-backed live-path wiring for every LLM call site + Concordia agent assembly + paraphrase-barrier component
+│   └── tests/                          219 pytest tests · schema round-trips + all 7 cards + scorer behavior + locked-prompt byte fences + disagreement detection + runner dry-run + live dispatch (4 conditions) + cache-hash manifest + Transport protocol + FakeTransport-backed live-path wiring for every LLM call site + Concordia agent assembly + paraphrase-barrier component + all four channels (Oracle/SkillBundle/PromptOnly/Email) + failure-mode routing + meeting-trigger threshold + bounded-query sentinel + max-rounds cap + Oracle cartographer-mode tag
 ├── .claude/
 │   └── skills/                         Claude Agent Skills · authoring + runtime source (spec-compliant path); Tauri bundles these at build time
 │       ├── README.md                   roster + write-scope table + thesis-property map + spec compliance checklist

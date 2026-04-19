@@ -116,6 +116,11 @@ class OracleChannel:
                 "private_tokens": list(scenario.private_token_set),
                 "ci_tuples": [t.model_dump() for t in scenario.ci_tuples],
                 "condition": self.condition.value,
+                # §6e: Oracle reads the same Cartographer cache fixture
+                # as D (shared across A, C-fairness-pilot, and D). Tag
+                # as 'cached' so §8d H-spec.hallucination decomposition
+                # joins A/D uniformly vs C's 'live' SDK runs.
+                "cartographer_mode": "cached",
             }
         )
 

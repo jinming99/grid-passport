@@ -172,3 +172,16 @@ def test_oracle_channel_attaches_scorer_inputs() -> None:
     assert isinstance(ledger.scorer_inputs["private_tokens"], list)
     assert len(ledger.scorer_inputs["private_tokens"]) > 0
     assert isinstance(ledger.scorer_inputs["ci_tuples"], list)
+
+
+def test_oracle_channel_tags_cartographer_mode_cached() -> None:
+    """§6e: Oracle reads the same Cartographer cache as D; §8d H-spec
+    decomposition needs a consistent 'cartographer_mode' key across
+    A/C/D to separate the cache-vs-live effect. Oracle tags as 'cached'.
+    """
+    responses = iter([_CANNED_APPLICANT, _CANNED_UTILITY, _CANNED_REGULATOR])
+    transport = FakeTransport(responder=lambda _kw: next(responses))
+    agents = _build_agents(transport)
+    ledger = OracleChannel().run(scenario=S1, seed=0, agents=agents)
+
+    assert ledger.scorer_inputs["cartographer_mode"] == "cached"
