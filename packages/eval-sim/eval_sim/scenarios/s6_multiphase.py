@@ -136,6 +136,7 @@ S6: ScenarioCard = ScenarioCard(
                 "flex_delta": ("28%", "34%"),
                 "policy_version_transition": ("v0.3", "v0.4"),
                 "restudy_required": True,
+                "policy_version_linkage_required": True,
             },
         ),
         Future(

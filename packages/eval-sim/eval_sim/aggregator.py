@@ -71,6 +71,17 @@ def bootstrap_mean_ci(
             n_resamples=0,
             method="degenerate-n=1",
         )
+    if float(np.std(values)) == 0.0:
+        # All samples identical — BCa acceleration divides by zero
+        # jackknife variance and emits NaN. Short-circuit with the
+        # correct degenerate answer: the CI is the point.
+        return BootstrapCI(
+            mean=mean,
+            low=mean,
+            high=mean,
+            n_resamples=0,
+            method="degenerate-zero-variance",
+        )
 
     effective_method = method
     try:
@@ -82,9 +93,14 @@ def bootstrap_mean_ci(
             n_resamples=n_resamples,
             rng=np.random.default_rng(seed=0xBC),
         )
+        ci_low, ci_high = float(result.confidence_interval.low), float(
+            result.confidence_interval.high
+        )
+        # scipy may emit NaN bounds under degenerate jackknife even for
+        # non-constant data (rare). If that happens, fall back to percentile.
+        if not (np.isfinite(ci_low) and np.isfinite(ci_high)):
+            raise ValueError("BCa produced non-finite bounds")
     except (ValueError, ZeroDivisionError):
-        # BCa acceleration can fail on tiny samples with zero jackknife
-        # variance. Fall back to percentile.
         effective_method = "percentile"
         result = stats.bootstrap(
             (values,),
