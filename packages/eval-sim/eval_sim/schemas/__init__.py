@@ -21,6 +21,11 @@ from eval_sim.schemas.channel import (
 )
 from eval_sim.schemas.condition import Condition
 from eval_sim.schemas.judge import Dimension, JudgeOutput, PerDimensionScore
+from eval_sim.schemas.priorauth import (
+    PriorAuthClinical,
+    PriorAuthProfile,
+    SafeHarborIdentifiers,
+)
 from eval_sim.schemas.role import (
     Disposition,
     ModelTier,
@@ -29,6 +34,7 @@ from eval_sim.schemas.role import (
 )
 from eval_sim.schemas.scenario import (
     CITuple,
+    Domain,
     ExpertiseGap,
     Future,
     FutureOutcomeScore,
@@ -45,6 +51,7 @@ __all__ = [
     "Condition",
     "Dimension",
     "Disposition",
+    "Domain",
     "ExpertiseGap",
     "FlexibilityPassport",
     "Future",
@@ -52,11 +59,14 @@ __all__ = [
     "JudgeOutput",
     "ModelTier",
     "PerDimensionScore",
+    "PriorAuthClinical",
+    "PriorAuthProfile",
     "PrivateProfile",
     "PublicEvidence",
     "RequestRecord",
     "Role",
     "RoleConfig",
+    "SafeHarborIdentifiers",
     "ScenarioCard",
     "SensitivityWeight",
     "SiteContext",

@@ -48,10 +48,14 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# CaseInput mirror deliberately preserves TypeScript camelCase field names to
-# keep cross-repo drift visible. See `eval_sim/schemas/caseinput.py` docstring.
+# CaseInput mirror + priorauth profile deliberately preserve camelCase field
+# names to match TypeScript sources and i2b2 / HIPAA conventions. See the
+# relevant file docstrings.
 "eval_sim/schemas/caseinput.py" = ["N815"]
+"eval_sim/schemas/priorauth.py" = ["N815"]
 "eval_sim/schemas/scenario.py" = ["N815"]
+# Scenario card bodies reference the camelCase fields above.
+"eval_sim/scenarios/*.py" = ["N815"]
 
 [tool.pyright]
 pythonVersion = "3.12"

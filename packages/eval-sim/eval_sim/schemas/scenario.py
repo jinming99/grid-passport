@@ -10,10 +10,13 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from eval_sim.schemas.caseinput import PrivateProfile, PublicEvidence, SiteContext
+from eval_sim.schemas.priorauth import PriorAuthProfile
 from eval_sim.schemas.role import Disposition
+
+Domain = Literal["grid", "priorauth"]
 
 
 class CITuple(BaseModel):
@@ -139,14 +142,47 @@ class ScenarioCard(BaseModel):
 
     # (1) identity
     scenario_id: str = Field(pattern=r"^S[0-9]+$")
+    domain: Domain = Field(
+        default="grid",
+        description=(
+            "Scenario domain. 'grid' is the interconnection workflow "
+            "(applicant↔utility↔regulator); 'priorauth' is the HIPAA "
+            "provider↔payer↔HIPAA-auditor replication (S7). Exactly one of "
+            "{private_profile, priorauth_profile} must be populated, "
+            "matching the domain."
+        ),
+    )
     applicant_org: str
     site: SiteContext
     requested_mw: float
     target_cod: str
     phases: int = Field(ge=1, default=1)
 
-    # (2) privateProfile
-    private_profile: PrivateProfile
+    # (2) private profile — domain-specific
+    private_profile: PrivateProfile | None = Field(
+        default=None,
+        description="Grid-domain private profile. Required when domain='grid'.",
+    )
+    priorauth_profile: PriorAuthProfile | None = Field(
+        default=None,
+        description="HIPAA priorauth profile. Required when domain='priorauth'.",
+    )
+
+    @model_validator(mode="after")
+    def _validate_domain_profile_consistency(self) -> ScenarioCard:
+        if self.domain == "grid":
+            if self.private_profile is None or self.priorauth_profile is not None:
+                raise ValueError(
+                    f"{self.scenario_id}: domain='grid' requires private_profile populated "
+                    "and priorauth_profile=None."
+                )
+        elif self.domain == "priorauth":
+            if self.priorauth_profile is None or self.private_profile is not None:
+                raise ValueError(
+                    f"{self.scenario_id}: domain='priorauth' requires priorauth_profile populated "
+                    "and private_profile=None."
+                )
+        return self
 
     # (3) public evidence cache fixture path (relative to package root)
     public_evidence_cache_path: str = Field(

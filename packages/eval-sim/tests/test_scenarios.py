@@ -34,7 +34,9 @@ def test_scenario_has_required_cards(scenario_id: str) -> None:
     card = scenarios.get(scenario_id)
     assert card.scenario_id == scenario_id
     assert card.applicant_org
-    assert card.requested_mw > 0
+    # requested_mw only applies to grid domain; priorauth uses date-of-service + CPT codes.
+    if card.domain == "grid":
+        assert card.requested_mw > 0, f"{scenario_id}: grid scenarios need requested_mw > 0"
     assert card.target_cod
     assert card.goals, "goals cannot be empty"
     assert card.ci_tuples, "CI tuples cannot be empty (§7 #7; §1.5.1 #3)"
@@ -43,6 +45,49 @@ def test_scenario_has_required_cards(scenario_id: str) -> None:
     assert card.oracle_ideal
     assert card.complication
     assert card.public_evidence_cache_path.endswith(".json")
+
+
+@pytest.mark.parametrize("scenario_id", scenarios.all_ids())
+def test_scenario_domain_consistency(scenario_id: str) -> None:
+    card = scenarios.get(scenario_id)
+    if card.domain == "grid":
+        assert card.private_profile is not None
+        assert card.priorauth_profile is None
+    elif card.domain == "priorauth":
+        assert card.priorauth_profile is not None
+        assert card.private_profile is None
+
+
+def test_all_seven_scenarios_registered() -> None:
+    """After Week-1 authoring, the registry should have exactly S1-S7 locked."""
+    assert sorted(scenarios.all_ids()) == ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
+
+
+def test_s5_adversarial_has_misreport_and_truth_tokens() -> None:
+    """S5 is the only scenario where ground-truth and misreport values diverge.
+    Both must be in the private-token set so the scorer tracks claimed-vs-actual.
+    """
+    s5 = scenarios.get("S5")
+    truth_tokens = {"none-yet", "none-committed", "0", "0.20"}
+    misreport_tokens = {"option-signed", "LOI-from-tier-1-bank", "35", "0.78"}
+    token_set = set(s5.private_token_set)
+    assert truth_tokens.issubset(token_set), f"S5 missing truth tokens: {truth_tokens - token_set}"
+    assert misreport_tokens.issubset(token_set), (
+        f"S5 missing misreport tokens: {misreport_tokens - token_set}"
+    )
+
+
+def test_s7_priorauth_has_safe_harbor_identifiers() -> None:
+    """S7 must carry HHS Safe Harbor 18 identifier subset per §7 S7."""
+    s7 = scenarios.get("S7")
+    assert s7.domain == "priorauth"
+    assert s7.priorauth_profile is not None
+    sh = s7.priorauth_profile.safeHarbor
+    # At least MRN + DOB + one date + NPI must be present for i2b2 protocol scoring.
+    assert sh.patientMRN
+    assert sh.patientDOB
+    assert sh.dateOfService
+    assert sh.referringProviderNPI
 
 
 def test_unknown_scenario_raises() -> None:
