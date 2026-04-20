@@ -276,7 +276,7 @@ def invoke_paraphrase_judge(
     artifact_text: str,
     private_fields: list[str],
     transport: Transport | None = None,
-    model: str = "claude-sonnet-4-6",
+    model: str = "claude-opus-4-7",  # Amendment A-6: unified to Opus
     dry_run: bool = True,
 ) -> ParaphraseJudgeVerdict:
     """Call the AgentLeak-style paraphrase judge.

@@ -18,6 +18,12 @@ const clamp = (v: number, lo: number, hi: number) =>
 const RISK_PENALTY: Record<RiskClass, number> = { low: 0, medium: 8, high: 18 };
 const FLOOD_PENALTY: Record<RiskClass, number> = { low: 0, medium: 3, high: 12 };
 
+// Quantize to nearest 5 to blur the linear-combination inversion (an
+// observer with the formula could otherwise recover a weighted sum of
+// confidenceContribution + redundancyContribution + bessShare; rounding
+// to 5 makes the residual ambiguity basin wider). Derivation-transparency
+// part 2 follow-on; pairs with expectedPeakBand + flexibilityPassport
+// tier-banding below. Mirror in apps/api/gridpassport/forecast.py.
 function firmnessScore(p: PrivateProfile, e: PublicEvidence, requestedMW: number): number {
   const siteBonus = e.siteControlEvidence ? 10 : 0;
   const bessShare = clamp((p.bessMW / requestedMW) * 50, 0, 10);
@@ -33,16 +39,34 @@ function firmnessScore(p: PrivateProfile, e: PublicEvidence, requestedMW: number
     siteBonus -
     permitPenalty -
     floodPenalty;
-  return Math.round(clamp(raw, 0, 100));
+  // Coarse quantization: nearest 5. 73.4 → 75; 62.2 → 60.
+  const quantized = Math.round(clamp(raw, 0, 100) / 5) * 5;
+  return quantized;
 }
 
+// Coarse peak-load tier bands keyed on confidence class, not on the
+// raw confidence float. Three tiers (low / medium / high) each map a
+// confidence range to a band, so confidence ∈ [0.75, 1.0] all publish
+// the same [0.60, 0.80] band — observer can't invert to the exact
+// private confidence. Mirror in apps/api/gridpassport/forecast.py.
 function expectedPeakBand(
   p: PrivateProfile,
   requestedMW: number,
 ): [number, number] {
-  const low = 0.55 + p.internalScheduleConfidence * 0.12;
-  const high = 0.72 + p.internalScheduleConfidence * 0.1;
-  return [Math.round(requestedMW * low), Math.round(requestedMW * high)];
+  const conf = p.internalScheduleConfidence;
+  let lowFrac: number;
+  let highFrac: number;
+  if (conf >= 0.75) {
+    lowFrac = 0.60;
+    highFrac = 0.80;
+  } else if (conf >= 0.55) {
+    lowFrac = 0.50;
+    highFrac = 0.75;
+  } else {
+    lowFrac = 0.40;
+    highFrac = 0.65;
+  }
+  return [Math.round(requestedMW * lowFrac), Math.round(requestedMW * highFrac)];
 }
 
 function responseClass(flexPercent: number): FlexResponseClass {
@@ -60,15 +84,33 @@ function durationBand(bessHours: number): [number, number] {
   return [8, 12];
 }
 
+// Coarse flexibility-MW tier bands keyed on the same class boundaries as
+// responseClass. Class-B (flex ≥ 20%) publishes [20% × req, 40% × req];
+// two Class-C sub-tiers split at flex=10%. Observer can narrow flexPercent
+// to a tier (3-tier resolution), not to the exact value. Mirror in
+// apps/api/gridpassport/forecast.py.
+function flexibilityBand(
+  flexPercent: number,
+  requestedMW: number,
+): [number, number] {
+  if (flexPercent >= 20) {
+    return [Math.round(requestedMW * 0.20), Math.round(requestedMW * 0.40)];
+  }
+  if (flexPercent >= 10) {
+    return [Math.round(requestedMW * 0.10), Math.round(requestedMW * 0.20)];
+  }
+  return [0, Math.round(requestedMW * 0.10)];
+}
+
 function flexibilityPassport(
   p: PrivateProfile,
   requestedMW: number,
 ): FlexibilityPassport {
-  const flexMW = requestedMW * (p.flexPercent / 100);
+  const [mwMin, mwMax] = flexibilityBand(p.flexPercent, requestedMW);
   const [durationHoursMin, durationHoursMax] = durationBand(p.bessHours);
   return {
-    mwMin: Math.round(flexMW * 0.82),
-    mwMax: Math.round(flexMW * 1.12),
+    mwMin,
+    mwMax,
     durationHoursMin,
     durationHoursMax,
     responseClass: responseClass(p.flexPercent),

@@ -91,7 +91,7 @@ class InferentialLiftScore:
 class StaabProbe:
     """Wrapper for the Staab probe invocation with dry_run path."""
 
-    model: str = "claude-sonnet-4-6"
+    model: str = "claude-opus-4-7"  # Amendment A-6: unified to Opus
 
     def run(
         self,
@@ -160,7 +160,7 @@ def invoke_semantic_equivalence_judge(
     a: str,
     b: str,
     transport: Transport | None = None,
-    model: str = "claude-sonnet-4-6",
+    model: str = "claude-opus-4-7",  # Amendment A-6: unified to Opus
     dry_run: bool = True,
 ) -> bool:
     """Staab's semantic-equivalence judge — returns True iff the model

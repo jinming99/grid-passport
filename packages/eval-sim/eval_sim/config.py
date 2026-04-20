@@ -21,12 +21,17 @@ MODEL_TIERS: Final[dict[str, ModelTier]] = {
     "product-agent": ModelTier.OPUS_4_7,
     # User-simulation agents (applicant / utility / regulator / paraphrase barrier).
     "user-sim": ModelTier.SONNET_4_6,
-    # Judge — one tier above user-sim, within-family (§5d + §14 #9).
+    # Judge — Prometheus rubric scoring (§5d).
     "judge": ModelTier.OPUS_4_7,
-    # Probes + scorers — match Staab / AgentLeak calibration tier (§5e).
-    "probe": ModelTier.SONNET_4_6,
-    "direct-leak-judge": ModelTier.SONNET_4_6,
-    "trace-leak-classifier": ModelTier.SONNET_4_6,
+    # Probes + detection-side scorers. Amendment A-6 unified all of
+    # these to Opus 4.7 (was Sonnet 4.6). Rationale: detection-quality
+    # uplift outweighs the same-family self-preference risk versus
+    # applicant-on-Opus; mitigated by mandatory swap-augmentation.
+    # AgentLeak 0.72 threshold was calibrated on GPT-4-class; Opus
+    # threshold may require recalibration in a future amendment.
+    "probe": ModelTier.OPUS_4_7,
+    "direct-leak-judge": ModelTier.OPUS_4_7,
+    "trace-leak-classifier": ModelTier.OPUS_4_7,
 }
 
 CONDITION_MODEL_TIER: Final[dict[Condition, ModelTier | None]] = {

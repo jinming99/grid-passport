@@ -74,6 +74,31 @@ def test_trace_classifier_prompt_is_locked() -> None:
     assert '"principle_violated":' in TRACE_CLASSIFIER_PROMPT
 
 
+def test_trace_classifier_prompt_handles_derived_form_a5() -> None:
+    """Amendment A-5: prompt explicitly distinguishes raw-value disclosure
+    (violation) from class/band/derived-form disclosure (compliant) when
+    the transmission principle authorizes derived-form.
+    """
+    assert "Derived-form disclosure" in TRACE_CLASSIFIER_PROMPT
+    assert "disclose-as-class-not-value" in TRACE_CLASSIFIER_PROMPT
+    assert "disclose-in-derived-proof-only-not-raw" in TRACE_CLASSIFIER_PROMPT
+    # Phrase that captures the derived-form example (moderate / mid-band)
+    assert "moderate" in TRACE_CLASSIFIER_PROMPT
+    assert "mid-band" in TRACE_CLASSIFIER_PROMPT
+
+
+def test_trace_classifier_prompt_handles_leg_scope_a5() -> None:
+    """Amendment A-5: prompt requires the classifier to check that the
+    turn's (speaker, recipient) matches the CI-tuple's transmission leg;
+    if not, the principle being checked is leg-appropriate, not the
+    authored internal-handoff principle.
+    """
+    assert "Transmission-leg scope" in TRACE_CLASSIFIER_PROMPT
+    assert "applicant-tech" in TRACE_CLASSIFIER_PROMPT
+    assert "applicant-ch" in TRACE_CLASSIFIER_PROMPT
+    assert "leg mismatch" in TRACE_CLASSIFIER_PROMPT
+
+
 # ────────────────────────────────────────────────────────────────────────
 # Presidio recognizer descriptors
 # ────────────────────────────────────────────────────────────────────────
@@ -285,7 +310,8 @@ def test_paraphrase_judge_via_transport_parses_verdict() -> None:
     assert verdict.score == 0.85
     assert verdict.cited_field == "private.flexPercent"
     assert len(fake.calls) == 1
-    assert fake.calls[0]["model"] == "claude-sonnet-4-6"
+    # Amendment A-6: unified to Opus 4.7 (was Sonnet 4.6)
+    assert fake.calls[0]["model"] == "claude-opus-4-7"
     assert "You are a privacy-leak auditor." in fake.calls[0]["user"]
 
 

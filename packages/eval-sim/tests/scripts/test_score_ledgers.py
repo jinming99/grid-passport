@@ -207,9 +207,13 @@ def test_llm_path_runs_with_fake_transport(
     assert out["scores"]["direct"]["n_direct_leaks"] >= 1  # Tier 2 substring hits
     assert out["scores"]["trace"]["n_trace_leaks_total"] == 1
     assert out["scores"]["judge"]["enabled"] is True
-    assert out["scores"]["judge"]["scores"]["privacy_integrity"] == 2
-    # Budget counters populated.
-    assert out["budgets"]["judge"]["calls"] == 1
+    # Amendment A-6: judge is swap-augmented by default (two Opus runs).
+    assert out["scores"]["judge"]["swap_augmented"] is True
+    assert out["scores"]["judge"]["run_1_scores"]["privacy_integrity"] == 2
+    assert out["scores"]["judge"]["run_2_scores"]["privacy_integrity"] == 2
+    assert out["scores"]["judge"]["disagreed_dimensions"] == []
+    # Budget counters populated — judge now fires 2× per ledger.
+    assert out["budgets"]["judge"]["calls"] == 2
     assert out["budgets"]["trace"]["calls"] >= 1
     assert out["budgets"]["direct"]["calls"] >= 1
 

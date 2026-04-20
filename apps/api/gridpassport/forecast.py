@@ -27,6 +27,8 @@ def _clamp(v: float, lo: float, hi: float) -> float:
 
 
 def _firmness_score(p: PrivateProfile, e: PublicEvidence, requested_mw: float) -> int:
+    # Derivation-transparency part 2: quantize to nearest 5 to blur the
+    # linear-combination inversion. Mirror of packages/core/src/forecast.ts.
     site_bonus = 10 if e.siteControlEvidence else 0
     bess_share = _clamp((p.bessMW / requested_mw) * 50, 0, 10)
     redundancy = _clamp(p.redundancyShiftPercent * 0.4, 0, 10)
@@ -34,13 +36,22 @@ def _firmness_score(p: PrivateProfile, e: PublicEvidence, requested_mw: float) -
     permit_penalty = _RISK_PENALTY[e.permitRisk]
     flood_penalty = _FLOOD_PENALTY[e.floodRisk]
     raw = 25 + confidence + redundancy + bess_share + site_bonus - permit_penalty - flood_penalty
-    return int(round(_clamp(raw, 0, 100)))
+    clamped = _clamp(raw, 0, 100)
+    return int(round(clamped / 5) * 5)
 
 
 def _expected_peak(p: PrivateProfile, requested_mw: float) -> tuple[int, int]:
-    low = 0.55 + p.internalScheduleConfidence * 0.12
-    high = 0.72 + p.internalScheduleConfidence * 0.10
-    return (int(round(requested_mw * low)), int(round(requested_mw * high)))
+    # Derivation-transparency part 2: confidence-class-keyed tier bands.
+    # Three tiers each map a confidence range to a fixed band, so the
+    # exact private confidence is not observer-invertible. Mirror of TS.
+    conf = p.internalScheduleConfidence
+    if conf >= 0.75:
+        low_frac, high_frac = 0.60, 0.80
+    elif conf >= 0.55:
+        low_frac, high_frac = 0.50, 0.75
+    else:
+        low_frac, high_frac = 0.40, 0.65
+    return (int(round(requested_mw * low_frac)), int(round(requested_mw * high_frac)))
 
 
 def _response_class(flex_percent: float) -> FlexResponseClass:
@@ -60,12 +71,23 @@ def _duration_band(bess_hours: float) -> tuple[int, int]:
     return (8, 12)
 
 
+def _flex_band(flex_percent: float, requested_mw: float) -> tuple[int, int]:
+    # Derivation-transparency part 2: class-keyed tier bands. Observer
+    # narrows flex_percent to a tier (3-tier resolution), not the exact
+    # value. Mirror of packages/core/src/forecast.ts::flexibilityBand.
+    if flex_percent >= 20:
+        return (int(round(requested_mw * 0.20)), int(round(requested_mw * 0.40)))
+    if flex_percent >= 10:
+        return (int(round(requested_mw * 0.10)), int(round(requested_mw * 0.20)))
+    return (0, int(round(requested_mw * 0.10)))
+
+
 def _flex_passport(p: PrivateProfile, requested_mw: float) -> FlexibilityPassport:
-    flex_mw = requested_mw * (p.flexPercent / 100)
+    mw_min, mw_max = _flex_band(p.flexPercent, requested_mw)
     d_min, d_max = _duration_band(p.bessHours)
     return FlexibilityPassport(
-        mwMin=round(flex_mw * 0.82),
-        mwMax=round(flex_mw * 1.12),
+        mwMin=mw_min,
+        mwMax=mw_max,
         durationHoursMin=d_min,
         durationHoursMax=d_max,
         responseClass=_response_class(p.flexPercent),

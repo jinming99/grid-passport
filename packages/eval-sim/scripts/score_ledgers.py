@@ -60,6 +60,7 @@ from eval_sim.scorers.efficiency import compute_efficiency
 from eval_sim.scorers.judge import (
     JudgeInvocation,
     invoke_judge,
+    judge_with_swap,
     tag_transcript,
 )
 from eval_sim.scorers.judge_rubric import FIVE_DIMENSION_RUBRIC_TEXT
@@ -449,44 +450,108 @@ def _score_judge(
     transport: Any | None,
     budget: ScorerBudget | None,
     dry_run: bool,
+    swap_augment: bool = True,
 ) -> dict[str, Any]:
-    """§5d + §8e — single Opus run per ledger. Swap-augmentation (two runs
-    + disagreement detection) is a separate follow-up; v0 keeps cost low
-    by issuing one call and reporting raw scores.
+    """§5d + §8e Prometheus judge.
+
+    Amendment A-6 made swap-augmentation mandatory: two independent Opus
+    runs with shuffled batch position + disagreement detection per §5d
+    protocol. Zheng et al. MT-Bench reports 22% swap-inconsistency floor
+    for GPT-4-class models; we report actual disagreement per dimension
+    and flag |delta| > 1 for human spot-check.
+
+    `swap_augment=False` disables the second run (for cost-sensitive
+    re-runs of just one axis); default is on.
     """
     transcript_formatted = tag_transcript(ledger.transcript)
-    invocation = JudgeInvocation(
-        transcript_formatted=transcript_formatted,
-        rubric_text=FIVE_DIMENSION_RUBRIC_TEXT,
-        batch_position=0,
-        batch_id=f"{ledger.scenario_id}-{ledger.condition.value}-s{ledger.seed:02d}",
-    )
+    batch_prefix = f"{ledger.scenario_id}-{ledger.condition.value}-s{ledger.seed:02d}"
+
     wrapped: Any | None = None
     if not dry_run and transport is not None:
         wrapped = BudgetingTransport(inner=transport, budget=budget)  # type: ignore[arg-type]
-    out = invoke_judge(
-        invocation=invocation,
-        transport=wrapped if wrapped is not None else None,
-        dry_run=dry_run or transport is None,
+
+    if dry_run or transport is None or not swap_augment:
+        # Single-run path (dry-run or explicit swap_augment=False).
+        invocation = JudgeInvocation(
+            transcript_formatted=transcript_formatted,
+            rubric_text=FIVE_DIMENSION_RUBRIC_TEXT,
+            batch_position=0,
+            batch_id=batch_prefix,
+        )
+        out = invoke_judge(
+            invocation=invocation,
+            transport=wrapped if wrapped is not None else None,
+            dry_run=dry_run or transport is None,
+        )
+        return {
+            "enabled": not dry_run and transport is not None,
+            "swap_augmented": False,
+            "scores": _dims_to_scores(out),
+            "counterfactual": out.counterfactual,
+            "rationales": _dims_to_rationales(out),
+        }
+
+    # Swap-augmented path (default for live runs). Two independent Opus
+    # calls with shuffled batch_position; disagreement per dimension.
+    result = judge_with_swap(
+        transcript_formatted=transcript_formatted,
+        rubric_text=FIVE_DIMENSION_RUBRIC_TEXT,
+        batch_id_1=f"{batch_prefix}-r1",
+        batch_id_2=f"{batch_prefix}-r2",
+        batch_position_1=0,
+        batch_position_2=1,
+        transport=wrapped,
+        dry_run=False,
     )
+    # Per-dimension scores are the per-run pair; report both + disagreement.
+    run_1_scores = _dims_to_scores(result.run_1)
+    run_2_scores = _dims_to_scores(result.run_2)
+    deltas = {
+        dim: abs(run_1_scores[dim] - run_2_scores[dim]) for dim in run_1_scores
+    }
     return {
-        "enabled": not dry_run and transport is not None,
-        "swap_augmented": False,
-        "scores": {
-            "stakeholder_alignment": out.stakeholder_alignment.score,
-            "planning_defensibility": out.planning_defensibility.score,
-            "privacy_integrity": out.privacy_integrity.score,
-            "regulatory_auditability": out.regulatory_auditability.score,
-            "applicant_experience": out.applicant_experience.score,
+        "enabled": True,
+        "swap_augmented": True,
+        "run_1_scores": run_1_scores,
+        "run_2_scores": run_2_scores,
+        "deltas": deltas,
+        # Mean score per dimension (cardinal average of ordinal; reported
+        # as summary stat, not claim input — see §9.5 on ordinal reporting).
+        "mean_scores": {
+            dim: (run_1_scores[dim] + run_2_scores[dim]) / 2
+            for dim in run_1_scores
         },
-        "counterfactual": out.counterfactual,
-        "rationales": {
-            "stakeholder_alignment": out.stakeholder_alignment.rationale,
-            "planning_defensibility": out.planning_defensibility.rationale,
-            "privacy_integrity": out.privacy_integrity.rationale,
-            "regulatory_auditability": out.regulatory_auditability.rationale,
-            "applicant_experience": out.applicant_experience.rationale,
+        # Median per dimension (better fit for ordinal data; round to int).
+        "median_scores": {
+            dim: round((run_1_scores[dim] + run_2_scores[dim]) / 2)
+            for dim in run_1_scores
         },
+        "disagreed_dimensions": sorted(d.value for d in result.disagreed_dimensions),
+        "requires_spot_check": result.requires_spot_check,
+        "counterfactual_run_1": result.run_1.counterfactual,
+        "counterfactual_run_2": result.run_2.counterfactual,
+        "rationales_run_1": _dims_to_rationales(result.run_1),
+        "rationales_run_2": _dims_to_rationales(result.run_2),
+    }
+
+
+def _dims_to_scores(out: Any) -> dict[str, int]:
+    return {
+        "stakeholder_alignment": out.stakeholder_alignment.score,
+        "planning_defensibility": out.planning_defensibility.score,
+        "privacy_integrity": out.privacy_integrity.score,
+        "regulatory_auditability": out.regulatory_auditability.score,
+        "applicant_experience": out.applicant_experience.score,
+    }
+
+
+def _dims_to_rationales(out: Any) -> dict[str, str]:
+    return {
+        "stakeholder_alignment": out.stakeholder_alignment.rationale,
+        "planning_defensibility": out.planning_defensibility.rationale,
+        "privacy_integrity": out.privacy_integrity.rationale,
+        "regulatory_auditability": out.regulatory_auditability.rationale,
+        "applicant_experience": out.applicant_experience.rationale,
     }
 
 
@@ -644,16 +709,35 @@ def _markdown_summary(summary: dict[str, Any]) -> str:
         direct = scores.get("direct", {}) or {}
         trace = scores.get("trace", {}) or {}
         judge = scores.get("judge", {}) or {}
-        j = judge.get("scores", {}) or {}
-        judge_cell = (
-            f"{j.get('stakeholder_alignment', '-')}/"
-            f"{j.get('planning_defensibility', '-')}/"
-            f"{j.get('privacy_integrity', '-')}/"
-            f"{j.get('regulatory_auditability', '-')}/"
-            f"{j.get('applicant_experience', '-')}"
-            if j
-            else "—"
+        # A-6 shape: swap-augmented has median_scores; single-run has scores.
+        # Prefer median_scores (ordinal-appropriate reporting per §9.5).
+        j = (
+            judge.get("median_scores")
+            or judge.get("scores")
+            or {}
         )
+        if judge.get("swap_augmented"):
+            deltas = judge.get("deltas", {}) or {}
+            disagree = "*" if any(d > 1 for d in deltas.values()) else ""
+            judge_cell = (
+                f"{j.get('stakeholder_alignment', '-')}/"
+                f"{j.get('planning_defensibility', '-')}/"
+                f"{j.get('privacy_integrity', '-')}/"
+                f"{j.get('regulatory_auditability', '-')}/"
+                f"{j.get('applicant_experience', '-')}{disagree}"
+                if j
+                else "—"
+            )
+        else:
+            judge_cell = (
+                f"{j.get('stakeholder_alignment', '-')}/"
+                f"{j.get('planning_defensibility', '-')}/"
+                f"{j.get('privacy_integrity', '-')}/"
+                f"{j.get('regulatory_auditability', '-')}/"
+                f"{j.get('applicant_experience', '-')}"
+                if j
+                else "—"
+            )
         trace_cell = (
             f"{trace.get('n_trace_leaks_total', '-')} / {trace.get('wls', '-')}"
             if trace

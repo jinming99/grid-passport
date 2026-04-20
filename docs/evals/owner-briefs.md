@@ -32,14 +32,16 @@ Work on this project happens against the pre-registered design. Edits to scenari
 
 Pick one of the deferred axes in `sim-bench-results.md` and land it. In priority order:
 
-| Axis | Lift | Why it matters |
-|---|---|---|
-| Ledger-shape extension for `validator_pass_per_turn` + `source_refs` metadata | ~2 days | Unlocks the full §8d mechanical compliance axes (H-workflow, H-spec, H-trigger). Currently only H-null runs. |
-| `CandidatePlan` extraction from ledger artifacts | ~2–3 days | Unlocks §8b Robustness (OPR + Savage regret). Without plan extraction, the central outcome-preservation metric is stubbed. |
-| Presidio + Staab probe pipeline for §8c.ii inferential lift | ~2–3 days | Adds the third privacy-leakage type (currently only direct + trace are live). |
-| Judge swap-augmentation (§5d) | ~1 day | 2× judge cost but quantifies position bias per §5d protocol. |
+| Axis | Spec | Lift | Why it matters |
+|---|---|---|---|
+| `CandidatePlan` extraction from ledger artifacts | [`specs/candidate-plan-extraction.md`](specs/candidate-plan-extraction.md) | ~2–3 days | Unlocks §8b Robustness (OPR + Savage regret). Without plan extraction, the central outcome-preservation metric is stubbed. **Highest lift.** |
+| Cross-check Referee Skill (§3.2 verifiable subset) | [`specs/P1_3-cross-check-referee-skill.md`](specs/P1_3-cross-check-referee-skill.md) | ~3–4 weeks | Ships the partial revelation-principle piece. New Skill + CI validator + baseline. |
+| Strategic-misreport benchmark (§3.2 non-amplification) | [`specs/P1_2-strategic-misreport-benchmark.md`](specs/P1_2-strategic-misreport-benchmark.md) | ~3–5 weeks | Direct measurement of substrate-vs-prompt equivalence rate under shaded inputs. |
+| Proper-scoring-rule calibration harness (§3.2 unverifiable subset) | [`specs/P1_4-proper-scoring-rule-calibration.md`](specs/P1_4-proper-scoring-rule-calibration.md) | ~2–3 weeks | Interviewer distribution-elicitation + CRPS scoring. Depends on P1.2 authoring for intake variants. |
+| Ledger-shape extension for `validator_pass_per_turn` + `source_refs` metadata | no spec yet | ~2 days | Unlocks the full §8d mechanical compliance axes (H-workflow, H-spec, H-trigger). Currently only H-null runs. |
+| Presidio + Staab probe pipeline for §8c.ii inferential lift | no spec yet | ~2–3 days | Adds the third privacy-leakage type (currently only direct + trace are live). |
 
-Whichever you pick: the score-batch is idempotent per-axis (`scripts/score_ledgers.py --scorer <name>`) so you can iterate without re-running the whole thing.
+Whichever you pick: the score-batch is idempotent per-axis (`scripts/score_ledgers.py --scorer <name>`) so you can iterate without re-running the whole thing. Each spec file is self-contained — read it end-to-end before starting.
 
 ### What "ready to run the main sweep" looks like
 
