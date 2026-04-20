@@ -11,19 +11,22 @@ When something here ships:
 
 ---
 
-## Current sprint — substantially landed (2026-04-18)
+## Current sprint — 2026-04-20 → ~2026-05-18 (demo-ready everything)
 
-Status snapshot:
+**Goal:** close every demo-facing gap so Grid Passport runs as a live end-to-end walkthrough (applicant Tauri → signed bundle → separate utility binary verifies + renders). Pilot evidence wired into `/about` §6 with OPR. Two more Skills run live on desktop via Claude Agent SDK. Derivation correctness gets dedicated unit tests. Sim-bench **main run deferred**; pilot numbers defend the talk.
 
-- **#1 Privacy Benefit Panel** — shipped.
-- **#2 Open-source the repo** — parked pending go/no-go; work itself is ready.
-- **#3 Landing page v1** — shipped.
-- **#4 Tauri shell v0** — shipped (Steps 1–7 landed; desktop UX reframe + schema-justification doc rode along on top, 1953b05).
-- **#5 Story page v1** — shipped.
+Full plan: **`docs/plans/sprint-2026-04-20.md`** — track-by-track items, sizes, owners, exit criteria, risk register.
 
-Only #2 remains open in the current sprint, and it's gated on a decision outside the build queue. Entries below retain their full breakdowns as landed-sprint records. **Next wave** picks up from near-term — #6 signed bundle **landed 2026-04-18** with a grounded design doc; next natural step is the re-scoped **#14 simulation bench** (pre-registration doc drafted 2026-04-19; blocks on Ming's sign-off of scenarios + role prompts + rubric + Bhawuk's utility-prompt review).
+Track summary:
 
-**Parallel research track.** The re-scoped **#14 simulation bench** runs on its own ~4-week timeline with hybrid ownership — Ming owns scenario design + rubric + analysis; one student owner builds `packages/eval-sim/`. See §14 + `docs/evals/sim-bench-design.md` for the full design. Ming's week-1 deliverable (scenario cards, role prompts, judge rubric) is the one gate on the student engine work kicking off.
+- **Track 1** — empirical evidence into `/about` §6 (~1 wk). P0.1 CandidatePlan extraction → P0.3 spot-check → re-score → §6 wire.
+- **Track 2** — Skill runtime on desktop (~2 wks, serial). #7 Interviewer Agent SDK wiring → #13 Explainer Skill on the same pipeline.
+- **Track 3** — utility surface + trust UX (parallel, ~1 wk). #11 utility Tauri binary as **separate `apps/utility/` workspace** (option B — import-graph-level write-scope); #12 self-review trust panel.
+- **Track 4** — correctness (slot in, 1–2 d). TS unit tests for `forecast.ts` + `audit.ts`.
+
+**Deferred this sprint:** main run (455 runs, $400–1200), P0.2 ledger metadata, #8 Cartographer live-fetch, #2 open-source, Windows/Linux desktop builds.
+
+Entries below retain their full breakdowns as landed-sprint records from the prior wave.
 
 ### 1. Privacy Benefit Panel (~1–2 days)
 
@@ -231,20 +234,17 @@ Items in priority order. Each is one paragraph; full breakdown when promoted to 
 
 ### What to work on next (2026-04-20)
 
-Given the sim-bench engine + pilot just landed with measurement-integrity amendments and direction-only signals, the priority is **unblock the headline claim before spending on main run**:
+Current-sprint plan: **`docs/plans/sprint-2026-04-20.md`** — demo-ready everything, ~4 weeks, main run deferred. Headline: P0.1 CandidatePlan → OPR into `/about` §6 → Interviewer/Explainer SDK wiring → separate utility Tauri binary → trust panel → forecast/audit unit tests.
 
-1. **P0 sim-bench blockers** (§14 P0.1–P0.3 above) — CandidatePlan extraction + ledger-metadata extension + different-family judge spot-check. ~1 week combined. Unblocks §9.1 OPR headline + §8d full compliance axes + Opus-Opus self-preference quantification. Student follow-on is well-scoped with specs ready.
-2. **§3.4 HotOS position paper draft** (Ming-led, ~1–2 weeks writing) — does not gate on students. Uses shipped substrate-metrics + 12-subset + amendments cycle as the evidence story. Object-capability-pattern translation is the research framing. 2026 submission window is Oct/Nov.
-3. **Main run** (§14 step 7) — only after P0.1 lands. Without CandidatePlan extraction, $400–1200 of SDK spend collects data that can't support the §9.1 headline.
-4. **§3.2 direct-measurement student track** (P1.2 / P1.3 / P1.4) — specs under `docs/evals/specs/`. Can run in parallel with main run; does NOT gate main run. Turns the three-mechanism composition in `research-roadmap.md` §3.2 from narrative into published evidence.
-5. **Product surface items** (#10/#11/#12 below) — small. Ship when demo context requires.
-6. **#13 Explainer agent** — rounds out the 3-Skill roster for human-preference dimension. Nice-to-have; does not gate the research narrative.
+Rationale for main-run deferral: pilot's 12-subset already produced directional evidence (D wins every judge Likert cell; D=0 on H-null; post-A-5 trace classifier clean). Spending $400–1200 before the demo loop is visible-to-users is the wrong order. Close the demo gaps, land OPR from pilot ledgers (not new SDK spend), and run main when the demo artifact itself needs it.
 
-What NOT to do next:
-- Main run before P0.1 (CandidatePlan extraction).
-- 6b seed expansion before A-5 + A-6 re-score is validated with human spot-check on the trace-axis (flagged as P2 in `sim-bench-results.md`).
-- #2 open-source (parked).
-- #9 EPRI MOSAIC (gated on EPRI external schedule).
+What NOT to do this sprint:
+- Main run (§14 step 7) — deferred.
+- P0.2 ledger metadata — deferred with main run; H-null suffices for §6.
+- §3.2 student track (P1.2/P1.3/P1.4) — specs ready; land when a student is assigned.
+- #8 Cartographer live-fetch — cache-only works for demo.
+- #2 open-source — parked.
+- #9 EPRI MOSAIC — gated on EPRI external schedule.
 
 ### 6. Signed disclosure bundle protocol — *shipped 2026-04-18*
 
