@@ -1,0 +1,168 @@
+{
+  "started_at_unix": 1776643078.920388,
+  "scenarios": [
+    "S1",
+    "S2",
+    "S3"
+  ],
+  "conditions": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "seeds": [
+    0
+  ],
+  "default_skip_scenarios": [
+    "S7"
+  ],
+  "include_s7": false,
+  "runs": [
+    {
+      "scenario": "S1",
+      "condition": "A",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 197.9,
+      "turns": 3,
+      "final_simulated_day": 0.0,
+      "file": "transcripts/S1_A_seed00.json",
+      "sha256": "6435d7aea7c8a1c6fbb0be5caf88d9684341c770805c6d3e8327429dd1bab58a",
+      "cache_hash": "68c898cb6c817c7f518de5931a7687ea1c2fad4f0cc11e4ca2dad9c2f99bae51"
+    },
+    {
+      "scenario": "S1",
+      "condition": "B",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 737.5,
+      "turns": 11,
+      "final_simulated_day": 37.0,
+      "file": "transcripts/S1_B_seed00.json",
+      "sha256": "74524bb90f6bd9f242e93271987d43eb441b059be7619a504cb04e87179d8af2",
+      "cache_hash": ""
+    },
+    {
+      "scenario": "S1",
+      "condition": "C",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 421.0,
+      "turns": 7,
+      "final_simulated_day": 10.0,
+      "file": "transcripts/S1_C_seed00.json",
+      "sha256": "3347d083d044221dd5cf5d90b036d2b07ba1430616c1abe660f6045c30b8eb28",
+      "cache_hash": "68c898cb6c817c7f518de5931a7687ea1c2fad4f0cc11e4ca2dad9c2f99bae51"
+    },
+    {
+      "scenario": "S1",
+      "condition": "D",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 404.2,
+      "turns": 7,
+      "final_simulated_day": 10.0,
+      "file": "transcripts/S1_D_seed00.json",
+      "sha256": "f5017d59c2489e95c0bbfad93f0cb557b0dc3a4dd04a43eafc7fb1027e41e679",
+      "cache_hash": "68c898cb6c817c7f518de5931a7687ea1c2fad4f0cc11e4ca2dad9c2f99bae51"
+    },
+    {
+      "scenario": "S2",
+      "condition": "A",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 471.6,
+      "turns": 3,
+      "final_simulated_day": 0.0,
+      "file": "transcripts/S2_A_seed00.json",
+      "sha256": "2694f12c6da5bc27c42fa17a0c6e8d492d18fa686ee1ad70e4062303964188f0",
+      "cache_hash": "14d382ca5ed165b41f151bd765383194dc618f49cdce8758f25a386ef644f36d"
+    },
+    {
+      "scenario": "S2",
+      "condition": "B",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 644.7,
+      "turns": 11,
+      "final_simulated_day": 37.0,
+      "file": "transcripts/S2_B_seed00.json",
+      "sha256": "e44c9f78ab30a703bacbbd4c17ee04e6188e35847475883f2b44d1df50fa27cf",
+      "cache_hash": ""
+    },
+    {
+      "scenario": "S2",
+      "condition": "C",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 368.8,
+      "turns": 6,
+      "final_simulated_day": 8.0,
+      "file": "transcripts/S2_C_seed00.json",
+      "sha256": "d160812ce01f165290db0899c4724b1eba4091d9015b8e58ac04ca203ca0adcf",
+      "cache_hash": "14d382ca5ed165b41f151bd765383194dc618f49cdce8758f25a386ef644f36d"
+    },
+    {
+      "scenario": "S2",
+      "condition": "D",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 381.5,
+      "turns": 7,
+      "final_simulated_day": 10.0,
+      "file": "transcripts/S2_D_seed00.json",
+      "sha256": "96df1268da8337aa5e31a00f55f980bbe5c3546a59cc9cd19a97c167fcc198f2",
+      "cache_hash": "14d382ca5ed165b41f151bd765383194dc618f49cdce8758f25a386ef644f36d"
+    },
+    {
+      "scenario": "S3",
+      "condition": "A",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 347.0,
+      "turns": 3,
+      "final_simulated_day": 0.0,
+      "file": "transcripts/S3_A_seed00.json",
+      "sha256": "70d9a142b518082e986b2b9c2218ec4d080322d66f166e7919929b653d28f8b9",
+      "cache_hash": "0d624db31fd3f960175831a23d542f46f8f5b6dffd8b0589c4832536ef43b9f4"
+    },
+    {
+      "scenario": "S3",
+      "condition": "B",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 341.5,
+      "turns": 6,
+      "final_simulated_day": 27.0,
+      "file": "transcripts/S3_B_seed00.json",
+      "sha256": "1722b013d735d3e0b0f8b3f03964380a1c72fb921ad14e630ce6e5f4d3642b74",
+      "cache_hash": ""
+    },
+    {
+      "scenario": "S3",
+      "condition": "C",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 369.2,
+      "turns": 7,
+      "final_simulated_day": 10.0,
+      "file": "transcripts/S3_C_seed00.json",
+      "sha256": "64cd1201e420395c12dcdc2e40759ef852552cbf52a0e0d95cb585d62db6e58d",
+      "cache_hash": "0d624db31fd3f960175831a23d542f46f8f5b6dffd8b0589c4832536ef43b9f4"
+    },
+    {
+      "scenario": "S3",
+      "condition": "D",
+      "seed": 0,
+      "status": "ok",
+      "wall_s": 531.9,
+      "turns": 7,
+      "final_simulated_day": 10.0,
+      "file": "transcripts/S3_D_seed00.json",
+      "sha256": "58f98336d4b2db407553f07becfe30a357fe21d4f76bf888f84e19b69e02e6f2",
+      "cache_hash": "0d624db31fd3f960175831a23d542f46f8f5b6dffd8b0589c4832536ef43b9f4"
+    }
+  ],
+  "finished_at_unix": 1776648295.87316
+}
