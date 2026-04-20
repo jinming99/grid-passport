@@ -1,3 +1,4 @@
+mod interviewer;
 mod signer;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -8,6 +9,7 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
         signer::applicant_public_key,
         signer::applicant_sign,
+        interviewer::interviewer_query,
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

@@ -208,7 +208,18 @@ export class FakeInterviewerTransport implements InterviewerTransport {
 }
 
 // ---------------------------------------------------------------------------
-// ClaudeAgentSDKTransport — stub. Track 2.1-polish wires this up.
+// ClaudeAgentSDKTransport — Track 2.1b.
+//
+// Webview invokes a Rust Tauri command (`interviewer_query`) that shells
+// out to `claude -p --output-format json --system-prompt <skill>` carrying
+// the parent Claude Code session's OAuth env. No API-key UX in the
+// webview. The Rust handler returns the model's raw text; we parse,
+// branch on clarify-shape vs CaseInput-shape, and gate every CaseInput
+// through `validateInterviewerOutput`.
+//
+// Tauri import is dynamic so that Node-side tooling (canary, tests) can
+// still `import { ClaudeAgentSDKInterviewerTransport }` without pulling
+// `@tauri-apps/api/core` into a browser-absent runtime.
 // ---------------------------------------------------------------------------
 
 export class ClaudeAgentSDKInterviewerTransport
@@ -216,25 +227,191 @@ export class ClaudeAgentSDKInterviewerTransport
 {
   readonly label = "claude-agent-sdk";
 
-  async query(_req: InterviewerRequest): Promise<InterviewerResult> {
-    return {
-      kind: "transportError",
-      message:
-        "Claude Agent SDK transport not yet wired (Track 2.1-polish). " +
-        "Running a Claude Code host session and routing webview IPC → " +
-        "Rust subprocess → SDK is the planned path; the seam here accepts " +
-        "the drop-in. Use FakeTransport for now.",
-    };
+  async query(req: InterviewerRequest): Promise<InterviewerResult> {
+    let invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
+    try {
+      const tauri = await import("@tauri-apps/api/core");
+      invoke = tauri.invoke;
+    } catch (err) {
+      return {
+        kind: "transportError",
+        message:
+          `Tauri IPC unavailable — this transport requires the Tauri webview runtime. ` +
+          `(${(err as Error).message ?? String(err)})`,
+      };
+    }
+
+    const skillSource = combineSkillSource(req.skill);
+
+    let raw: string;
+    try {
+      const out = await invoke("interviewer_query", {
+        transcript: req.userText,
+        skillSource,
+      });
+      if (typeof out !== "string") {
+        return {
+          kind: "transportError",
+          message: `expected string from interviewer_query, got ${typeof out}`,
+        };
+      }
+      raw = out;
+    } catch (err) {
+      return {
+        kind: "transportError",
+        message: `claude-agent-sdk: ${(err as Error).message ?? String(err)}`,
+      };
+    }
+
+    const candidate = extractFirstJsonObject(raw);
+    if (candidate === null) {
+      return {
+        kind: "transportError",
+        message: `Claude response did not contain a JSON object. Raw (truncated): ${raw.slice(0, 400)}`,
+      };
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(candidate);
+    } catch (err) {
+      return {
+        kind: "transportError",
+        message: `failed to parse JSON from claude response: ${(err as Error).message}`,
+      };
+    }
+
+    // Clarify-shape detection. Tolerant of two shapes the model emits:
+    //   1. `{ "clarify": "<question>" }` — what the Rust prompt requests
+    //   2. `{ "type": "clarify", "question": "<question>", ... }` — what
+    //      the Interviewer Skill's own intake convention produces (the
+    //      Skill's rules take precedence over the Rust-prompt format
+    //      hint, which is the intended design)
+    const clarifyText = detectClarify(parsed);
+    if (clarifyText !== null) {
+      return { kind: "clarify", question: clarifyText };
+    }
+
+    try {
+      const handoff = validateInterviewerOutput(parsed);
+      const value = assembleCaseInput(handoff);
+      return { kind: "caseInput", value };
+    } catch (err) {
+      if (err instanceof InterviewerContractViolation) {
+        return {
+          kind: "validatorRejection",
+          reasons: [err.message],
+          raw: parsed,
+        };
+      }
+      return {
+        kind: "transportError",
+        message: `unexpected: ${(err as Error).message}`,
+      };
+    }
   }
 }
 
 /**
- * Pick the right transport for the current runtime. v0 always returns the
- * Fake; `2.1-polish` will inspect `import.meta.env.VITE_INTERVIEWER_TRANSPORT`
- * (or an equivalent) to choose between Fake and Claude Agent SDK.
+ * Detect the two clarify shapes the model is observed to emit. Returns
+ * the question text, or null if the value isn't a clarify response.
+ */
+function detectClarify(parsed: unknown): string | null {
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return null;
+  }
+  const o = parsed as Record<string, unknown>;
+  // Shape 1: { clarify: "<q>" }
+  if (typeof o.clarify === "string") return o.clarify;
+  // Shape 2: { type: "clarify", question: "<q>" } — the SKILL.md's own intake
+  // convention uses this with an optional `field` pointer.
+  if (o.type === "clarify" && typeof o.question === "string") {
+    return o.question;
+  }
+  return null;
+}
+
+/**
+ * Concatenate a LoadedSkill into a single system prompt string:
+ * SKILL.md body + reference files + examples, each separated by a
+ * horizontal rule. The Claude Code CLI accepts ~32KB of system prompt
+ * without issue; the Interviewer skill weighs ~11KB so this is safe.
+ */
+function combineSkillSource(skill: LoadedSkill): string {
+  const parts: string[] = [skill.skillMdBody];
+  for (const ref of skill.references) {
+    parts.push(`# ${ref.filename}\n\n${ref.body}`);
+  }
+  for (const ex of skill.examples) {
+    parts.push(`# Example — ${ex.filename}\n\n${ex.body}`);
+  }
+  return parts.join("\n\n---\n\n");
+}
+
+/**
+ * Extract the first complete JSON object from a text blob. Tolerates
+ * markdown fences (```json ... ```) and surrounding prose. Returns null
+ * if no `{` is present or braces don't balance.
+ */
+export function extractFirstJsonObject(text: string): string | null {
+  let s = text.replace(/^\s*```(?:json)?\s*/m, "").replace(/\s*```\s*$/m, "");
+  const start = s.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i]!;
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (inString) {
+      if (c === "\\") escape = true;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) {
+        return s.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Pick the right transport for the current runtime.
+ *
+ * Selection order:
+ *   1. `VITE_INTERVIEWER_TRANSPORT=fake` forces Fake (useful for dev +
+ *      demo recording without LLM spend).
+ *   2. `VITE_INTERVIEWER_TRANSPORT=sdk` forces the Claude Agent SDK
+ *      transport (errors cleanly if Tauri IPC is unavailable).
+ *   3. Auto-detect: Tauri runtime (`window.__TAURI_INTERNALS__` present)
+ *      → SDK, else → Fake.
+ *
+ * Canary + Node-side tooling get Fake by default (no window, no Tauri).
+ * Desktop webview gets SDK and, when `claude` CLI is unreachable, surfaces
+ * a clear transportError the IntakePanel renders verbatim.
  */
 export function defaultInterviewerTransport(): InterviewerTransport {
-  // NOTE (Track 2.1-polish): gate on env/flag before flipping to SDK.
+  const flag = (
+    import.meta as unknown as {
+      env?: Record<string, string | undefined>;
+    }
+  ).env?.VITE_INTERVIEWER_TRANSPORT;
+  if (flag === "fake") return new FakeInterviewerTransport();
+  if (flag === "sdk") return new ClaudeAgentSDKInterviewerTransport();
+  if (
+    typeof window !== "undefined" &&
+    "__TAURI_INTERNALS__" in window
+  ) {
+    return new ClaudeAgentSDKInterviewerTransport();
+  }
   return new FakeInterviewerTransport();
 }
 

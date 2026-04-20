@@ -152,7 +152,10 @@ console.log(
 // ---------------------------------------------------------------------------
 
 import {
+  ClaudeAgentSDKInterviewerTransport,
   FakeInterviewerTransport,
+  defaultInterviewerTransport,
+  extractFirstJsonObject,
   makeRequest,
 } from "../src/lib/interviewer-transport.ts";
 
@@ -210,6 +213,63 @@ if (clarify.kind !== "clarify") {
 }
 console.log(
   `[canary:desktop] interviewer transport (clarify): pass (empty prose → clarify; no state write)`,
+);
+
+// SDK transport without Tauri runtime: must surface a clean transportError
+// (not throw). This guards the defensive dynamic-import path in
+// ClaudeAgentSDKInterviewerTransport.query().
+const sdk = new ClaudeAgentSDKInterviewerTransport();
+const sdkResult = await sdk.query(
+  makeRequest("should fail cleanly outside Tauri", minimalSkill),
+);
+if (sdkResult.kind !== "transportError") {
+  console.error(
+    `[canary:desktop] FAIL: SDK transport in Node expected 'transportError', got '${sdkResult.kind}'`,
+  );
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] interviewer transport (sdk outside Tauri): pass (graceful transportError, no throw)`,
+);
+
+// Auto-detect: defaultInterviewerTransport() must return Fake in Node (no
+// window / no Tauri globals). If this flips to SDK by accident, canary +
+// any Node-side test that relies on the factory would hit the LLM path
+// unintentionally.
+const auto = defaultInterviewerTransport();
+if (auto.label !== "fake") {
+  console.error(
+    `[canary:desktop] FAIL: defaultInterviewerTransport() in Node expected 'fake', got '${auto.label}'`,
+  );
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] interviewer transport (factory): pass (Node auto-detects Fake; desktop runtime selects SDK via __TAURI_INTERNALS__)`,
+);
+
+// Tolerant JSON extraction: markdown fences must be stripped; the first
+// balanced {...} must be returned. This is the parser that takes a raw
+// claude CLI response (which often wraps JSON in ```json fences despite
+// the "no prose" instruction) and hands clean JSON to the validator.
+const fenced = "```json\n{\n  \"clarify\": \"hi\"\n}\n```";
+const unfenced = extractFirstJsonObject(fenced);
+if (unfenced !== '{\n  "clarify": "hi"\n}') {
+  console.error(
+    `[canary:desktop] FAIL: extractFirstJsonObject didn't strip fences; got: ${JSON.stringify(unfenced)}`,
+  );
+  process.exit(1);
+}
+const prose = 'Some prose before. {"a":1,"b":{"c":2}} and after.';
+if (extractFirstJsonObject(prose) !== '{"a":1,"b":{"c":2}}') {
+  console.error(`[canary:desktop] FAIL: extractFirstJsonObject prose-wrapping`);
+  process.exit(1);
+}
+if (extractFirstJsonObject("no json here, just words") !== null) {
+  console.error(`[canary:desktop] FAIL: extractFirstJsonObject should return null for no-JSON input`);
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] interviewer transport (json extraction): pass (fences stripped · prose-wrapped extracted · no-json returns null)`,
 );
 
 console.log("[canary:desktop] all clear");
