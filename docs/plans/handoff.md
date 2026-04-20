@@ -54,7 +54,7 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**§17 signed off (2026-04-19). Post-lock implementation: steps 1–5 of 7 complete in 7 commits (`b15a395` → `552d898`). Amendment A-3 applied pre-pilot (`ab9ba87`).** The 7-step plan to live-bench:
+**§17 signed off (2026-04-19). Post-lock implementation: steps 1–6a of 7 complete in 8 commits (`b15a395` → `2d09b3d`). Amendment A-3 applied pre-pilot (`ab9ba87`). Step 6a = pilot wiring + 12-subset validation — pilot engine proven end-to-end, step-6 remaining work decomposes into 6b/6c/6d below.** The 7-step plan to live-bench:
 
 1. ✅ **LLM transport adapter** (`b15a395`) — `eval_sim/llm.py`: `Transport` Protocol + `ClaudeAgentSDKTransport` + `FakeTransport` + lazy singleton. Rides parent Claude Code session auth — no `ANTHROPIC_API_KEY` (trick: `os.environ.pop("CLAUDECODE", None)` before each `query()`; pattern from `agentic_ai_reviewer`). Defensive monkeypatch for SDK v0.1.x `MessageParseError` on `rate_limit_event`. Live smoke: Sonnet round-trip 13.7s.
 2. ✅ **Scorer flip** (`b15a395`) — 6 LLM call sites refactored from `client: Anthropic | None` to `transport: Transport | None` (judge, judge swap, paraphrase judge, Staab probe, semantic-equivalence, trace classifier, paraphrase barrier). Dropped `anthropic` SDK dep. Latent bug fixed: `PARAPHRASE_JUDGE_PROMPT`'s JSON braces would have crashed `str.format()` in the pilot — switched to `.replace()`-based substitution; locked prompt bytes unchanged. Live judge smoke: 33.3s, fully-parsed `JudgeOutput`.
@@ -66,8 +66,17 @@ Durable record of project state, decisions, and what future work needs to know. 
    - **4d** `email.py` (B; multi-round email + meeting protocol per §6a — 3+ unresolved → 90% accept via separate SHA256 stream). Three meeting leak vectors: attendee broadening, notes-doc forwarding (when `meeting_notes_reuse` fires), verbal-to-text paraphrase. System-level failure modes from `failure_modes.py` applied at routing layer (`wrong_cc` adds planning-lead; `scheduler_assistant_cc` adds DL marker on `artifact_refs`). Loop-bug fix: exit BEFORE applicant's reply once trigger threshold reached.
    - **4e** `runner.py` — `run(scenario, condition, seed, *, dry_run, transport, max_turns)` dispatches to the right channel by Condition. Per-condition agent tier per §5e + §4.1: applicant uses Opus for A/C/D, Sonnet for B; utility + regulator universally Sonnet. Circular-import guard: `failure_modes` import moved to function body.
    - **Architectural call** (recorded in `eval_sim/channels/base.py` docstring): we use Concordia's `EntityAgent`/`ContextComponent`/`AssociativeMemoryBank` substrate but **not** `concordia.environment.engines.Sequential` — the latter is itself LLM-driven (~3,360 wasted Sonnet calls in main run with no decision-theoretic content). Substrate claim per §1.4 is preserved; loop is ours.
-5. ✅ **Live Cartographer cache generation** (`552d898`) — `scripts/generate_cartographer_cache.py` now wires `_invoke_live_cartographer()` through `ClaudeAgentSDKTransport` (Opus 4.7, product-agent tier). System prompt = SKILL.md + SOURCES.md; user prompt carries scenario identity + a canonical-URL whitelist extracted from SOURCES.md's `**URL:**` rows. 3-attempt retry loop with in-loop TS-CI-validator subprocess — schema AND URL-whitelist failures both feed back as corrective nudges. 7 fixtures committed at `eval_sim/fixtures/cartographer-cache/`: 6 grid scenarios (all passed validator on attempt 1/3) + S7 priorauth sentinel (`{domain:'priorauth',cache_applicable:false}`). `cache-hashes.json` manifest carries all 7 SHA-256 digests per §15.5. Live smoke of dispatch (`scripts/smoke_runner_dispatch.py`, ab9ba87) separately validated R1 meeting-day fix + R2 Oracle cartographer_mode tag on the real SDK path.
-6. **Pilot** — 28 main + 9 fairness-check = 37 runs. Validate scorer + role-prompt behavior; amend if surfaced; re-lock.
+5. ✅ **Live Cartographer cache generation** (`552d898`) — `scripts/generate_cartographer_cache.py` now wires `_invoke_live_cartographer()` through `ClaudeAgentSDKTransport` (Opus 4.7, product-agent tier). System prompt = SKILL.md + SOURCES.md; user prompt carries scenario identity + a canonical-URL whitelist extracted from SOURCES.md's `**URL:**` rows. 3-attempt retry loop with in-loop TS-CI-validator subprocess — schema AND URL-whitelist failures both feed back as corrective nudges. 7 fixtures committed at `eval_sim/fixtures/cartographer-cache/`: 6 grid scenarios (all passed validator on attempt 1/3) + S7 priorauth sentinel (`{domain:'priorauth',cache_applicable:false}`). `cache-hashes.json` manifest carries all 7 SHA-256 digests per §15.5. Live smoke of dispatch (`scripts/smoke_runner_dispatch.py`, `ab9ba87`) separately validated R1 meeting-day fix + R2 Oracle cartographer_mode tag on the real SDK path.
+6. **Pilot** — 28 main + 9 fairness-check = 37 runs. Decomposed into:
+   - **6a** ✅ (`2d09b3d`) — `scripts/pilot.py --live` wired: CSV filter flags (`--scenarios`, `--conditions`, `--max-seeds`, `--include-s7`), per-run ledger JSON → `results/pilot/transcripts/` (gitignored), incremental committed manifest at `results/pilot/manifest.json` (§15.5 reproducibility artifact). Ledger serializer handles Pydantic + dataclasses + nested containers. **12-subset validation (S1+S2+S3 × A/B/C/D × seed=0, ~85 min, ~$20–30 SDK): all 12 `ok`.** Step-6a directional findings (n=1 seed, NOT statistically significant — pilot gates confirming engine behavior, not publishable claims):
+     - A always 3 turns / day 0 per §4.1 ✓ (no variance: deterministic)
+     - B meeting trigger fires in S1 + S2 (11 turns / day 37) but NOT in S3 (6 turns / day 27) — §6a-consistent: Kraken's low-friction archetype resolves in-thread without escalation
+     - C/D wire-protocol parity holds (same 7-turn/day-10 shape when both hit the 2-round cap) — substrate-isolation §1.5.1 #1 design goal visible in the transcripts
+     - **Substrate signal candidate:** S2 × C early-terminated at 1 bounded-query round (6 turns / day 8) while S2 × D went 2 rounds (7 turns / day 10). §8d H-spec would pick this up at full-pilot seed counts as a flat-prompt-vs-Skill discipline delta
+     - `cache_hash` on every ledger matches `552d898` §6e manifest — cross-check passes
+   - **6b** — 16+ more main-pilot runs to reach §9 seed coverage (seeds 1–4 for S1–S3 + full 5-seed sweep for S4/S5/S6) = 27+ more Opus-heavy runs, ~2.5–4 hrs wall-clock, ~$40–80 SDK. Pending.
+   - **6c** — Fairness pilot (§6e): 9 runs where C AND D both call Cartographer live on S1/S3/S7. **Requires `runner.run()` extension** accepting a `cartographer_mode_override: Literal['live','cached']|None` argument (not wired today; `pilot.py --fairness` errors out explicitly). ~1–2 hrs wall-clock.
+   - **6d** — Scorer-over-ledger batch step. The scorer modules under `eval_sim/scorers/{efficiency,robustness,mechanical,privacy/*,judge,futures}.py` are all ready; none are currently invoked from the pilot loop. Needs a batch pass reading `results/pilot/transcripts/*.json` → writing `results/pilot/scores/*.json` → aggregating to `results/pilot/summary.{json,md}`. **No SDK cost** for deterministic scorers; judge + probe scorers are LLM-gated (~$20–50 for the subset, ~$100–200 for a full 37-run pilot). Amendments per §3.2 if scorer behavior surprises.
 7. **Main** — 140 condition + 35 oracle + 280 judge = 455 runs. Aggregate via `aggregator.py` (BCa CIs, weighted κ, length-residual). Generate `docs/evals/sim-bench-results.md`.
 
 **Amendment A-3 (pre-pilot, `ab9ba87`):** reconciled four items surfaced by the step-4 code review — §6a meeting turnaround to 4d (table wins over bullet; `MEETING_DURATION_DAYS` removed; `email.py` verbal turns now 0.5d each); §5e row 1 clarified (applicant follows per-condition product-agent tier: B Sonnet; A/C/D Opus — the code already did this, doc now matches); §6a vector-3 verbal-to-text documented as parallel-draws simplification in v1; §6a `scheduler_assistant_cc` documented as unconditional-firing in v1. Pricing check (Opus ~1.67× Sonnet) noted but unifying to all-Opus would collapse the §5d/§14 #9 self-preference mitigation so tiered design retained. No runs initiated; no data invalidated. Same commit: `channels/oracle.py` gained `cartographer_mode='cached'` scorer_input; stale "pending step 4X" markers removed.
@@ -103,7 +112,9 @@ Bhawuk's utility-prompt review is deferred to post-lock amendment per user direc
 | `channels/prompt_bundle.py` | Condition C — same loop as D via shared workflow; `cartographer_mode='live'`; substrate difference set by runner at agent build · §4.3 + §6c | **live wired** |
 | `channels/email.py` | Condition B — multi-round NDA-email + 3-vector meeting protocol + system-level failure-mode application + meeting-accept on a separate SHA256 stream · §4.2 + §6a | **live wired** |
 | `runner.py` | Single-run orchestrator; dry-run returns synthetic 3-turn ledger; **live path dispatches to the right channel by Condition** (A→Oracle / B→Email / C→PromptOnly / D→SkillBundle), builds AgentBundle at the right tier per §5e + §4.1 (applicant Opus for A/C/D, Sonnet for B; utility + regulator universally Sonnet) | **live wired** |
-| `scripts/pilot.py` + `scripts/main.py` | typer CLIs · print locked run matrix · dry-run only | ready |
+| `scripts/pilot.py` | typer CLI · live dispatch via `runner.run()` · CSV filter flags · per-run ledger JSON + incremental manifest · §15.5 SHA-256 tracking | **live wired** · 12-subset validated (`2d09b3d`) |
+| `scripts/main.py` | typer CLI · prints locked run matrix · dry-run only (pilot.py pattern ready to port when main run starts) | ready to port |
+| `results/pilot/manifest.json` | §15.5 reproducibility artifact — scenario/condition/seed × wall-clock + turn-count + final-day + cache_hash + SHA-256 per run. Committed; transcripts/ gitignored | live |
 | `scripts/smoke_llm.py` | manual one-shot transport round-trip via `claude-agent-sdk`; no API key needed | live |
 | `scripts/smoke_judge.py` | manual end-to-end: locked Prometheus prompt + 3-turn synthetic transcript → Opus 4.7 → parsed `JudgeOutput` | live |
 | `scripts/smoke_agents.py` | manual end-to-end: build applicant → live paraphrase barrier → live act; reports paraphrase audit | live |
@@ -114,11 +125,32 @@ Bhawuk's utility-prompt review is deferred to post-lock amendment per user direc
 
 Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff check && uv run pyright` — all green. ~90s first run (BCa bootstrap tests do 10k resamples); warm cached runs under 3s.
 
-**What is still pending** (steps 6–7 of the post-§17 plan):
-- **Step 6** — pilot (28 + 9 fairness-check = 37 runs; ~5–6 hrs wall-clock at step-5 observed rates; ~$50–100 SDK cost). Includes the §6e fairness pilot — 3 seeds on S1/S3/S7 where both C and D hit the live SDK to isolate cache-vs-no-cache effect from substrate effect.
+**What is still pending** (step 6b/6c/6d of the decomposed step 6, plus step 7):
+- **Step 6b** — additional seeds to reach §9 replication (see step-6 breakdown above). Blocking nothing — can run in parallel with 6c/6d once the runner is ready.
+- **Step 6c** — `runner.run()` cartographer-mode override + fairness-pilot enablement (~30 min engine work + 9 live runs = ~1–2 hrs).
+- **Step 6d** — scorer-over-ledger batch step (the biggest remaining pre-talk lift; see below).
 - **Step 7** — main (140 condition + 35 oracle + 280 judge = 455 runs). Aggregate via `aggregator.py` (BCa CIs, weighted κ, length-residual) → `docs/evals/sim-bench-results.md` → talk slide.
 
-**Suggested first action in next session:** start the pilot run against `scripts/pilot.py --live` (currently dry-run only; Week-2 wiring to dispatch through `runner.py` + persist per-run ledgers + aggregate scorer-input summaries is the remaining bench-engine work). Expect ~5–10 min per run × 37 runs ≈ 5 hrs; run over a single shell session so transcripts land in one batch for human spot-check.
+**Suggested first action in next session (order matters — do step 6d *before* spending more SDK on seeds):**
+
+1. **Step 6d scorer batch (no SDK; pure Python).** Add `scripts/score_ledgers.py` that reads every `results/pilot/transcripts/*.json` and runs the deterministic scorers first (`efficiency.score_from_ledger`, `mechanical.score_from_ledger`, `robustness.score_from_futures`), then the LLM-gated scorers (`privacy/{direct,inferential,trace}.score_from_ledger`, `judge.score_transcript`). Emit `results/pilot/scores/{scenario}_{condition}_seed{N}.json` + aggregated `results/pilot/summary.{json,md}`. Budget each scorer's LLM spend explicitly so the batch can be re-run without re-spending on the deterministic axes. This lets us interpret the 12-subset before generating more ledgers. **Start here** — no SDK needed, ~2–3 hrs of engine work, and it will surface any scorer-side bugs before we commit ledgers on 16 more runs.
+2. **Step 6c fairness enablement.** Extend `eval_sim/runner.py::run()` with a `cartographer_mode_override` kwarg threaded to `SkillBundleChannel` + `PromptOnlyBundleChannel` (they already carry `cartographer_mode` on `scorer_inputs`; just expose a setter). Then flip `pilot.py --fairness` from the explicit `typer.Exit(1)` to a real dispatch loop over `(CARTOGRAPHER_FAIRNESS_PILOT_SCENARIOS, CARTOGRAPHER_FAIRNESS_PILOT_SEEDS, [C, D])` with `cartographer_mode_override='live'` for both. **Nudge:** this is ~30 min of engine work + ~1–2 hrs of runs. Do after 6d so we can score the fairness runs immediately.
+3. **Step 6b seed expansion.** Once scorers are landing clean signals on the 12-subset, decide whether signal quality justifies more seeds. The calculus: run more only if §9 success thresholds need tightening CIs. Specific invocation: `PYTHONPATH=. uv run python scripts/pilot.py --live --scenarios S1,S2,S3 --max-seeds 5` (re-runs S1–S3 with seeds 0–4 — seed=0 overwrites; idempotent if content is deterministic, but *expect new LLM content per seed* since transport doesn't pin determinism).
+4. **Out-of-scope for pre-talk (defer):** Priorauth agent path for S7 — `build_applicant_priorauth(PriorAuthProfile)` parallel builder. Grid-domain replication slide can land with 6 grid scenarios; S7 story ships as a follow-up paragraph.
+
+**Useful invocations for any next session:**
+
+```bash
+cd packages/eval-sim
+# Matrix-only preview (no SDK):
+PYTHONPATH=. uv run python scripts/pilot.py --scenarios S1,S2,S3 --max-seeds 1
+# Re-run a single cell (cheap sanity check):
+PYTHONPATH=. uv run python scripts/pilot.py --live --scenarios S1 --conditions D --max-seeds 1
+# Replay the 4-condition × S1 × seed=0 dispatch smoke (~27 min):
+PYTHONPATH=. uv run python scripts/smoke_runner_dispatch.py
+# Regenerate a single Cartographer fixture (~1 min, ~$0.50):
+PYTHONPATH=. uv run python scripts/generate_cartographer_cache.py --scenario S1 --live
+```
 
 Every locked prompt + locked parameter has a byte-level regression-fence test. Post-lock edits will fail CI unless a matching amendment block lands in sim-bench-design.md §3.2.
 
