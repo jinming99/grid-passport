@@ -141,4 +141,75 @@ if (invalidFrontmatter.length > 0) {
 console.log(
   `[canary:desktop] skills bundle source: pass (${SHIPPING_SKILLS.length} skill${SHIPPING_SKILLS.length === 1 ? "" : "s"} present + frontmatter valid at .claude/skills/)`,
 );
+
+// ---------------------------------------------------------------------------
+// Interviewer transport pipeline (Track 2.1).
+//
+// Exercises the free-form-prose → FakeTransport → validator → CaseInput path
+// end-to-end in Node. Mirrors the webview's runtime shape without actually
+// mounting React. If the validator contract ever regresses or the transport
+// seam breaks, the gate fires here instead of waiting for manual UI testing.
+// ---------------------------------------------------------------------------
+
+import {
+  FakeInterviewerTransport,
+  makeRequest,
+} from "../src/lib/interviewer-transport.ts";
+
+const minimalSkill = {
+  slug: "interviewer",
+  frontmatter: {
+    name: "gridpassport-interviewer",
+    description: "canary stub — mirrors the shipped Skill frontmatter shape",
+  },
+  skillMdBody: "",
+  references: [],
+  examples: [],
+};
+
+const fake = new FakeInterviewerTransport();
+
+// Happy path: prose → caseInput, passes validator.
+const happy = await fake.query(
+  makeRequest("180MW at Prince William, target 2028, ~22% deferrable", minimalSkill),
+);
+if (happy.kind !== "caseInput") {
+  console.error(
+    `[canary:desktop] FAIL: FakeTransport happy-path returned ${happy.kind}; expected caseInput`,
+  );
+  if (happy.kind === "validatorRejection") {
+    for (const r of happy.reasons) console.error(`  - ${r}`);
+  } else if (happy.kind === "transportError") {
+    console.error(`  - ${happy.message}`);
+  }
+  process.exit(1);
+}
+if (happy.value.status !== "draft") {
+  console.error(
+    `[canary:desktop] FAIL: Interviewer hand-off status must be 'draft' (got '${happy.value.status}')`,
+  );
+  process.exit(1);
+}
+if (happy.value.publicEvidence.sourceRefs.length !== 0) {
+  console.error(
+    `[canary:desktop] FAIL: Interviewer hand-off must ship with empty publicEvidence.sourceRefs (Cartographer's scope)`,
+  );
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] interviewer transport (happy): pass (FakeTransport → validator → CaseInput; ${happy.value.applicantOrg}, ${happy.value.requestedMW} MW)`,
+);
+
+// Clarify path: empty prose → clarify question, never reaches state.
+const clarify = await fake.query(makeRequest("   ", minimalSkill));
+if (clarify.kind !== "clarify") {
+  console.error(
+    `[canary:desktop] FAIL: FakeTransport clarify-path expected 'clarify', got '${clarify.kind}'`,
+  );
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] interviewer transport (clarify): pass (empty prose → clarify; no state write)`,
+);
+
 console.log("[canary:desktop] all clear");

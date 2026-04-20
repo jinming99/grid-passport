@@ -10,6 +10,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@grid-passport/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@grid-passport/core':
         specifier: workspace:*
         version: link:../../packages/core

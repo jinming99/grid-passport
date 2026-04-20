@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CASE_METAS,
   DEFAULT_CASE_ID,
@@ -14,7 +14,10 @@ import {
   type LoadedCase,
 } from "./lib/case-loader";
 import { buildAndSignBundle, exportBundle } from "./lib/bundle";
+import { loadAllSkills, type LoadedSkill } from "./lib/skills-loader";
+import { defaultInterviewerTransport } from "./lib/interviewer-transport";
 import { ReviewColumn } from "./components/ReviewColumn";
+import { IntakePanel } from "./components/IntakePanel";
 
 const ROLES: Role[] = ["applicant", "utility", "regulator"];
 
@@ -39,6 +42,42 @@ export function App() {
   );
   const [mode, setMode] = useState<Mode>("work");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [interviewerSkill, setInterviewerSkill] =
+    useState<LoadedSkill | null>(null);
+
+  // Load shipping Skills into memory on first mount. Fails softly when the
+  // Tauri resource path is unavailable (e.g., running `vite` alone without
+  // the Tauri host) — the IntakePanel disables its submit button and the
+  // rest of the app is unaffected. The real Agent SDK wiring in Track
+  // 2.1-polish will also feed off this loaded skill.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const skills = await loadAllSkills();
+        if (cancelled) return;
+        const iv = skills.find((s) => s.slug === "interviewer") ?? null;
+        setInterviewerSkill(iv);
+      } catch {
+        // Intentional: intake degrades to "skills not loaded" in the panel.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const onInterviewerAccept = useCallback((input: CaseInput) => {
+    setLoaded({
+      input,
+      source: {
+        kind: "interviewer",
+        transport: defaultInterviewerTransport().label,
+        at: new Date().toISOString(),
+      },
+    });
+    setStatus({ kind: "idle" });
+  }, []);
 
   const projections = useMemo(() => {
     const record = buildRecord(loaded.input);
@@ -147,6 +186,14 @@ export function App() {
                     {loaded.source.path}
                   </span>
                 </>
+              ) : loaded.source.kind === "interviewer" ? (
+                <>
+                  <span className="source-tag">source · interviewer</span>
+                  <span className="source-path mono">
+                    transport {loaded.source.transport} · at{" "}
+                    {loaded.source.at.slice(11, 19)}
+                  </span>
+                </>
               ) : (
                 <>
                   <span className="source-tag">source · bundled fixture</span>
@@ -210,6 +257,11 @@ export function App() {
           {status.kind === "error" ? (
             <div className="status-line status-err">✘ {status.message}</div>
           ) : null}
+
+          <IntakePanel
+            skill={interviewerSkill}
+            onAccept={onInterviewerAccept}
+          />
         </section>
       ) : (
         <section className="review-gate">

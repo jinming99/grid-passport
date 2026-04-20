@@ -57,7 +57,7 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**Sprint 2026-04-20 ("demo-ready everything") in flight. Tracks 1 + 4 landed 2026-04-20; Track 3.1 scaffold landed 2026-04-20 (full UX follow-up); main run still deferred.** Sprint plan at `docs/plans/sprint-2026-04-20.md`: four tracks, ~4 weeks, four parallelizable streams. Track 1 (empirical evidence into `/about` §6) — P0.1 CandidatePlan extraction + P0.3 different-family judge spot-check + live 12-cell re-score with robustness axis + `/about` §6 OPR tables. Track 4 (derivation-correctness tests) — 48 new `node:test` units in `packages/core/src/{forecast,audit}.test.ts` (tier-band invariants, quantize-to-5 firmness, hash-chain integrity, policy-version binding, override-row redaction); `pnpm core:test` now runs 57 tests (↑ from 9). Track 3.1 (utility binary) — `apps/utility/` workspace scaffolded (Vite + React + TS + Tauri 2.10.3; crate `grid-passport-utility`, identifier `app.gridpassport.utility`, port 1430, window 1180×760); verifier-only Rust core (no signer deps); placeholder paste+verify UI proves the import chain; **gate 15 `canary:utility`** green — write-scope import guard + verifier-wiring positive check + sign/verify/tamper/reject e2e on a fresh bundle. Tracks 2 (Interviewer SDK wiring → Explainer Skill) and 3.2 (self-review trust panel) remain open.
+**Sprint 2026-04-20 ("demo-ready everything") in flight. Tracks 1 + 4 landed 2026-04-20; Tracks 2.1a + 3.1 scaffolds landed 2026-04-20; main run still deferred.** Sprint plan at `docs/plans/sprint-2026-04-20.md`: four tracks, ~4 weeks, four parallelizable streams. Track 1 (empirical evidence into `/about` §6) — P0.1 CandidatePlan extraction + P0.3 different-family judge spot-check + live 12-cell re-score with robustness axis + `/about` §6 OPR tables. Track 4 (derivation-correctness tests) — 48 new `node:test` units in `packages/core/src/{forecast,audit}.test.ts`; `pnpm core:test` now runs 57 tests (↑ from 9). Track 3.1 (utility binary) — `apps/utility/` workspace scaffolded; **gate 15 `canary:utility`** green (write-scope import guard + verifier-wiring positive + sign/verify/tamper/reject e2e). Track 2.1a (Interviewer transport seam) — pure validator extracted to `@grid-passport/agents/interviewer/validator` for webview import; transport interface + `FakeInterviewerTransport` + `ClaudeAgentSDKInterviewerTransport` stub at `apps/desktop/src/lib/interviewer-transport.ts`; `IntakePanel` component wired into desktop work-mode; `canary:desktop` extended from 3 to 5 guards exercising the prose→validator→CaseInput pipeline end-to-end (+ clarify-path negative). Tracks 2.1b (real Claude Agent SDK wiring — substrate decision pending), 2.2 (Explainer Skill, serialized behind 2.1b), 3.1-polish (utility full UX), and 3.2 (self-review trust panel) remain open.
 
 **Track 1 headline numbers, n=1 per cell (from `docs/evals/sim-bench-results.md`):**
 - **OPR Δ = D − B**: S1 **+0.328 ✓** (clears §9.1 threshold); S3 +0.194 borderline; S2 +0.047 flat.
@@ -148,7 +148,8 @@ Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff ch
 - **Step 7 main run** — 140 condition + 35 oracle + 280 judge = 455 runs, ~$400–1200 SDK. Deferred per 2026-04-20 sprint decision; pilot numbers now defend the talk (see Track 1 headline above).
 
 *Sprint-side (in flight):*
-- **Track 2.1 Interviewer Agent SDK wiring** — Claude Agent SDK as transport in `apps/desktop/`; streams `/gridpassport-interviewer` responses into `CaseInput` field writes; validator-gated emission; graceful fallback when a Claude Code host session is present. 3–5 d. The critical path for Track 2.
+- **Track 2.1a Interviewer transport seam** — ✅ landed 2026-04-20. Architecture is in place; a `FakeInterviewerTransport` drives the full prose→validator→CaseInput pipeline in the webview. Every emission is gated by `validateInterviewerOutput` (now importable from `@grid-passport/agents/interviewer/validator`). The React `IntakePanel` renders clarify/validator-rejection/transport-error states discriminately.
+- **Track 2.1b Real Claude Agent SDK transport** — open. Drop-in replacement for `ClaudeAgentSDKInterviewerTransport.query()`. Substrate decision pending: (a) webview HTTP-SDK with API key (violates "no API-key UX") vs (b) webview→Rust-IPC→subprocess carrying Claude Code session env. Recommend (b); matches eval-sim's `ClaudeAgentSDKTransport` pattern + the sprint's "require Claude Code host session" open-question resolution. 2–3 d once the substrate is picked.
 - **Track 2.2 Explainer Skill v0** — `.claude/skills/explainer/` + `ROLE_VOICES.md` + paired validator (no raw-private-field regex in narration). Runs on Track 2.1's SDK transport. Adds row 3 to research-thesis §4 write-scope table. 3–5 d, serial after 2.1.
 - ~~**Track 3.1 Utility Tauri binary (`apps/utility/`) scaffold**~~ — ✅ landed 2026-04-20 (scaffold + gate 15). Workspace scaffolded as separate `apps/utility/` package mirroring `apps/desktop/` recipe. Imports only `@grid-passport/verifier` + `@grid-passport/core/{types, projection, bundle}` (the core imports are type-only in practice); the write-scope guard in `pnpm canary:utility` forbids `@grid-passport/core/{fixtures, forecast, audit}` in `apps/utility/src` by grep. Gate 15 exercises: (i) write-scope guard, (ii) positive `@grid-passport/verifier` wiring check, (iii) sign + verify + tamper + reject on a fresh owl-compute bundle. Full UX (real drop-zone, projection render with role-pinned `BenefitPanel`, trust-claim stamping) lands as Track 3.1-polish in a follow-up chunk — the scaffold compiles, typechecks, and proves the import chain.
 - **Track 3.2 Self-review trust panel** — persistent chrome in `apps/desktop/` showing `0 network calls · inputs at <path> · bundle hash <truncated> · 0 raw private fields released`. Live runtime state, not hardcoded. 1–2 d.
@@ -158,7 +159,7 @@ Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff ch
 
 **Suggested first action in next session:**
 
-1. **Track 2.1 Interviewer SDK wiring** (~3–5 d) — the critical path for Track 2 (Explainer 2.2 serializes behind it). Read `docs/agents.md` §5c + existing `apps/desktop/src/lib/skills-loader.ts` first. Loader produces `LoadedSkill[]`; 2.1's job is to wire that through a Claude-Code-session-hosted transport with the paired `validate_caseinput.ts` validator gating every emission. Do this when fresh.
+1. **Track 2.1b real Claude Agent SDK transport** (~2–3 d) — drop-in replacement for `ClaudeAgentSDKInterviewerTransport.query()` at `apps/desktop/src/lib/interviewer-transport.ts`. Path (b) is recommended: new Rust Tauri command (e.g., `invoke("interviewer_query", { transcript, skillSource })`) that shells out to a subprocess carrying the Claude Code session env, parses the model's JSON response, and returns it to the webview. The existing transport seam + validator gate already wraps the result; all that changes is the bytes inside `query()`. Read eval-sim's `eval_sim/llm.py::ClaudeAgentSDKTransport` for the session-inheritance pattern (trick: `os.environ.pop("CLAUDECODE", None)` before each SDK call).
 2. **Track 3.1-polish `apps/utility/` full UX** (~3–4 d remainder) — scaffold already green; follow-up layers on: (a) real drop-zone via `@tauri-apps/plugin-dialog` + `plugin-fs`, (b) verified-bundle state carrying keyId + policy-hash display, (c) rendering `payload.projections.utility` with a utility-pinned `BenefitPanel` (hoist from web or reimplement locally), (d) trust-claim stamping (`no network · verify-only · pinned to keyId`). `canary:utility` already covers the write-scope contract and the verify/tamper e2e; UX work doesn't need new canaries.
 3. **Replay Track 1 invocations if needed** (for reproducibility):
    ```bash
@@ -232,12 +233,14 @@ grid-passport/
 │   ├── verifier-py/                    Python reference verifier · single file · PyCA cryptography + stdlib only · demonstrates protocol portability
 │   ├── desktop/                        Tauri 2.x shell · Vite + React + TS frontend · Rust core · applicant-side signing
 │   │   ├── src/
-│   │   │   ├── App.tsx                 top-level: two-mode (work/review) · case picker · file loader · review gate + export terminus
-│   │   │   ├── components/             ReviewColumn (work|review variant), MiniBenefit, ProjectionSections (bucket-tiered with ⓘ tooltips)
+│   │   │   ├── App.tsx                 top-level: two-mode (work/review) · case picker · file loader · interviewer intake · review gate + export terminus
+│   │   │   ├── components/             ReviewColumn (work|review variant), MiniBenefit, ProjectionSections (bucket-tiered with ⓘ tooltips), IntakePanel (Track 2.1a — prose → validator → CaseInput)
 │   │   │   ├── lib/
-│   │   │   │   ├── case-loader.ts      dialog.open + fs.readTextFile + structural validate against CaseInput
+│   │   │   │   ├── case-loader.ts      dialog.open + fs.readTextFile + structural validate against CaseInput; `LoadedCase.source` discriminates file | bundled | interviewer
 │   │   │   │   ├── signer.ts           tauriSigner() → BundleSigner via applicant_public_key + applicant_sign IPC
-│   │   │   │   └── bundle.ts           buildAndSignBundle() · signs v1 bundle with OS-keychain-backed Ed25519 · dialog.save + fs.writeTextFile
+│   │   │   │   ├── bundle.ts           buildAndSignBundle() · signs v1 bundle with OS-keychain-backed Ed25519 · dialog.save + fs.writeTextFile
+│   │   │   │   ├── skills-loader.ts    resolveResource + plugin-fs → LoadedSkill[] from packaged `.claude/skills/` (Tauri-only)
+│   │   │   │   └── interviewer-transport.ts  Track 2.1a transport seam · `InterviewerTransport` iface + `FakeInterviewerTransport` (default v0) + `ClaudeAgentSDKInterviewerTransport` stub (2.1b target) · every caseInput emission validator-gated
 │   │   │   ├── styles.css              terminal-flavored vanilla CSS (no Tailwind on desktop yet)
 │   │   │   └── main.tsx
 │   │   ├── scripts/canary-desktop.ts   asserts @grid-passport/core imports + 3-case × 3-role projection invariant
@@ -299,7 +302,8 @@ grid-passport/
 │       │   ├── export_prompt_only.ts   generic Skill → prompt-only baseline derivation; takes skill name (or --all); drift gate at `pnpm agents:baseline:check`
 │       │   └── compute_metrics.ts      measures each Skill's substrate properties + produces metrics.md + metrics.json; drift gate at `pnpm agents:metrics:check`
 │       ├── interviewer/
-│       │   ├── scripts/validate_caseinput.ts   structural + write-scope contract validator; 3 positive + 3 negative self-tests
+│       │   ├── src/validator.ts                  pure browser-safe `validateInterviewerOutput` + `InterviewerContractViolation` — importable from desktop webview via subpath export `@grid-passport/agents/interviewer/validator` (Track 2.1a)
+│       │   ├── scripts/validate_caseinput.ts     CLI wrapper: re-exports pure validator + fixture-backed 3+3 self-test for `agents:validate` gate
 │       │   └── baselines/
 │       │       ├── prompt-only.md              AUTO-GENERATED; research case-study artifact; content-hashed drift gate
 │       │       └── README.md                   case-study framing · methodology · what the comparison does and does not prove (applies to all Skill baselines)
@@ -438,7 +442,7 @@ Add a new case:
 | 1 | `pnpm typecheck` | Web package types consistent |
 | 2 | `pnpm privacy:canary` | Structural + audit-scan + TS↔Rego↔Python drift — `docs/privacy-claim.md` §2c |
 | 3 | `pnpm desktop:typecheck` | Desktop package types consistent |
-| 4 | `pnpm canary:desktop` | Desktop imports `@grid-passport/core` + projection invariant on 3 cases × 3 roles |
+| 4 | `pnpm canary:desktop` | Desktop imports `@grid-passport/core` + projection invariant on 3 cases × 3 roles + shipping Skills bundle source present + **interviewer transport pipeline** (FakeTransport → validator → CaseInput happy path with `status=draft` + empty publicEvidence; clarify path for empty prose) — Track 2.1a |
 | 5 | `pnpm utility:typecheck` | Utility package types consistent |
 | 6 | `pnpm canary:utility` | Utility write-scope guard (no `@grid-passport/core/{fixtures,forecast,audit}` imports in `apps/utility/src`) + positive `@grid-passport/verifier` wiring + sign/verify/tamper/reject e2e on a fresh owl-compute bundle |
 | 7 | `pnpm core:test` | 57 tests across `crypto.test.ts` (9 — 6 official RFC 8785 JCS vectors incl. `weird.json` surrogate-pair + NaN/Infinity rejection + determinism) · `forecast.test.ts` (30 — tier-band invariants, quantize-to-5 under perturbation, confidence/flex/duration tier boundaries, override semantics, clamp) · `audit.test.ts` (18 — hash-chain integrity, policy-version binding per actor class, override-row redaction, sealed-field-count tripwire) |

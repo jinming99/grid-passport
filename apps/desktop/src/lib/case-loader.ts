@@ -4,7 +4,10 @@ import type { CaseInput } from "@grid-passport/core/types";
 
 export interface LoadedCase {
   input: CaseInput;
-  source: { kind: "file"; path: string } | { kind: "bundled"; caseId: string };
+  source:
+    | { kind: "file"; path: string }
+    | { kind: "bundled"; caseId: string }
+    | { kind: "interviewer"; transport: string; at: string };
 }
 
 export class CaseValidationError extends Error {
