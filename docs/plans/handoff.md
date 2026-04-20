@@ -57,7 +57,7 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**Sprint 2026-04-20 ("demo-ready everything") in flight. Track 1 (empirical evidence into `/about` §6) landed 2026-04-20; main run still deferred.** Sprint plan at `docs/plans/sprint-2026-04-20.md`: four tracks, ~4 weeks, four parallelizable streams. Track 1 closed this turn — P0.1 CandidatePlan extraction + P0.3 different-family judge spot-check + live 12-cell re-score with robustness axis + `/about` §6 OPR tables. Tracks 2 (Interviewer SDK wiring → Explainer Skill), 3 (`apps/utility/` Tauri binary + trust panel), 4 (forecast/audit unit tests) are open.
+**Sprint 2026-04-20 ("demo-ready everything") in flight. Tracks 1 + 4 landed 2026-04-20; main run still deferred.** Sprint plan at `docs/plans/sprint-2026-04-20.md`: four tracks, ~4 weeks, four parallelizable streams. Track 1 (empirical evidence into `/about` §6) — P0.1 CandidatePlan extraction + P0.3 different-family judge spot-check + live 12-cell re-score with robustness axis + `/about` §6 OPR tables. Track 4 (derivation-correctness tests) — 48 new `node:test` units in `packages/core/src/{forecast,audit}.test.ts` (tier-band invariants, quantize-to-5 firmness, hash-chain integrity, policy-version binding, override-row redaction); `pnpm core:test` now runs 57 tests (↑ from 9). Tracks 2 (Interviewer SDK wiring → Explainer Skill) and 3 (`apps/utility/` Tauri binary + trust panel) remain open.
 
 **Track 1 headline numbers, n=1 per cell (from `docs/evals/sim-bench-results.md`):**
 - **OPR Δ = D − B**: S1 **+0.328 ✓** (clears §9.1 threshold); S3 +0.194 borderline; S2 +0.047 flat.
@@ -136,7 +136,7 @@ Bhawuk's utility-prompt review is deferred to post-lock amendment per user direc
 | `scripts/generate_cartographer_cache.py` | §6e fixture generator · SKILL.md+SOURCES.md system prompt · canonical-URL whitelist in user prompt · 3-attempt retry with in-loop TS-CI validator · S7 priorauth sentinel path · writes to `card.public_evidence_cache_path` + SHA-256 manifest | **live wired** + 7 fixtures committed on attempt 1/3 each |
 | `scripts/smoke_channel_oracle.py` | manual end-to-end Oracle channel run (3 LLM calls) | live |
 | `scripts/smoke_channel_skill_bundle.py` | manual end-to-end SkillBundle channel run (5–7 LLM calls; up to 2 bounded-query rounds) | live |
-| `tests/` | **222 pytest tests** covering schema round-trips · S1-S7 cards · scorer behavior · locked-prompt byte fences · disagreement detection · runner dry-run + live dispatch (4 conditions) · cache-hash manifest (committed + fallback-marker) · `Transport` protocol · `FakeTransport`-backed live-path wiring for every LLM call site · Concordia agent assembly + paraphrase-barrier component · all four channels (Oracle/SkillBundle/PromptOnly/Email) under FakeTransport · failure-mode routing application · meeting-trigger threshold · loop bounds + sentinel detection + max-rounds cap · Oracle cartographer-mode tag · canonical-URL whitelist parse · S7 sentinel shape · priorauth-domain guard | all green (~3s warm) |
+| `tests/` | **258 pytest tests** covering schema round-trips · S1-S7 cards · scorer behavior (incl. `plan_extraction` 19-test suite landed with Track 1) · locked-prompt byte fences · disagreement detection · runner dry-run + live dispatch (4 conditions) · cache-hash manifest (committed + fallback-marker) · `Transport` protocol · `FakeTransport`-backed live-path wiring for every LLM call site · Concordia agent assembly + paraphrase-barrier component · all four channels (Oracle/SkillBundle/PromptOnly/Email) under FakeTransport · failure-mode routing application · meeting-trigger threshold · loop bounds + sentinel detection + max-rounds cap · Oracle cartographer-mode tag · canonical-URL whitelist parse · S7 sentinel shape · priorauth-domain guard | all green (~3s warm) |
 
 Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff check && uv run pyright` — all green. ~90s first run (BCa bootstrap tests do 10k resamples); warm cached runs under 3s.
 
@@ -152,16 +152,15 @@ Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff ch
 - **Track 2.2 Explainer Skill v0** — `.claude/skills/explainer/` + `ROLE_VOICES.md` + paired validator (no raw-private-field regex in narration). Runs on Track 2.1's SDK transport. Adds row 3 to research-thesis §4 write-scope table. 3–5 d, serial after 2.1.
 - **Track 3.1 Utility Tauri binary (`apps/utility/`)** — separate workspace; imports only `@grid-passport/verifier` + `@grid-passport/core/{types,projection}` scoped to the utility-view slice. Cannot link `CaseInput.privateProfile` by import graph. Two screens (drop bundle → verify + keyId/policy display; render utility projection with pinned `BenefitPanel`). New `pnpm canary:utility` with grep-guard + e2e verify. 4–5 d.
 - **Track 3.2 Self-review trust panel** — persistent chrome in `apps/desktop/` showing `0 network calls · inputs at <path> · bundle hash <truncated> · 0 raw private fields released`. Live runtime state, not hardcoded. 1–2 d.
-- **Track 4 TS unit tests for `forecast.ts` + `audit.ts`** — vitest. Forecast: tier-band invariants under perturbation + quantized firmnessScore. Audit: hash-chain linkage + policy-hash binding + redaction-action rows. CLAUDE.md mandate coverage. 1–2 d, no dependencies.
+- ~~**Track 4 TS unit tests for `forecast.ts` + `audit.ts`**~~ — ✅ landed 2026-04-20. 48 new `node:test` units (30 forecast + 18 audit) layered under the existing `tsx --test` runner; no new vitest dep. `pnpm core:test` glob-expanded from hardcoded crypto-only to `src/*.test.ts`. Coverage themes: tier-band invariants, `firmnessScore` quantize-to-5 under perturbation, hash-chain `prevHash[i] === sha256(JCS(event[i-1]))`, per-actor policy-version binding, override-row redaction discipline (applicant vs non-applicant baseline visibility).
 
 **Sprint-close deliverable (target ~2026-05-18): master student brief.** At sprint close we consolidate Track 1 + Track 2 + Track 3 + Track 4 findings into a single onboarding doc (candidate path: `docs/plans/sprint-2026-04-20-brief.md`) that a student can read cold and walk into either the main run (eval side) or the next sprint's feature work. Each track's sub-sections should be write-once here and linked from the brief at close — don't duplicate content into the brief while the sprint is live.
 
 **Suggested first action in next session:**
 
-1. **Track 4 TS unit tests** (smallest bounded item, ~1 d) — vitest for `forecast.ts` + `audit.ts`. No dependencies. Earns a "slot in while Track 2 has external blockers" line on the sprint-close brief.
-2. **Track 3.1 `apps/utility/` Tauri scaffold** (~1 d scaffold → 4–5 d full) — stand up the workspace; wire `@grid-passport/verifier`; write the first canary. Then build up the projection-render side in parallel to Track 2 SDK wiring.
-3. **Track 2.1 Interviewer SDK wiring** (~3–5 d) — the hard one; do this when fresh, not at the tail of a long session. Reads `docs/agents.md` §5c + the existing `apps/desktop/src/lib/skills-loader.ts` first.
-4. **Replay Track 1 invocations if needed** (for reproducibility):
+1. **Track 3.1 `apps/utility/` Tauri scaffold** (~1 d scaffold → 4–5 d full) — stand up the workspace; wire `@grid-passport/verifier`; write the first canary. Then build up the projection-render side in parallel to Track 2 SDK wiring. Becomes gate 15 (`canary:utility`) when landed.
+2. **Track 2.1 Interviewer SDK wiring** (~3–5 d) — the hard one; do this when fresh, not at the tail of a long session. Reads `docs/agents.md` §5c + the existing `apps/desktop/src/lib/skills-loader.ts` first.
+3. **Replay Track 1 invocations if needed** (for reproducibility):
    ```bash
    cd packages/eval-sim
    PYTHONPATH=. uv run python scripts/score_ledgers.py --scorer robustness   # ~2 min, ~$0.50
@@ -259,7 +258,9 @@ grid-passport/
 │   │       ├── policy.ts               POLICY table (runtime mirror of the Rego) · enforcement
 │   │       ├── projection.ts           projectForRole(req, role) → ProjectedView
 │   │       ├── forecast.ts             forecast(case, override?) → DerivedProof
+│   │       ├── forecast.test.ts        30 tier-band + quantize-to-5 + boundary + override tests (Track 4)
 │   │       ├── audit.ts                async buildAuditTrail(case, record, role, override) · hash-chained via prevHash
+│   │       ├── audit.test.ts           18 hash-chain + policy-binding + override-redaction tests (Track 4)
 │   │       ├── bundle.ts               DisclosureBundle v1.0.0 · signBundle() · localSigner() · newBundleId()
 │   │       ├── crypto.ts               inline RFC 8785 JCS · WebCrypto SHA-256 · base64/hex helpers
 │   │       ├── crypto.test.ts          RFC 8785 official test vectors (Erdtman's cyberphone/json-canonicalization testdata)
@@ -319,7 +320,7 @@ grid-passport/
 │   │   ├── smoke_judge.py              manual end-to-end: locked Prometheus prompt + 3-turn synthetic transcript → Opus 4.7 → parsed JudgeOutput
 │   │   ├── smoke_agents.py             manual end-to-end: build applicant → live paraphrase barrier → live act; reports paraphrase audit
 │   │   └── generate_cartographer_cache.py  §6e fixture generator · dry-run only (live SDK pending step 5)
-│   └── tests/                          219 pytest tests · schema round-trips + all 7 cards + scorer behavior + locked-prompt byte fences + disagreement detection + runner dry-run + live dispatch (4 conditions) + cache-hash manifest + Transport protocol + FakeTransport-backed live-path wiring for every LLM call site + Concordia agent assembly + paraphrase-barrier component + all four channels (Oracle/SkillBundle/PromptOnly/Email) + failure-mode routing + meeting-trigger threshold + bounded-query sentinel + max-rounds cap + Oracle cartographer-mode tag
+│   └── tests/                          258 pytest tests · schema round-trips + all 7 cards + scorer behavior (incl. plan_extraction 19 tests from Track 1) + locked-prompt byte fences + disagreement detection + runner dry-run + live dispatch (4 conditions) + cache-hash manifest + Transport protocol + FakeTransport-backed live-path wiring for every LLM call site + Concordia agent assembly + paraphrase-barrier component + all four channels (Oracle/SkillBundle/PromptOnly/Email) + failure-mode routing + meeting-trigger threshold + bounded-query sentinel + max-rounds cap + Oracle cartographer-mode tag
 ├── .claude/
 │   └── skills/                         Claude Agent Skills · authoring + runtime source (spec-compliant path); Tauri bundles these at build time
 │       ├── README.md                   roster + write-scope table + thesis-property map + spec compliance checklist
@@ -416,7 +417,7 @@ Add a new case:
 
 ## Operational notes
 
-### The 10 gates (run these to confirm a clean tree)
+### Gate list (run these to confirm a clean tree)
 
 | # | Command | What it proves |
 |---|---|---|
@@ -424,7 +425,7 @@ Add a new case:
 | 2 | `pnpm privacy:canary` | Structural + audit-scan + TS↔Rego↔Python drift — `docs/privacy-claim.md` §2c |
 | 3 | `pnpm desktop:typecheck` | Desktop package types consistent |
 | 4 | `pnpm canary:desktop` | Desktop imports `@grid-passport/core` + projection invariant on 3 cases × 3 roles |
-| 5 | `pnpm core:test` | 6 official RFC 8785 JCS test vectors byte-for-byte (incl. `weird.json` surrogate-pair case) |
+| 5 | `pnpm core:test` | 57 tests across `crypto.test.ts` (9 — 6 official RFC 8785 JCS vectors incl. `weird.json` surrogate-pair + NaN/Infinity rejection + determinism) · `forecast.test.ts` (30 — tier-band invariants, quantize-to-5 under perturbation, confidence/flex/duration tier boundaries, override semantics, clamp) · `audit.test.ts` (18 — hash-chain integrity, policy-version binding per actor class, override-row redaction, sealed-field-count tripwire) |
 | 6 | `pnpm verifier:test` | 10 targeted tamper cases + 2000-iteration fuzz (zero false positives) |
 | 7 | `pnpm canary:bundle` | In-process sign → verify → tamper → reject × 3 cases |
 | 8 | `pnpm canary:roundtrip` | TS + Rust signers × TS + Python verifiers — 3-way parity on valid + tampered |
@@ -481,7 +482,7 @@ pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:d
 
 Items in this section are state-of-the-codebase observations that matter to a future session but aren't roadmap-tracked work:
 
-- **Test coverage is uneven.** The signed-bundle protocol (`packages/core/src/{crypto,bundle}.ts`, `packages/verifier/`, Rust signer) has comprehensive coverage (gates 5, 6, 7, 8, 9 above). The *projection/forecast layer itself* — `forecast.ts`, route handlers — still has only mechanical (privacy-canary) evidence and no unit tests. CLAUDE.md mandates tests for changes to projections/policy/proofs/traces; wire a vitest suite before the next round of changes there. Pytest is already in `apps/api/pyproject.toml` dev deps. (Tracked in roadmap backlog.)
+- **Test coverage is uneven — but forecast + audit now covered.** The signed-bundle protocol (`packages/core/src/{crypto,bundle}.ts`, `packages/verifier/`, Rust signer) has comprehensive coverage (gates 5, 6, 7, 8, 9 above). As of 2026-04-20 (Track 4 land), `forecast.ts` + `audit.ts` also carry dedicated unit tests (`{forecast,audit}.test.ts`, 48 units — tier-band invariants, quantize-to-5, hash-chain integrity, policy-version binding, override redaction). The *API route handlers* (`apps/web/app/api/scenario/route.ts`) still have only mechanical (privacy-canary) evidence; a route-handler suite would complete the picture but isn't on the sprint. Pytest is already in `apps/api/pyproject.toml` dev deps.
 - **Derivation transparency — partial.** `flexibilityPassport.durationHoursMin/Max` was re-derived as coarse BESS tier bands (2026-04-18), so `bessHours` no longer leaks through that pair. Remaining surfaces with the same "monotone-invertible from a private input" risk: `flexibilityPassport.mwMin/Max`, `firmnessScore`, `expectedPeakMW`. A shared band-design pattern for the remaining derived fields is tracked in the roadmap backlog (`derivation transparency review, part 2`).
 - **Desktop bundles are now signed v1.** Shipped 2026-04-18 with #6. `@grid-passport/core/audit` swapped to async WebCrypto (no more `node:crypto` dep); audit chain has `prevHash` links; Tauri app signs the JCS-canonicalized payload via OS-keychain-backed Ed25519 (`keyring` crate + `ed25519-dalek`); `packages/verifier/` validates any produced bundle. One small remaining surface: `policyHash.rego` is a placeholder on desktop because Vite doesn't currently ship `packages/policy/grid-passport.rego` as a loadable asset — the runtime TS hash *is* computed correctly. Add Rego-asset loading to desktop Vite config in the packaging-polish pass so both halves of the dual hash (§3.6 of the design doc) are real.
 - **Desktop icon is a placeholder** upscaled from the generated 256×256 PNG; bake a real branded icon before distribution (see roadmap backlog: `desktop packaging polish`).
