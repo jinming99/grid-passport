@@ -19,6 +19,7 @@ import { defaultInterviewerTransport } from "./lib/interviewer-transport";
 import { ReviewColumn } from "./components/ReviewColumn";
 import { IntakePanel } from "./components/IntakePanel";
 import { ExplainerPanel } from "./components/ExplainerPanel";
+import { TrustPanel } from "./components/TrustPanel";
 
 const ROLES: Role[] = ["applicant", "utility", "regulator"];
 
@@ -168,6 +169,8 @@ export function App() {
           </div>
         </div>
       </header>
+
+      <TrustPanel loaded={loaded} />
 
       {mode === "work" ? (
         <section className="case-bar">
