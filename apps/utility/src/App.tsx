@@ -1,34 +1,47 @@
-import { useState } from "react";
-import { verifyBundle, type VerifyResult } from "@grid-passport/verifier";
+import { useCallback, useState } from "react";
+import type { VerifyResult } from "@grid-passport/verifier";
+import { loadAndVerifyBundle } from "./lib/bundle-loader";
+import { UtilityProjection } from "./components/UtilityProjection";
 
-// Track 3.1 scaffold. The full drop-zone + projection-render UX lands in a
-// follow-up; this v0 just proves the import chain compiles end-to-end and
-// the verifier is callable from the utility surface.
+// Track 3.1-polish. Real drop-zone + projection render + trust-claim stamp.
 //
 // Write-scope contract (enforced structurally by `pnpm canary:utility`):
 //   - imports ONLY @grid-passport/verifier + @grid-passport/core/{types,
-//     projection, bundle} (the last two as `import type` in practice);
+//     projection, bundle} (the last as `import type` in practice);
 //   - MUST NOT import @grid-passport/core/{fixtures, forecast, audit},
-//     since those are the applicant-side writers for derived proofs and
-//     raw private profiles. The utility has no source of raw CaseInput and
-//     therefore no capability to reconstruct one.
+//     since those are the applicant-side writers. The utility has no
+//     source of raw CaseInput and therefore no capability to reconstruct
+//     one.
+
+type LoadState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | {
+      kind: "loaded";
+      path: string;
+      verify: VerifyResult;
+    }
+  | { kind: "error"; message: string };
 
 export function App() {
-  const [paste, setPaste] = useState("");
-  const [result, setResult] = useState<VerifyResult | null>(null);
+  const [pubKeyInput, setPubKeyInput] = useState("");
+  const [state, setState] = useState<LoadState>({ kind: "idle" });
 
-  async function onVerify() {
-    // Placeholder: in the scaffold there's no public-key plumbing, so a
-    // dummy 32-byte key will fail signature verification. This exercises the
-    // import path; the real UX lands with the drop-zone + keyId display.
-    const dummyKey = new Uint8Array(32);
-    try {
-      const r = await verifyBundle(paste, dummyKey);
-      setResult(r);
-    } catch (err) {
-      setResult({ ok: false, reasons: [(err as Error).message] });
+  const onLoad = useCallback(async () => {
+    setState({ kind: "loading" });
+    const result = await loadAndVerifyBundle(pubKeyInput);
+    if (result.kind === "cancelled") {
+      setState({ kind: "idle" });
+      return;
     }
-  }
+    if (result.kind === "error") {
+      setState({ kind: "error", message: result.message });
+      return;
+    }
+    setState({ kind: "loaded", path: result.path, verify: result.verify });
+  }, [pubKeyInput]);
+
+  const canLoad = pubKeyInput.trim().length > 0 && state.kind !== "loading";
 
   return (
     <div className="shell">
@@ -38,26 +51,39 @@ export function App() {
           <span className="stamp">utility · v0</span>
         </div>
         <div className="telltale">
-          <span className="telltale-dot" /> verifier · ready
+          <span className="telltale-dot" /> verifier · ready · no network
         </div>
       </header>
 
       <main className="stage">
         <section className="card">
-          <div className="card-title">drop a disclosure bundle</div>
+          <div className="card-title">open a disclosure bundle</div>
           <div className="card-body">
             <p>
-              The full drop-zone lands in the follow-up chunk. For now, paste
-              a bundle JSON below and click verify. A production drop-zone will
-              read the applicant's issuer public key from a trust store and
-              render <span className="mono">verified · keyId · policy@hash</span>{" "}
-              before exposing the utility projection.
+              Paste the applicant's issuer public key (base64), then open the
+              bundle JSON. Verification happens locally — nothing leaves this
+              machine. The utility view is only rendered when the signature
+              checks out.
             </p>
-            <textarea
-              value={paste}
-              onChange={(e) => setPaste(e.target.value)}
-              rows={6}
-              placeholder='{"schema":"grid-passport/bundle", ...}'
+
+            <label
+              style={{
+                display: "block",
+                fontFamily: "var(--mono)",
+                fontSize: 10,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "var(--ink-mute)",
+                marginBottom: 6,
+              }}
+            >
+              issuer public key (base64, 32-byte Ed25519)
+            </label>
+            <input
+              type="text"
+              value={pubKeyInput}
+              onChange={(e) => setPubKeyInput(e.target.value)}
+              placeholder="MCowBQYDK2VwAyEA... (paste applicant pubkey)"
               style={{
                 width: "100%",
                 fontFamily: "var(--mono)",
@@ -68,60 +94,199 @@ export function App() {
                 padding: 10,
               }}
             />
-            <button
-              type="button"
-              onClick={onVerify}
-              disabled={!paste}
-              style={{
-                marginTop: 10,
-                fontFamily: "var(--mono)",
-                fontSize: 11,
-                padding: "8px 14px",
-                background: "transparent",
-                color: "var(--ink)",
-                border: "1px solid var(--border)",
-                cursor: paste ? "pointer" : "not-allowed",
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-              }}
-            >
-              verify bundle →
-            </button>
+
+            <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                onClick={onLoad}
+                disabled={!canLoad}
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: 11,
+                  padding: "8px 14px",
+                  background: "transparent",
+                  color: "var(--ink)",
+                  border: "1px solid var(--border)",
+                  cursor: canLoad ? "pointer" : "not-allowed",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {state.kind === "loading"
+                  ? "verifying…"
+                  : "open bundle.json →"}
+              </button>
+            </div>
           </div>
         </section>
 
-        {result ? (
-          <section className="card">
-            <div className="card-title">
-              {result.ok ? "verified" : "rejected"}
+        {state.kind === "error" ? (
+          <section className="card" style={{ borderColor: "var(--rose, #fb7185)" }}>
+            <div
+              className="card-title"
+              style={{ color: "var(--rose, #fb7185)" }}
+            >
+              error
             </div>
-            <div className="card-body">
-              {result.ok ? (
-                <p>
-                  keyId <span className="mono">{result.payload?.issuer.keyId}</span>{" "}
-                  · policy@
-                  <span className="mono">
-                    {result.policyHash?.runtime?.slice(0, 24)}…
-                  </span>
-                </p>
-              ) : (
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {result.reasons.map((r) => (
-                    <li key={r} className="mono">
-                      {r}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <div className="card-body mono">{state.message}</div>
           </section>
+        ) : null}
+
+        {state.kind === "loaded" ? (
+          <BundleView path={state.path} verify={state.verify} />
         ) : null}
       </main>
 
       <footer className="foot">
-        <span>bundle v1.0.0 · Ed25519</span>
-        <span>no network · verify-only</span>
+        <span>bundle v1.0.0 · Ed25519 · JCS (RFC 8785)</span>
+        <span>verify-only · no network · utility surface</span>
       </footer>
     </div>
+  );
+}
+
+function BundleView({
+  path,
+  verify,
+}: {
+  path: string;
+  verify: VerifyResult;
+}) {
+  if (!verify.ok || !verify.payload) {
+    return (
+      <section
+        className="card"
+        style={{ borderColor: "var(--rose, #fb7185)" }}
+      >
+        <div
+          className="card-title"
+          style={{ color: "var(--rose, #fb7185)" }}
+        >
+          rejected
+        </div>
+        <div className="card-body">
+          <div
+            className="mono"
+            style={{ fontSize: 10, color: "var(--ink-mute)" }}
+            title={path}
+          >
+            source · {path}
+          </div>
+          <ul style={{ margin: "8px 0 0 18px" }}>
+            {verify.reasons.map((r) => (
+              <li key={r} className="mono">
+                {r}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    );
+  }
+
+  const p = verify.payload;
+  const utilityView = p.projections.utility;
+
+  return (
+    <>
+      <section
+        className="card"
+        style={{ borderColor: "var(--lime, #a3e635)" }}
+      >
+        <div
+          className="card-title"
+          style={{ color: "var(--lime, #a3e635)" }}
+        >
+          verified
+        </div>
+        <div className="card-body" style={{ fontFamily: "var(--mono)", fontSize: 11 }}>
+          <div>
+            keyId <span className="mono">{p.issuer.keyId}</span>
+            {p.issuer.label ? (
+              <>
+                {" · "}issuer <span className="mono">{p.issuer.label}</span>
+              </>
+            ) : null}
+          </div>
+          <div style={{ marginTop: 4 }}>
+            bundle <span className="mono">{p.bundleId}</span>
+          </div>
+          <div style={{ marginTop: 4 }}>
+            policy @ <span className="mono">{p.policyVersion}</span>
+          </div>
+          <div style={{ marginTop: 4 }}>
+            policy hash · rego{" "}
+            <span className="mono">
+              {verify.policyHash?.rego?.slice(0, 22)}…
+            </span>{" "}
+            · runtime{" "}
+            <span className="mono">
+              {verify.policyHash?.runtime?.slice(0, 22)}…
+            </span>
+          </div>
+          <div style={{ marginTop: 4 }}>
+            audit events{" "}
+            <span className="mono">{p.auditChain.length}</span> · chained via
+            SHA-256 prevHash
+          </div>
+          <div
+            style={{
+              marginTop: 6,
+              color: "var(--ink-mute)",
+              fontSize: 10,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+            }}
+            title={path}
+          >
+            source · {path}
+          </div>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="card-title">utility projection</div>
+        <div className="card-body">
+          <UtilityProjection view={utilityView} />
+        </div>
+      </section>
+
+      <section
+        className="card"
+        style={{ borderLeft: "2px solid var(--lime, #a3e635)" }}
+      >
+        <div
+          className="card-title"
+          style={{ color: "var(--lime, #a3e635)" }}
+        >
+          trust claim
+        </div>
+        <div
+          className="card-body mono"
+          style={{ fontSize: 11, lineHeight: 1.6 }}
+        >
+          <div>
+            • verification ran locally · no network calls during verify
+          </div>
+          <div>
+            • this binary imports only{" "}
+            <span style={{ color: "var(--ink)" }}>
+              @grid-passport/verifier + @grid-passport/core/{"{"}types,
+              projection, bundle{"}"}
+            </span>
+          </div>
+          <div>
+            • raw applicant privateProfile never crosses this projection's
+            boundary by construction (enforced at import graph by{" "}
+            <span style={{ color: "var(--ink)" }}>pnpm canary:utility</span>)
+          </div>
+          <div>
+            • pinned to keyId{" "}
+            <span style={{ color: "var(--ink)" }}>{p.issuer.keyId}</span> for
+            this session
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
