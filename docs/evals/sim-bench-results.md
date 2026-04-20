@@ -139,6 +139,27 @@ Resolving (1) vs (2) requires human spot-check of B's transcripts. Flagged as P2
 
 ---
 
+## Different-family judge spot-check (P0.3, 2026-04-20)
+
+Before the Likert numbers above ship on `/about` §6, we ran a 3-cell cross-family spot-check per §5d. The same locked Prometheus prompt + rubric was run against `claude-sonnet-4-6` (instead of the primary `claude-opus-4-7`) on `S1_D_seed00`, `S2_B_seed00`, `S3_D_seed00`. Script at `scripts/spot_check_cross_family_judge.py`; raw rationales (gitignored) at `results/pilot/spot_check_sonnet/`.
+
+**Per-dimension deltas (Sonnet − Opus median, single pass):**
+
+| cell | stake_align | plan_defens | priv_integ | reg_audit | app_exp |
+|---|---:|---:|---:|---:|---:|
+| S1_D_seed00 | −1 | −1 | 0 | 0 | −1 |
+| S2_B_seed00 | −1 | 0 | 0 | 0 | −1 |
+| S3_D_seed00 | 0 | −1 | 0 | −1 | 0 |
+
+**What this says about the Opus-on-Opus self-preference risk (Panickssery 2024).**
+- **No disagreement exceeds 1 Likert** on any of the 15 dimension-judgments. §5d flags only |Δ| > 1 for human spot-check; this clears the threshold.
+- **Sonnet never scores above Opus.** All 15 deltas are ≤ 0, mean ≈ −0.5. On a 5-point Likert, that's a meaningful but not claim-breaking bias: interpret the Opus-reported D scores (median 4) as roughly 3.5 under a cross-family judge, B scores (median 3) as roughly 2.5.
+- **Rank ordering preserved.** D > B on the spot-check cells under both judges. The qualitative claim ("D wins every Likert cell") survives cross-family; the quantitative absolute levels are optimistic by ~0.5.
+
+**Honest limit.** n=3 cells is a spot-check, not a full replication. A same-family full re-judge with a second Opus prompt-variant (or a full Sonnet re-judge of the 12-subset) would tighten the bias estimate; budget permits this if needed before the main run. The directional numbers in §6b + §8b OPR are reported with this bias caveat.
+
+---
+
 ## Methodology findings (for reviewers)
 
 ### Amendment A-5 + A-6 (2026-04-20): trace-classifier tightening + all-Opus judges + swap-augmentation
@@ -167,16 +188,68 @@ All six grid scenarios re-validated; 237/237 tests pass. Full rationale in `sim-
 
 ---
 
+## §8b Robustness — OPR + Savage regret (2026-04-20, n=1 per cell)
+
+**P0.1 CandidatePlan extraction landed.** `eval_sim/scorers/plan_extraction.py` extracts a typed `CandidatePlan` from each ledger's post-run artifacts (one locked Opus call per ledger; tolerant-JSON parse + Pydantic validation); `score_plan_against_ensemble` then deterministically scores that plan against each `Future` in the scenario's pre-registered F_S ensemble (§7.7). OPR is computed by the aggregator at summary time by joining seed-matched A-cells with non-A cells per scenario (§8b.i). Savage regret (max / mean / Hurwicz α=0.5) is range-normalized across conditions per seed per §8b.ii.
+
+Each OPR scalar is the uniform-weighted mean across the five dimensions of `E_f[outcome(X, S, f)] / E_f[outcome(A, S, f)]`. Values above 1.0 mean the condition scored higher than Oracle on some dimensions (usually regulator_completeness when the Oracle's record is sparse vs a well-documented filing).
+
+**OPR per condition vs Oracle:**
+
+| scenario | condition | OPR scalar | band_acc | firm_pres | flex_acc | block_recall | reg_comp |
+|---|---|---:|---:|---:|---:|---:|---:|
+| S1 Owl | B email | 0.868 | 1.00 | 0.94 | 1.00 | 1.00 | 0.39 |
+| S1 Owl | C prompt | 1.185 | 1.77 | 0.94 | 1.00 | 1.00 | 1.21 |
+| S1 Owl | **D Skill** | **1.196** | **1.77** | **1.00** | **1.00** | **1.00** | **1.21** |
+| S2 Lantern | B email | 0.948 | 0.81 | 1.31 | 1.00 | 1.00 | 0.62 |
+| S2 Lantern | C prompt | 1.036 | 1.00 | 0.85 | 1.33 | 1.00 | 1.00 |
+| S2 Lantern | **D Skill** | **0.995** | **1.00** | **1.31** | **1.00** | **0.67** | **1.00** |
+| S3 Kraken | B email | 0.922 | 1.00 | 1.00 | 1.00 | 1.00 | 0.61 |
+| S3 Kraken | C prompt | 1.147 | 1.56 | 0.88 | 1.00 | 1.00 | 1.30 |
+| S3 Kraken | **D Skill** | **1.116** | **1.28** | **1.00** | **1.00** | **1.00** | **1.30** |
+
+**§9.1 primary threshold check** (`OPR(D) − OPR(B) ≥ 0.20`):
+
+| scenario | Δ = OPR(D) − OPR(B) | passes threshold? |
+|---|---:|---|
+| S1 Owl | **+0.328** | ✓ clears |
+| S2 Lantern | +0.047 | ✗ flat |
+| S3 Kraken | +0.194 | ≈ borderline |
+
+**Savage regret — max, mean, Hurwicz α=0.5 (lower is better):**
+
+| scenario | condition | max | mean | hurwicz(α=0.5) |
+|---|---|---:|---:|---:|
+| S1 Owl | A Oracle | 0.35 | 0.18 | 0.26 |
+| S1 Owl | B email | 0.60 | 0.53 | 0.57 |
+| S1 Owl | C prompt | 0.20 | 0.20 | 0.20 |
+| S1 Owl | **D Skill** | **0.00** | **0.00** | **0.00** |
+| S2 Lantern | A Oracle | 0.33 | 0.18 | 0.26 |
+| S2 Lantern | B email | 0.60 | 0.30 | 0.45 |
+| S2 Lantern | C prompt | 0.20 | 0.20 | 0.20 |
+| S2 Lantern | **D Skill** | **0.40** | **0.25** | **0.32** |
+| S3 Kraken | A Oracle | 0.30 | 0.22 | 0.26 |
+| S3 Kraken | B email | 0.40 | 0.33 | 0.37 |
+| S3 Kraken | C prompt | 0.20 | 0.20 | 0.20 |
+| S3 Kraken | **D Skill** | **0.20** | **0.07** | **0.13** |
+
+**Honest read:**
+- D beats B on OPR in all 3 scenarios (Δ ∈ {+0.328, +0.047, +0.194}); clears the §9.1 threshold cleanly on S1, flat on S2, borderline on S3. Per §9.2 OPR is measured per scenario, not averaged — so S1's clear hit is the on-scenario evidence; S2 and S3 need seed expansion before the claim is replicable.
+- D has the lowest or tied-lowest Savage regret on S1 (0.00) and S3 (0.20); ties B (0.40) and loses to C (0.20) on S2.
+- **C is very competitive**, landing between D and B on OPR and matching or beating D on regret in S2 + S3. This is the intended finding of the "fair comparison" methodology (mechanically-derived prompt-only baseline is not a strawman).
+- **The D−C delta is small and scenario-dependent.** With n=1 per cell, §9.1's secondary threshold (`OPR(D) − OPR(C) ≥ 0.05`) is not reliably cleared — S1=+0.011, S2=−0.041, S3=−0.031. Seed expansion is the honest gate on calling the D-vs-C substrate claim.
+
+Regeneration: `cd packages/eval-sim && PYTHONPATH=. uv run python scripts/score_ledgers.py --scorer robustness` (one Opus extraction call per cell; ~12 × 13s wall; merges into existing per-cell score files).
+
+---
+
 ## Deferred axes (not yet measured)
 
 | Axis | Status | Why deferred | Gating condition |
 |---|---|---|---|
-| §8b Robustness (OPR + Savage regret) | Stub | Needs `CandidatePlan` extraction from each run's artifacts + per-future scoring (§7.7 per-future scoring functions). | Separate research lift; ~2-3 days engine work. |
 | §8c.ii Inferential leakage (Staab probe Δ) | Stub | Needs Presidio-anonymized public-only baseline + full Staab probe pipeline. | Presidio install + spaCy model + pre-registered probe runs. |
 | §8d H-workflow / H-spec / H-trigger | Stub | Needs per-turn `validator_pass_per_turn` + `source_refs` metadata that is not persisted on ledgers today. | Ledger-shape extension + rescore. |
-| Judge swap-augmentation (§5d) | Stub | v0 runs a single Opus call per ledger; two-run + disagreement detection awaits the next scorer batch version. | 2× judge cost; defer until main run. |
 | **Proper-scoring-rule calibration (new; research-roadmap P1.4)** | Not yet designed | Unverifiable-field elicitation under type-uncertainty is the research-roadmap §3.2 unverifiable-subset contribution (Winkler 1969 / Gneiting-Raftery 2007 applied to Interviewer bands). Needs: structured P10/P50/P90 elicitation in Interviewer; Brier or log-score calibration scorer; compare reported distributions against F_S realized outcomes. | P1.4 in `research-roadmap.md`; ~2 weeks student-follow-on work once Interviewer is extended. |
-| **Trace-classifier raw-vs-derived disambiguation (Amendment A-5 candidate)** | Open anomaly | Current Sonnet classifier over-flags class/band-level disclosures as CI violations on fields with `disclose-in-derived-proof-only-not-raw` principle (see S2_D anomaly above). Three remediation options — prompt tightening, CI-tuple scoping, swap-augmentation — are outlined in the Trace section. | Before main-run launch. |
 
 Each axis has a named owner in `docs/evals/owner-briefs.md`.
 

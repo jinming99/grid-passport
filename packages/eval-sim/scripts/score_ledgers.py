@@ -57,6 +57,7 @@ from eval_sim.schemas.role import Role
 from eval_sim.schemas.scenario import CITuple, ScenarioCard
 from eval_sim.schemas.turn import TurnMessage
 from eval_sim.scorers.efficiency import compute_efficiency
+from eval_sim.scorers.futures import score_plan_against_ensemble
 from eval_sim.scorers.judge import (
     JudgeInvocation,
     invoke_judge,
@@ -65,6 +66,7 @@ from eval_sim.scorers.judge import (
 )
 from eval_sim.scorers.judge_rubric import FIVE_DIMENSION_RUBRIC_TEXT
 from eval_sim.scorers.mechanical import compute_h_null
+from eval_sim.scorers.plan_extraction import ExtractionResult, extract_plan
 from eval_sim.scorers.privacy.direct import (
     ParaphraseJudgeVerdict,
     compute_direct_leakage,
@@ -75,6 +77,7 @@ from eval_sim.scorers.privacy.trace import (
     compute_trace_leakage,
     invoke_trace_classifier,
 )
+from eval_sim.scorers.robustness import compute_opr, compute_savage_regret
 
 app = typer.Typer(add_completion=False, help=__doc__)
 console = Console()
@@ -86,9 +89,10 @@ ALL_SCORERS: tuple[str, ...] = (
     "direct",
     "trace",
     "judge",
+    "robustness",
 )
 DETERMINISTIC_SCORERS: frozenset[str] = frozenset({"efficiency", "mechanical"})
-LLM_GATED_SCORERS: frozenset[str] = frozenset({"direct", "trace", "judge"})
+LLM_GATED_SCORERS: frozenset[str] = frozenset({"direct", "trace", "judge", "robustness"})
 
 _SCORER_HELP: str = (
     "Run only named scorers (repeatable). Choices: "
@@ -535,6 +539,78 @@ def _score_judge(
     }
 
 
+def _score_robustness(
+    ledger: LedgerView,
+    *,
+    scenario_card: ScenarioCard,
+    transport: Any | None,
+    budget: ScorerBudget | None,
+    dry_run: bool,
+) -> dict[str, Any]:
+    """§8b robustness — CandidatePlan extraction + per-future scoring.
+
+    One Opus extraction call per ledger yields a typed `CandidatePlan`;
+    `score_plan_against_ensemble` then deterministically scores that plan
+    against every Future in `scenario_card.futures_ensemble`. The per-cell
+    output carries the plan + per-future scores; **OPR and Savage regret
+    are aggregator-level** (they cross-join A-cells with B/C/D-cells per
+    scenario, and they need seed-matched pairs that a single cell can't
+    produce).
+
+    Extraction failures surface as `plan = None` with an `error` field;
+    downstream aggregation excludes those cells and reports the exclusion
+    rate per spec §Risk.
+    """
+    transcript_text: str | None = None
+    if ledger.condition == Condition.B_NDA_EMAIL:
+        transcript_text = tag_transcript(ledger.transcript)
+
+    wrapped: Any | None = None
+    if not dry_run and transport is not None:
+        wrapped = BudgetingTransport(inner=transport, budget=budget)  # type: ignore[arg-type]
+
+    result: ExtractionResult = extract_plan(
+        artifacts=ledger.artifacts,
+        condition=ledger.condition.value,
+        scenario_id=ledger.scenario_id,
+        transcript_text=transcript_text,
+        transport=wrapped if wrapped is not None else None,
+        dry_run=dry_run or transport is None,
+    )
+
+    payload: dict[str, Any] = {
+        "enabled": not dry_run and transport is not None,
+        "extraction_error": result.error,
+    }
+    if result.plan is None:
+        payload["plan"] = None
+        payload["per_future_scores"] = None
+        return payload
+
+    plan = result.plan
+    payload["plan"] = {
+        "energization_band": plan.energization_band,
+        "firmness_score": plan.firmness_score,
+        "flexibility_class": plan.flexibility_class,
+        "blockers_surfaced": list(plan.blockers_surfaced),
+        "regulator_completeness": plan.regulator_completeness,
+        "policy_version_linked": plan.policy_version_linked,
+        "has_amendment_path": plan.has_amendment_path,
+    }
+    per_future = score_plan_against_ensemble(plan, scenario_card)
+    payload["per_future_scores"] = {
+        f_id: {
+            "band_accuracy": score.band_accuracy,
+            "firmness_preservation": score.firmness_preservation,
+            "flexibility_acceptance": score.flexibility_acceptance,
+            "blocker_recall": score.blocker_recall,
+            "regulator_completeness": score.regulator_completeness,
+        }
+        for f_id, score in per_future.items()
+    }
+    return payload
+
+
 def _dims_to_scores(out: Any) -> dict[str, int]:
     return {
         "stakeholder_alignment": out.stakeholder_alignment.score,
@@ -580,7 +656,7 @@ def _score_one_ledger(
     transport: Any | None,
     with_llm: bool,
 ) -> PerCellResult:
-    _ = scenario_card  # reserved for future scoring needs (ground-truth fields)
+    # scenario_card is consumed by robustness (per-future scoring).
     t_cell = time.monotonic()
     result = PerCellResult(
         scenario_id=ledger.scenario_id,
@@ -622,6 +698,15 @@ def _score_one_ledger(
             ledger,
             transport=transport,
             budget=budgets["judge"],
+            dry_run=not with_llm,
+        )
+
+    if "robustness" in selected_scorers:
+        result.scores["robustness"] = _score_robustness(
+            ledger,
+            scenario_card=scenario_card,
+            transport=transport,
+            budget=budgets["robustness"],
             dry_run=not with_llm,
         )
 
@@ -677,6 +762,134 @@ def _aggregate(cells: list[PerCellResult]) -> dict[str, Any]:
         "n_cells": len(cells),
         "totals_per_scorer": {name: t.as_dict() for name, t in totals.items()},
         "cells": by_cell,
+        "robustness": _aggregate_robustness(cells),
+    }
+
+
+def _aggregate_robustness(cells: list[PerCellResult]) -> dict[str, Any]:
+    """Cross-condition join per scenario: OPR(X, S) = E_f[outcome(X,S,f)] /
+    E_f[outcome(A,S,f)] and Savage regret across conditions per §8b.
+
+    Joins seed-matched same-scenario cells. A scenario must have both an
+    A-cell and at least one non-A cell at the same seed to contribute.
+    Cells whose robustness.per_future_scores is None (extraction failure)
+    are excluded; exclusion count is reported.
+
+    Output shape:
+        {
+          "scenarios": {
+            "<scenario_id>": {
+              "<seed>": {
+                "<condition>": {"opr_scalar": float, "opr_per_dim": {...}}
+              },
+              "regret_by_condition": {"<condition>": {max/mean/hurwicz_05 scalars}}
+            }
+          },
+          "excluded_cells": [ {scenario_id, condition, seed, reason}, ... ]
+        }
+    """
+    # Index cells by (scenario, seed, condition) → per_future_scores.
+    # Skip cells without a robustness block or with None per_future_scores.
+    from eval_sim.schemas.scenario import FutureOutcomeScore
+
+    excluded: list[dict[str, Any]] = []
+    by_scenario_seed: dict[tuple[str, int], dict[Condition, dict[str, FutureOutcomeScore]]] = {}
+
+    for cell in cells:
+        rob = cell.scores.get("robustness")
+        if not isinstance(rob, dict):
+            continue  # scorer not run this pass — skip silently
+        if "per_future_scores" not in rob:
+            continue  # stale cell without the new field
+        pfs = rob.get("per_future_scores")
+        if pfs is None:
+            excluded.append(
+                {
+                    "scenario_id": cell.scenario_id,
+                    "condition": cell.condition.value,
+                    "seed": cell.seed,
+                    "reason": rob.get("extraction_error") or "per_future_scores is None",
+                }
+            )
+            continue
+        try:
+            typed = {
+                f_id: FutureOutcomeScore.model_validate(score_dict)
+                for f_id, score_dict in pfs.items()
+            }
+        except Exception as err:
+            excluded.append(
+                {
+                    "scenario_id": cell.scenario_id,
+                    "condition": cell.condition.value,
+                    "seed": cell.seed,
+                    "reason": f"per_future_scores malformed: {err}",
+                }
+            )
+            continue
+        key = (cell.scenario_id, cell.seed)
+        by_scenario_seed.setdefault(key, {})[cell.condition] = typed
+
+    scenarios_out: dict[str, Any] = {}
+    for (scenario_id, seed), per_cond in by_scenario_seed.items():
+        oracle_scores = per_cond.get(Condition.A_ORACLE)
+        if oracle_scores is None:
+            continue  # cannot compute OPR without A baseline
+
+        scen_bucket = scenarios_out.setdefault(scenario_id, {})
+        seed_bucket = scen_bucket.setdefault(f"seed{seed:02d}", {"opr_by_condition": {}})
+
+        # OPR per non-A condition vs A.
+        for cond, cond_scores in per_cond.items():
+            if cond == Condition.A_ORACLE:
+                continue
+            try:
+                opr = compute_opr(cond_scores, oracle_scores)
+            except ValueError as err:
+                excluded.append(
+                    {
+                        "scenario_id": scenario_id,
+                        "condition": cond.value,
+                        "seed": seed,
+                        "reason": f"OPR mismatch: {err}",
+                    }
+                )
+                continue
+            seed_bucket["opr_by_condition"][cond.value] = {
+                "scalar": round(opr.scalar, 4),
+                "per_dimension": {d: round(v, 4) for d, v in opr.per_dimension.items()},
+            }
+
+        # Savage regret across all conditions present (including A).
+        try:
+            regret = compute_savage_regret(per_cond)
+        except ValueError as err:
+            excluded.append(
+                {
+                    "scenario_id": scenario_id,
+                    "condition": "ALL",
+                    "seed": seed,
+                    "reason": f"regret failed: {err}",
+                }
+            )
+        else:
+            seed_bucket["regret_by_condition"] = {
+                cond.value: {
+                    "max_scalar": round(r.max_regret_scalar, 4),
+                    "mean_scalar": round(r.mean_regret_scalar, 4),
+                    "hurwicz_05_scalar": round(r.hurwicz_05_scalar, 4),
+                }
+                for cond, r in regret.items()
+            }
+
+    return {
+        "scenarios": scenarios_out,
+        "excluded_cells": excluded,
+        "n_cells_joined": sum(
+            len(seed_bucket["opr_by_condition"])
+            for scen in scenarios_out.values()
+            for seed_bucket in scen.values()
+        ),
     }
 
 
@@ -753,6 +966,59 @@ def _markdown_summary(summary: dict[str, Any]) -> str:
             f"{judge_cell} |"
         )
     lines.append("")
+    lines.append("## §8b robustness — OPR per condition (vs Oracle)")
+    lines.append("")
+    rob = summary.get("robustness", {}) or {}
+    scenarios_out = rob.get("scenarios", {}) or {}
+    if not scenarios_out:
+        lines.append("_No robustness-joined cells — either robustness scorer not run, or no A-baseline + non-A pair at matching seed._")
+    else:
+        lines.append("| scenario | seed | condition | OPR scalar | band_acc | firm_pres | flex_acc | block_recall | reg_comp |")
+        lines.append("|---|---|---|---:|---:|---:|---:|---:|---:|")
+        for scenario_id in sorted(scenarios_out.keys()):
+            seeds = scenarios_out[scenario_id]
+            for seed_key in sorted(seeds.keys()):
+                opr_by_cond = seeds[seed_key].get("opr_by_condition", {}) or {}
+                for cond in sorted(opr_by_cond.keys()):
+                    entry = opr_by_cond[cond]
+                    pd = entry.get("per_dimension", {}) or {}
+                    lines.append(
+                        f"| `{scenario_id}` | `{seed_key}` | `{cond}` | "
+                        f"{entry.get('scalar', '-')} | "
+                        f"{pd.get('band_accuracy', '-')} | "
+                        f"{pd.get('firmness_preservation', '-')} | "
+                        f"{pd.get('flexibility_acceptance', '-')} | "
+                        f"{pd.get('blocker_recall', '-')} | "
+                        f"{pd.get('regulator_completeness', '-')} |"
+                    )
+        lines.append("")
+        lines.append("### Savage regret (range-normalized, across all conditions per seed)")
+        lines.append("")
+        lines.append("| scenario | seed | condition | max | mean | hurwicz(α=0.5) |")
+        lines.append("|---|---|---|---:|---:|---:|")
+        for scenario_id in sorted(scenarios_out.keys()):
+            seeds = scenarios_out[scenario_id]
+            for seed_key in sorted(seeds.keys()):
+                regret = seeds[seed_key].get("regret_by_condition", {}) or {}
+                for cond in sorted(regret.keys()):
+                    r = regret[cond]
+                    lines.append(
+                        f"| `{scenario_id}` | `{seed_key}` | `{cond}` | "
+                        f"{r.get('max_scalar', '-')} | "
+                        f"{r.get('mean_scalar', '-')} | "
+                        f"{r.get('hurwicz_05_scalar', '-')} |"
+                    )
+        excluded = rob.get("excluded_cells", []) or []
+        if excluded:
+            lines.append("")
+            lines.append(f"**Excluded cells:** {len(excluded)}")
+            for ex in excluded[:20]:
+                lines.append(
+                    f"- `{ex.get('scenario_id')}_{ex.get('condition')}_seed{ex.get('seed'):02d}`: "
+                    f"{ex.get('reason')}"
+                )
+
+    lines.append("")
     lines.append("## Deferred (v0 batch)")
     lines.append("")
     lines.append(
@@ -760,17 +1026,9 @@ def _markdown_summary(summary: dict[str, Any]) -> str:
         "baseline + Staab probe runs. Separate lift."
     )
     lines.append(
-        "- `robustness` (§8b): needs CandidatePlan extraction from each run's "
-        "artifacts + per-future scoring (§7.7). Separate lift."
-    )
-    lines.append(
         "- `mechanical.h_workflow / h_spec / h_trigger` (§8d): need per-turn "
         "validator-pass + source_refs metadata that is not persisted on "
         "ledgers today. Ledger-shape extension + rescore."
-    )
-    lines.append(
-        "- `judge` swap-augmentation (§5d): v0 runs one Opus call per ledger; "
-        "two-run + disagreement detection is a follow-up."
     )
     lines.append("")
     return "\n".join(lines)

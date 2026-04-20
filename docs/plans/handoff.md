@@ -57,7 +57,15 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**Sim-bench engine + pilot shipped 2026-04-20; main run deferred pending P0 blockers.** §17 signed off 2026-04-19; post-lock implementation landed in 12 commits (`b15a395` → `6cd07ce`). Four amendments applied: A-3 pre-pilot reconciliation (`ab9ba87`), A-4 token hygiene + H-null word-boundary (`ce38241`), A-5 trace classifier prompt tightening (`8ea8725`), A-6 all-Opus judges + mandatory swap-augmentation (`8ea8725` + `6cd07ce`). 12-subset scored twice (pre- and post-A-5/A-6) — D wins every cell on Prometheus median Likert; D stable under swap-aug (max |Δ|=1, zero disagreed dimensions) while B/C show privacy_integrity variance; D=0 H-null; trace classifier clean on all B/C/D post-A-5. The 7-step plan to live-bench:
+**Sprint 2026-04-20 ("demo-ready everything") in flight. Track 1 (empirical evidence into `/about` §6) landed 2026-04-20; main run still deferred.** Sprint plan at `docs/plans/sprint-2026-04-20.md`: four tracks, ~4 weeks, four parallelizable streams. Track 1 closed this turn — P0.1 CandidatePlan extraction + P0.3 different-family judge spot-check + live 12-cell re-score with robustness axis + `/about` §6 OPR tables. Tracks 2 (Interviewer SDK wiring → Explainer Skill), 3 (`apps/utility/` Tauri binary + trust panel), 4 (forecast/audit unit tests) are open.
+
+**Track 1 headline numbers, n=1 per cell (from `docs/evals/sim-bench-results.md`):**
+- **OPR Δ = D − B**: S1 **+0.328 ✓** (clears §9.1 threshold); S3 +0.194 borderline; S2 +0.047 flat.
+- **Savage regret (max)**: D=0.00 (S1), 0.40 (S2 ties B), 0.20 (S3 ties C lowest).
+- **Cross-family judge bias (P0.3 spot-check)**: Sonnet never scores above Opus; mean Δ ≈ −0.5 Likert; no disagreement > 1 Likert across 15 dimension-judgments; rank ordering D > B preserved. Opus-as-judge overstates D's absolute Likert by ~0.5 but not direction.
+- **Honest counterpoint**: C (mechanically-derived prompt-only) is competitive — matches or beats D on OPR in S2/S3. The D-vs-C substrate claim needs seed expansion; the D-vs-B status-quo claim holds directionally.
+
+**Prior — sim-bench engine + pilot shipped 2026-04-20.** §17 signed off 2026-04-19; post-lock implementation landed in 12 commits (`b15a395` → `6cd07ce`). Four amendments applied: A-3 pre-pilot reconciliation (`ab9ba87`), A-4 token hygiene + H-null word-boundary (`ce38241`), A-5 trace classifier prompt tightening (`8ea8725`), A-6 all-Opus judges + mandatory swap-augmentation (`8ea8725` + `6cd07ce`). 12-subset scored twice (pre- and post-A-5/A-6) — D wins every cell on Prometheus median Likert; D stable under swap-aug (max |Δ|=1, zero disagreed dimensions) while B/C show privacy_integrity variance; D=0 H-null; trace classifier clean on all B/C/D post-A-5. The 7-step plan to live-bench:
 
 1. ✅ **LLM transport adapter** (`b15a395`) — `eval_sim/llm.py`: `Transport` Protocol + `ClaudeAgentSDKTransport` + `FakeTransport` + lazy singleton. Rides parent Claude Code session auth — no `ANTHROPIC_API_KEY` (trick: `os.environ.pop("CLAUDECODE", None)` before each `query()`; pattern from `agentic_ai_reviewer`). Defensive monkeypatch for SDK v0.1.x `MessageParseError` on `rate_limit_event`. Live smoke: Sonnet round-trip 13.7s.
 2. ✅ **Scorer flip** (`b15a395`) — 6 LLM call sites refactored from `client: Anthropic | None` to `transport: Transport | None` (judge, judge swap, paraphrase judge, Staab probe, semantic-equivalence, trace classifier, paraphrase barrier). Dropped `anthropic` SDK dep. Latent bug fixed: `PARAPHRASE_JUDGE_PROMPT`'s JSON braces would have crashed `str.format()` in the pilot — switched to `.replace()`-based substitution; locked prompt bytes unchanged. Live judge smoke: 33.3s, fully-parsed `JudgeOutput`.
@@ -132,21 +140,33 @@ Bhawuk's utility-prompt review is deferred to post-lock amendment per user direc
 
 Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff check && uv run pyright` — all green. ~90s first run (BCa bootstrap tests do 10k resamples); warm cached runs under 3s.
 
-**What is still pending (P0 blockers before main run — see `docs/plans/roadmap.md` §14):**
-- **CandidatePlan extraction** (P0.1) — unblocks §8b Robustness / OPR / Savage regret. The §9.1 headline claim `OPR(D) − OPR(B) ≥ 0.20` cannot be measured without this. Spec at `docs/evals/specs/candidate-plan-extraction.md`. Student follow-on, ~2–3 days.
-- **Ledger-metadata extension** (P0.2) — persist `validator_pass_per_turn` + `source_refs[]` on ledgers. Unblocks §8d H-workflow + H-spec + H-trigger (currently only H-null runs). Student follow-on, ~2 days.
-- **Different-family judge spot-check** (P0.3) — re-judge 2–3 cells with Claude 3.5 Sonnet judge. Quantifies same-family self-preference risk (Panickssery 2024) on D's Likert. ~$2, 30 min.
-- **Step 6b** — additional seeds to reach §9 replication. Deferred pending P0 landing.
-- **Step 7 main run** — 140 condition + 35 oracle + 280 judge = 455 runs, ~$400–1200 SDK. Only defensible after P0.1 + P0.2 land (otherwise collects data that can't support the §9.1 headline).
-- **Step 6d** — scorer-over-ledger batch step (the biggest remaining scoring lift; see below).
-- **Step 7** — main (140 condition + 35 oracle + 280 judge = 455 runs). Aggregate via `aggregator.py` (BCa CIs, weighted κ, length-residual) → `docs/evals/sim-bench-results.md` (summary doc).
+**What is still pending (Sprint 2026-04-20 remaining tracks — see `docs/plans/sprint-2026-04-20.md`):**
 
-**Suggested first action in next session (order matters — do step 6d *before* spending more SDK on seeds):**
+*Eval-side (deferred until after demo-ready tracks):*
+- **Ledger-metadata extension** (P0.2) — persist `validator_pass_per_turn` + `source_refs[]` on ledgers. Unblocks §8d H-workflow + H-spec + H-trigger (currently only H-null runs). Student follow-on, ~2 days. Deferred with main run.
+- **Step 6b seed expansion** — 16+ more runs to reach §9 seed coverage. Deferred until main-run decision.
+- **Step 7 main run** — 140 condition + 35 oracle + 280 judge = 455 runs, ~$400–1200 SDK. Deferred per 2026-04-20 sprint decision; pilot numbers now defend the talk (see Track 1 headline above).
 
-1. **Step 6d scorer batch (no SDK; pure Python).** Add `scripts/score_ledgers.py` that reads every `results/pilot/transcripts/*.json` and runs the deterministic scorers first (`efficiency.score_from_ledger`, `mechanical.score_from_ledger`, `robustness.score_from_futures`), then the LLM-gated scorers (`privacy/{direct,inferential,trace}.score_from_ledger`, `judge.score_transcript`). Emit `results/pilot/scores/{scenario}_{condition}_seed{N}.json` + aggregated `results/pilot/summary.{json,md}`. Budget each scorer's LLM spend explicitly so the batch can be re-run without re-spending on the deterministic axes. This lets us interpret the 12-subset before generating more ledgers. **Start here** — no SDK needed, ~2–3 hrs of engine work, and it will surface any scorer-side bugs before we commit ledgers on 16 more runs.
-2. **Step 6c fairness enablement.** Extend `eval_sim/runner.py::run()` with a `cartographer_mode_override` kwarg threaded to `SkillBundleChannel` + `PromptOnlyBundleChannel` (they already carry `cartographer_mode` on `scorer_inputs`; just expose a setter). Then flip `pilot.py --fairness` from the explicit `typer.Exit(1)` to a real dispatch loop over `(CARTOGRAPHER_FAIRNESS_PILOT_SCENARIOS, CARTOGRAPHER_FAIRNESS_PILOT_SEEDS, [C, D])` with `cartographer_mode_override='live'` for both. **Nudge:** this is ~30 min of engine work + ~1–2 hrs of runs. Do after 6d so we can score the fairness runs immediately.
-3. **Step 6b seed expansion.** Once scorers are landing clean signals on the 12-subset, decide whether signal quality justifies more seeds. The calculus: run more only if §9 success thresholds need tightening CIs. Specific invocation: `PYTHONPATH=. uv run python scripts/pilot.py --live --scenarios S1,S2,S3 --max-seeds 5` (re-runs S1–S3 with seeds 0–4 — seed=0 overwrites; idempotent if content is deterministic, but *expect new LLM content per seed* since transport doesn't pin determinism).
-4. **Deferred (follow-up):** Priorauth agent path for S7 — `build_applicant_priorauth(PriorAuthProfile)` parallel builder. Grid-domain replication can land with 6 grid scenarios; S7 story ships as a follow-up paragraph.
+*Sprint-side (in flight):*
+- **Track 2.1 Interviewer Agent SDK wiring** — Claude Agent SDK as transport in `apps/desktop/`; streams `/gridpassport-interviewer` responses into `CaseInput` field writes; validator-gated emission; graceful fallback when a Claude Code host session is present. 3–5 d. The critical path for Track 2.
+- **Track 2.2 Explainer Skill v0** — `.claude/skills/explainer/` + `ROLE_VOICES.md` + paired validator (no raw-private-field regex in narration). Runs on Track 2.1's SDK transport. Adds row 3 to research-thesis §4 write-scope table. 3–5 d, serial after 2.1.
+- **Track 3.1 Utility Tauri binary (`apps/utility/`)** — separate workspace; imports only `@grid-passport/verifier` + `@grid-passport/core/{types,projection}` scoped to the utility-view slice. Cannot link `CaseInput.privateProfile` by import graph. Two screens (drop bundle → verify + keyId/policy display; render utility projection with pinned `BenefitPanel`). New `pnpm canary:utility` with grep-guard + e2e verify. 4–5 d.
+- **Track 3.2 Self-review trust panel** — persistent chrome in `apps/desktop/` showing `0 network calls · inputs at <path> · bundle hash <truncated> · 0 raw private fields released`. Live runtime state, not hardcoded. 1–2 d.
+- **Track 4 TS unit tests for `forecast.ts` + `audit.ts`** — vitest. Forecast: tier-band invariants under perturbation + quantized firmnessScore. Audit: hash-chain linkage + policy-hash binding + redaction-action rows. CLAUDE.md mandate coverage. 1–2 d, no dependencies.
+
+**Sprint-close deliverable (target ~2026-05-18): master student brief.** At sprint close we consolidate Track 1 + Track 2 + Track 3 + Track 4 findings into a single onboarding doc (candidate path: `docs/plans/sprint-2026-04-20-brief.md`) that a student can read cold and walk into either the main run (eval side) or the next sprint's feature work. Each track's sub-sections should be write-once here and linked from the brief at close — don't duplicate content into the brief while the sprint is live.
+
+**Suggested first action in next session:**
+
+1. **Track 4 TS unit tests** (smallest bounded item, ~1 d) — vitest for `forecast.ts` + `audit.ts`. No dependencies. Earns a "slot in while Track 2 has external blockers" line on the sprint-close brief.
+2. **Track 3.1 `apps/utility/` Tauri scaffold** (~1 d scaffold → 4–5 d full) — stand up the workspace; wire `@grid-passport/verifier`; write the first canary. Then build up the projection-render side in parallel to Track 2 SDK wiring.
+3. **Track 2.1 Interviewer SDK wiring** (~3–5 d) — the hard one; do this when fresh, not at the tail of a long session. Reads `docs/agents.md` §5c + the existing `apps/desktop/src/lib/skills-loader.ts` first.
+4. **Replay Track 1 invocations if needed** (for reproducibility):
+   ```bash
+   cd packages/eval-sim
+   PYTHONPATH=. uv run python scripts/score_ledgers.py --scorer robustness   # ~2 min, ~$0.50
+   PYTHONPATH=. uv run python scripts/spot_check_cross_family_judge.py        # ~2 min, ~$0.30
+   ```
 
 **Useful invocations for any next session:**
 

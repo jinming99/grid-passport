@@ -17,6 +17,8 @@ results/pilot/scores/
 results/main/transcripts/
 results/main/judge-runs/
 results/main/scores/
+# P0.3 cross-family spot-check raw rationales (summary rolled into sim-bench-results.md).
+results/pilot/spot_check_sonnet/
 
 # OS noise
 .DS_Store
