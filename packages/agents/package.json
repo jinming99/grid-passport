@@ -5,15 +5,18 @@
   "type": "module",
   "description": "Claude Agent Skills for Grid Passport — small, named, single-responsibility agents with explicit write-scope contracts. See docs/design/research-thesis.md.",
   "exports": {
-    "./interviewer/validator": "./interviewer/src/validator.ts"
+    "./interviewer/validator": "./interviewer/src/validator.ts",
+    "./explainer/validator": "./explainer/src/validator.ts"
   },
   "scripts": {
     "validate:interviewer": "tsx interviewer/scripts/validate_caseinput.ts",
     "validate:cartographer": "tsx cartographer/scripts/validate_publicevidence.ts",
+    "validate:explainer": "tsx explainer/scripts/validate_narration.ts",
     "baseline": "tsx scripts/export_prompt_only.ts --all",
     "baseline:check": "tsx scripts/export_prompt_only.ts --all --check",
     "baseline:interviewer": "tsx scripts/export_prompt_only.ts interviewer",
     "baseline:cartographer": "tsx scripts/export_prompt_only.ts cartographer",
+    "baseline:explainer": "tsx scripts/export_prompt_only.ts explainer",
     "metrics": "tsx scripts/compute_metrics.ts",
     "metrics:check": "tsx scripts/compute_metrics.ts --check"
   },

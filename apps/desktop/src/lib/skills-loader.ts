@@ -69,6 +69,7 @@ export const SHIPPING_SKILLS = [
   "interviewer",
   "cartographer",
   "priorauth-interviewer",
+  "explainer",
 ] as const;
 
 /**

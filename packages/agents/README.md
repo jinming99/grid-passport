@@ -11,10 +11,10 @@ Start with **`.claude/skills/README.md`** for the Skill roster + write-scope + t
 
 | Skill | Validator | Script |
 |---|---|---|
-| Interviewer | `packages/agents/interviewer/scripts/validate_caseinput.ts` | `pnpm agents:validate` |
-| Cartographer (#8) | planned at `packages/agents/cartographer/scripts/validate_publicevidence.ts` | — |
+| Interviewer | `packages/agents/interviewer/scripts/validate_caseinput.ts` (CLI) · `packages/agents/interviewer/src/validator.ts` (pure, browser-safe; `@grid-passport/agents/interviewer/validator`) | `pnpm agents:validate:interviewer` |
+| Cartographer | `packages/agents/cartographer/scripts/validate_publicevidence.ts` | `pnpm agents:validate:cartographer` |
+| Explainer | `packages/agents/explainer/scripts/validate_narration.ts` (CLI) · `packages/agents/explainer/src/validator.ts` (pure, browser-safe; `@grid-passport/agents/explainer/validator`) | `pnpm agents:validate:explainer` |
 | Notary (later) | planned at `packages/agents/notary/scripts/validate_auditevents.ts` | — |
-| Explainer (#13) | planned at `packages/agents/explainer/scripts/validate_prose.ts` | — |
 
 Each validator enforces the Skill's **write-scope contract** from the research thesis: the specific `FieldPath` groups the Skill may and may not write. A failure is a contract violation, not a warning.
 

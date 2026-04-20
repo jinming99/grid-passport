@@ -82,6 +82,33 @@
       "upfrontTokens": 352,
       "triggeredTokens": 2220,
       "fullLoadTokens": 5232
+    },
+    {
+      "name": "explainer",
+      "l1MetadataChars": 1319,
+      "l1MetadataTokens": 330,
+      "l2BodyChars": 11621,
+      "l2BodyTokens": 2905,
+      "l3ResourceChars": 20083,
+      "l3ResourceTokens": 5022,
+      "l3FileCount": 4,
+      "promptOnlyChars": 34916,
+      "promptOnlyTokens": 8729,
+      "frontmatterFields": 3,
+      "whenToUsePresent": true,
+      "doNotUseForPresent": true,
+      "neverClauses": 4,
+      "haltClauses": 8,
+      "refuseClauses": 3,
+      "writeScopeSections": 1,
+      "validatorNegatives": 5,
+      "fileCount": 5,
+      "exampleCount": 3,
+      "referenceDepth": 1,
+      "baselineContentHash": "b61e11b35cf9de2c",
+      "upfrontTokens": 330,
+      "triggeredTokens": 3235,
+      "fullLoadTokens": 8257
     }
   ],
   "sourceWhitelist": 11

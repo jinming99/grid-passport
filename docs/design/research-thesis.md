@@ -95,7 +95,7 @@ Every named agent is a *different* write-scope contract. The system is the resea
 | **Cartographer** (#8) | Writes only to `publicEvidence`; every entry carries `sourceRefs[]`; cannot touch `privateProfile` | *Provenance-bound retrieval* — cherry-picking is detectable because the write-scope is append-only and source-addressed. RAG becomes auditable by construction. |
 | **Notary** (later) | Computes hashes; emits `AuditEvent[]`; deterministic; cannot mutate upstream records | *Agent-as-ceremony* — the agent's role is reduced to cryptographic bookkeeping; non-determinism is moved outside the trust-critical path. |
 | **Forecaster** / **Referee** (done, pure functions) | No LLM; pure functions over typed inputs | *Projection-as-purity* — the deterministic layer is deliberately not an LLM. This is the architectural split that makes stochastic-layer failures bounded. |
-| **Explainer** (#13) | Reads only `ProjectedView`, never raw inputs; writes natural-language prose conditioned on role | *By-construction leak-proofness* — the write-scope contract has a dual read-scope contract. Cannot leak what it cannot see. |
+| **Explainer** (#13, v0 shipped 2026-04-20) | Reads only `ProjectedView` + `Role` (via `ROLE_VOICES.md` for voice specs); writes natural-language prose; **never writes structured fields** + **never reads raw `CaseInput.privateProfile`**. Paired validator (`packages/agents/explainer/scripts/validate_narration.ts`) asserts no fixture-derived forbidden literal appears in non-applicant narrations. | *By-construction leak-proofness* — the write-scope contract has a dual read-scope contract. Cannot leak what it cannot see. The validator makes the property empirically checkable on every narration emission, mirroring the structural-refusal discipline the write-scope Skills apply from the other side. |
 | **Switchboard** (stretch) | Not shipping unless it can demonstrate value over workflow-driven default | *Architectural restraint* — absence of an agent is itself a safety property. |
 
 Pattern: **every agent has a specific strategic-integrity property, and the substrate enforces it structurally — not through prompting.** This is the research-grade generalization of "agents propose, humans dispose" from `docs/vision.md §5c`.
@@ -118,13 +118,14 @@ When the Rego policy changes (quarterly, per regulator), past signed disclosures
 
 ## 6a. Substrate metrics — concrete numbers to put on the slide
 
-The substrate-property evidence is shippable before the behavioral evaluation runs, and it replicates across three Skills in two domains. Full report at `packages/agents/metrics.md` (auto-generated; drift-gated). Headline deltas (Skill substrate vs mechanically-derived prompt-only baseline, token counts at ~chars/4 heuristic):
+The substrate-property evidence is shippable before the behavioral evaluation runs, and it replicates across **four Skills in two domains** — three write-scope Skills (Interviewer, Cartographer, priorauth-Interviewer) plus the read-scope Skill (Explainer). Full report at `packages/agents/metrics.md` (auto-generated; drift-gated). Headline deltas (Skill substrate vs mechanically-derived prompt-only baseline, token counts at ~chars/4 heuristic):
 
-| Skill (domain) | Upfront context saving | Triggered context saving | "never" clauses | "halt" clauses | "refuse" clauses | Validator-refused contract violations |
+| Skill (domain · axis) | Upfront context saving | Triggered context saving | "never" clauses | "halt" clauses | "refuse" clauses | Validator-refused contract violations |
 |---|---:|---:|---:|---:|---:|---:|
-| `interviewer` (grid) | **−95.8%** | −66.9% | 6 | 6 | 7 | 3 |
-| `cartographer` (grid) | **−96.4%** | −65.6% | 6 | 9 | 2 | 4 |
-| `priorauth-interviewer` (healthcare) | **−93.8%** | — | 5 | 5 | 12 | n/a (scaffold only) |
+| `interviewer` (grid · write-scope) | **−95.8%** | −66.9% | 6 | 6 | 7 | 3 |
+| `cartographer` (grid · write-scope) | **−96.4%** | −65.5% | 6 | 9 | 2 | 4 |
+| `priorauth-interviewer` (healthcare · write-scope) | **−93.8%** | −60.8% | 5 | 5 | 12 | n/a (scaffold only) |
+| `explainer` (grid · **read-scope**) | **−96.2%** | −62.9% | 4 | 8 | 3 | 5 |
 
 What these numbers directly support:
 
@@ -132,7 +133,7 @@ What these numbers directly support:
 - **§3.2 agent as non-amplification intermediary** — Interviewer's 6×never + 6×halt + 7×refuse clauses implement the non-coaching rule at the authoring layer, enforced by the paired CI validator. `priorauth-interviewer`'s equivalent rule replicates it in the healthcare domain. This is the non-amplification axis; the cross-check axis (verifiable fields via Cartographer + Referee) and proper-scoring-rule axis (unverifiable fields) are separate mechanisms discussed in §3.2 above.
 - **§3.3 projection-as-purity** — the deterministic layer (Forecaster + Referee) is absent from this table by construction. Zero stochastic surface; every LLM write is write-scope-bounded.
 - **§3.4 object-capability pattern at the validator layer** — the validator-refused-violations column is the set of writes the contract rules out, replicating the object-capability architectural invariants (static write-scope, fail-closed denial, no amplification) at the authoring + validator layer rather than at a runtime kernel. Cartographer's 4 enforced violations (privateProfile leak, derivedProof bleed, empty sourceRefs, unknown source URL) is the sharpest instance we ship today. Not seL4-grade formal verification; the pattern, applied at a softer enforcement layer.
-- **Generalization (§6 below)** — three Skills, two domains, same substrate shape, same magnitude of substrate advantage. The pattern replicating across domains is what lets this be a substrate claim rather than a single-Skill finding.
+- **Generalization (§6 below)** — four Skills, two domains, two contract axes (write-scope + read-scope), same substrate shape, same magnitude of substrate advantage (−93.8% to −96.4% upfront across all four). The pattern replicating across domains *and* across contract axes is what lets this be a substrate claim rather than a single-Skill finding.
 
 These are **leading indicators** for the behavioral deltas #14 will measure. If the behavioral deltas land in the direction the substrate metrics predict, that is an unusually clean substrate-vs-behavior alignment — evidence that the measured properties explain the measured outcomes.
 

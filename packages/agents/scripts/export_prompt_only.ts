@@ -28,7 +28,7 @@ const PKG_ROOT = join(THIS_DIR, "..");
 const REPO_ROOT = join(PKG_ROOT, "..", "..");
 
 // Shipping Skills — keep in sync with .claude/skills/README.md roster.
-const SHIPPING_SKILLS = ["interviewer", "cartographer", "priorauth-interviewer"];
+const SHIPPING_SKILLS = ["interviewer", "cartographer", "priorauth-interviewer", "explainer"];
 
 // Per-Skill reference files beyond the optional REFERENCE.md. Any .md file in
 // the Skill dir that isn't SKILL.md, REFERENCE.md, or inside examples/ is

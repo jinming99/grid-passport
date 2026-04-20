@@ -27,6 +27,7 @@ Skill substrate loads content progressively (metadata always; body when triggere
 | interviewer | 341 tok | 2,356 tok | 4,977 tok | 8,141 tok | -95.8% | -66.9% |
 | cartographer | 316 tok | 2,741 tok | 5,344 tok | 8,871 tok | -96.4% | -65.5% |
 | priorauth-interviewer | 352 tok | 1,868 tok | 3,012 tok | 5,662 tok | -93.8% | -60.8% |
+| explainer | 330 tok | 2,905 tok | 5,022 tok | 8,729 tok | -96.2% | -62.9% |
 
 **Read this as:** Skill substrate occupies a *fraction* of the prompt-only's context budget at the moment the model is deciding whether to engage (upfront) and still a *fraction* once engaged (triggered), because REFERENCE.md / examples/ load only when the current turn needs them. The prompt-only substrate pays the full cost on every call whether the current turn needs the evidence or not.
 
@@ -37,6 +38,7 @@ Skill substrate loads content progressively (metadata always; body when triggere
 | interviewer | 3 | yes | yes | 0 |
 | cartographer | 3 | yes | yes | 0 |
 | priorauth-interviewer | 3 | yes | yes | 0 |
+| explainer | 3 | yes | yes | 0 |
 
 **Read this as:** every Skill ships with structured discovery metadata (`name` + `description` + `when_to_use` with explicit NOT-use-for clauses pointing at sibling Skills). The flat-prompt baseline has zero separate discovery signal — the host has to guess from the content whether to route to this prompt at all. For #14's H-trigger test, this is the substrate-side prediction.
 
@@ -49,6 +51,7 @@ These are the schema-discipline signals from research-thesis §3.1 (*schema-as-s
 | interviewer | 6 | 6 | 7 | 1 | 3 |
 | cartographer | 6 | 9 | 2 | 1 | 4 |
 | priorauth-interviewer | 5 | 5 | 12 | 1 | 0 |
+| explainer | 4 | 8 | 3 | 1 | 5 |
 
 **Cartographer extra:** source-URL whitelist size = **11** (every URL in sourceRefs[] must match one of these or be an applicant upload; the CI validator enforces this at every commit).
 
@@ -61,6 +64,7 @@ These are the schema-discipline signals from research-thesis §3.1 (*schema-as-s
 | interviewer | 5 | 3 | 1 |
 | cartographer | 5 | 3 | 1 |
 | priorauth-interviewer | 3 | 1 | 1 |
+| explainer | 5 | 3 | 1 |
 
 **Read this as:** the Skill substrate is a *navigable filesystem*. The model can re-read `examples/lantern-cloud-evidence.md` mid-task when the current applicant looks like Lantern Cloud, rather than carrying all three examples' worth of tokens through every turn. The prompt-only substrate is one file; the model can only re-read *all* of it.
 
@@ -71,6 +75,7 @@ These are the schema-discipline signals from research-thesis §3.1 (*schema-as-s
 | interviewer | `1fab1b125127be51` | `pnpm agents:baseline` |
 | cartographer | `118f6fe979461988` | `pnpm agents:baseline` |
 | priorauth-interviewer | `485fae34bc895913` | `pnpm agents:baseline` |
+| explainer | `b61e11b35cf9de2c` | `pnpm agents:baseline` |
 
 **Read this as:** the prompt-only baseline is not hand-maintained. Every Skill edit produces a new deterministic hash. The drift gate (`pnpm agents:baseline:check`) refuses merges that edit the Skill without regenerating the baseline — which is how the Skill-vs-prompt comparison stays fair across time.
 

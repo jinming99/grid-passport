@@ -29,15 +29,17 @@
     "core:test": "pnpm --filter @grid-passport/core test",
     "verifier:test": "pnpm --filter @grid-passport/verifier test",
     "verifier:typecheck": "pnpm --filter @grid-passport/verifier typecheck",
-    "agents:validate": "pnpm --filter @grid-passport/agents validate:interviewer && pnpm --filter @grid-passport/agents validate:cartographer",
+    "agents:validate": "pnpm --filter @grid-passport/agents validate:interviewer && pnpm --filter @grid-passport/agents validate:cartographer && pnpm --filter @grid-passport/agents validate:explainer",
     "agents:validate:interviewer": "pnpm --filter @grid-passport/agents validate:interviewer",
     "agents:validate:cartographer": "pnpm --filter @grid-passport/agents validate:cartographer",
+    "agents:validate:explainer": "pnpm --filter @grid-passport/agents validate:explainer",
     "agents:typecheck": "pnpm --filter @grid-passport/agents exec tsc -p .",
     "agents:baseline": "pnpm --filter @grid-passport/agents baseline",
     "agents:baseline:check": "pnpm --filter @grid-passport/agents baseline:check",
     "agents:metrics": "pnpm --filter @grid-passport/agents metrics",
     "agents:metrics:check": "pnpm --filter @grid-passport/agents metrics:check",
     "agents:baseline:interviewer": "pnpm --filter @grid-passport/agents baseline:interviewer",
-    "agents:baseline:cartographer": "pnpm --filter @grid-passport/agents baseline:cartographer"
+    "agents:baseline:cartographer": "pnpm --filter @grid-passport/agents baseline:cartographer",
+    "agents:baseline:explainer": "pnpm --filter @grid-passport/agents baseline:explainer"
   }
 }

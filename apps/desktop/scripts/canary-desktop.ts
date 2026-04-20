@@ -90,7 +90,7 @@ if (!existsSync(SKILLS_DIR)) {
   );
   process.exit(1);
 }
-const SHIPPING_SKILLS = ["interviewer", "cartographer", "priorauth-interviewer"];
+const SHIPPING_SKILLS = ["interviewer", "cartographer", "priorauth-interviewer", "explainer"];
 const missingSkills: string[] = [];
 const invalidFrontmatter: string[] = [];
 for (const name of SHIPPING_SKILLS) {

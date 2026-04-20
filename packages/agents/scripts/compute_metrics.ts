@@ -115,6 +115,7 @@ function discoverSkill(name: string): SkillPaths {
     interviewer: "validate_caseinput.ts",
     cartographer: "validate_publicevidence.ts",
     "priorauth-interviewer": undefined,
+    explainer: "validate_narration.ts",
   };
   const validatorFile = validatorFileByName[name];
   const pkgValidator = validatorFile
@@ -449,8 +450,11 @@ function main(): void {
   // Keep in sync with SHIPPING_SKILLS in scripts/export_prompt_only.ts and the
   // roster in .claude/skills/README.md. The priorauth-interviewer Skill is the
   // substrate-transfer demo — adding it means the metrics panel spans two
-  // domains (grid × healthcare) with the same recipe, not just one.
-  const skills = ["interviewer", "cartographer", "priorauth-interviewer"];
+  // domains (grid × healthcare) with the same recipe, not just one. Explainer
+  // was added 2026-04-20 (Track 2.2) — the read-scope counterpart to the
+  // write-scope Skills, exercising the same substrate pattern on a different
+  // contract axis.
+  const skills = ["interviewer", "cartographer", "priorauth-interviewer", "explainer"];
   const metrics = skills.map((s) => measureSkill(discoverSkill(s)));
   const md = renderReport(metrics);
   const json = {
