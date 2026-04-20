@@ -10,7 +10,7 @@ Durable record of project state, decisions, and what future work needs to know. 
 4. Before touching the bundle/signer/verifier/audit code, read `docs/design/signed-bundle.md` + `docs/design/signed-bundle-spec.md`.
 5. Before scoping a new agent or adding a `CaseInput` field, read `docs/design/research-thesis.md` — the "schema is the safety case" framing is load-bearing and should shape write-scope, SKILL.md constraints, and eval targets. `docs/vision.md` §4b (5-test filter) is the upstream check for any new field; also add an entry to `packages/core/src/ask-reasons.ts`.
 6. **If working on the eval harness (#14, simulation bench):** `docs/evals/sim-bench-design.md` is the single source of truth — it is the pre-registration document, currently pending Ming's §17 sign-off (Amendments A-1 and A-2 both applied 2026-04-19; A-2 is a pre-lock thesis-framing sharpening that scopes the claim, restructures §1.5 into methodology + realism-engineering, decomposes H-spec.hallucination, and adds §9.4 thesis-refinement paths). All implementation lives under `packages/eval-sim/` (to be created). The earlier `docs/evals/rubric.md` + `docs/evals/owner-briefs.md` are superseded and retained as historical artifacts; do not build against them.
-7. Run all gates to confirm the tree is clean: `pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:desktop && pnpm core:test && pnpm verifier:test && pnpm canary:bundle && pnpm canary:roundtrip && pnpm desktop:test && pnpm agents:typecheck && pnpm agents:validate && pnpm agents:baseline:check && pnpm agents:metrics:check` — ~13s wall-clock.
+7. Run all gates to confirm the tree is clean: `pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:desktop && pnpm utility:typecheck && pnpm canary:utility && pnpm core:test && pnpm verifier:test && pnpm canary:bundle && pnpm canary:roundtrip && pnpm desktop:test && pnpm agents:typecheck && pnpm agents:validate && pnpm agents:baseline:check && pnpm agents:metrics:check` — ~16s wall-clock (15 gates including gate 15 `canary:utility`).
 
 ## Identity
 
@@ -57,7 +57,7 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**Sprint 2026-04-20 ("demo-ready everything") in flight. Tracks 1 + 4 landed 2026-04-20; main run still deferred.** Sprint plan at `docs/plans/sprint-2026-04-20.md`: four tracks, ~4 weeks, four parallelizable streams. Track 1 (empirical evidence into `/about` §6) — P0.1 CandidatePlan extraction + P0.3 different-family judge spot-check + live 12-cell re-score with robustness axis + `/about` §6 OPR tables. Track 4 (derivation-correctness tests) — 48 new `node:test` units in `packages/core/src/{forecast,audit}.test.ts` (tier-band invariants, quantize-to-5 firmness, hash-chain integrity, policy-version binding, override-row redaction); `pnpm core:test` now runs 57 tests (↑ from 9). Tracks 2 (Interviewer SDK wiring → Explainer Skill) and 3 (`apps/utility/` Tauri binary + trust panel) remain open.
+**Sprint 2026-04-20 ("demo-ready everything") in flight. Tracks 1 + 4 landed 2026-04-20; Track 3.1 scaffold landed 2026-04-20 (full UX follow-up); main run still deferred.** Sprint plan at `docs/plans/sprint-2026-04-20.md`: four tracks, ~4 weeks, four parallelizable streams. Track 1 (empirical evidence into `/about` §6) — P0.1 CandidatePlan extraction + P0.3 different-family judge spot-check + live 12-cell re-score with robustness axis + `/about` §6 OPR tables. Track 4 (derivation-correctness tests) — 48 new `node:test` units in `packages/core/src/{forecast,audit}.test.ts` (tier-band invariants, quantize-to-5 firmness, hash-chain integrity, policy-version binding, override-row redaction); `pnpm core:test` now runs 57 tests (↑ from 9). Track 3.1 (utility binary) — `apps/utility/` workspace scaffolded (Vite + React + TS + Tauri 2.10.3; crate `grid-passport-utility`, identifier `app.gridpassport.utility`, port 1430, window 1180×760); verifier-only Rust core (no signer deps); placeholder paste+verify UI proves the import chain; **gate 15 `canary:utility`** green — write-scope import guard + verifier-wiring positive check + sign/verify/tamper/reject e2e on a fresh bundle. Tracks 2 (Interviewer SDK wiring → Explainer Skill) and 3.2 (self-review trust panel) remain open.
 
 **Track 1 headline numbers, n=1 per cell (from `docs/evals/sim-bench-results.md`):**
 - **OPR Δ = D − B**: S1 **+0.328 ✓** (clears §9.1 threshold); S3 +0.194 borderline; S2 +0.047 flat.
@@ -150,7 +150,7 @@ Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff ch
 *Sprint-side (in flight):*
 - **Track 2.1 Interviewer Agent SDK wiring** — Claude Agent SDK as transport in `apps/desktop/`; streams `/gridpassport-interviewer` responses into `CaseInput` field writes; validator-gated emission; graceful fallback when a Claude Code host session is present. 3–5 d. The critical path for Track 2.
 - **Track 2.2 Explainer Skill v0** — `.claude/skills/explainer/` + `ROLE_VOICES.md` + paired validator (no raw-private-field regex in narration). Runs on Track 2.1's SDK transport. Adds row 3 to research-thesis §4 write-scope table. 3–5 d, serial after 2.1.
-- **Track 3.1 Utility Tauri binary (`apps/utility/`)** — separate workspace; imports only `@grid-passport/verifier` + `@grid-passport/core/{types,projection}` scoped to the utility-view slice. Cannot link `CaseInput.privateProfile` by import graph. Two screens (drop bundle → verify + keyId/policy display; render utility projection with pinned `BenefitPanel`). New `pnpm canary:utility` with grep-guard + e2e verify. 4–5 d.
+- ~~**Track 3.1 Utility Tauri binary (`apps/utility/`) scaffold**~~ — ✅ landed 2026-04-20 (scaffold + gate 15). Workspace scaffolded as separate `apps/utility/` package mirroring `apps/desktop/` recipe. Imports only `@grid-passport/verifier` + `@grid-passport/core/{types, projection, bundle}` (the core imports are type-only in practice); the write-scope guard in `pnpm canary:utility` forbids `@grid-passport/core/{fixtures, forecast, audit}` in `apps/utility/src` by grep. Gate 15 exercises: (i) write-scope guard, (ii) positive `@grid-passport/verifier` wiring check, (iii) sign + verify + tamper + reject on a fresh owl-compute bundle. Full UX (real drop-zone, projection render with role-pinned `BenefitPanel`, trust-claim stamping) lands as Track 3.1-polish in a follow-up chunk — the scaffold compiles, typechecks, and proves the import chain.
 - **Track 3.2 Self-review trust panel** — persistent chrome in `apps/desktop/` showing `0 network calls · inputs at <path> · bundle hash <truncated> · 0 raw private fields released`. Live runtime state, not hardcoded. 1–2 d.
 - ~~**Track 4 TS unit tests for `forecast.ts` + `audit.ts`**~~ — ✅ landed 2026-04-20. 48 new `node:test` units (30 forecast + 18 audit) layered under the existing `tsx --test` runner; no new vitest dep. `pnpm core:test` glob-expanded from hardcoded crypto-only to `src/*.test.ts`. Coverage themes: tier-band invariants, `firmnessScore` quantize-to-5 under perturbation, hash-chain `prevHash[i] === sha256(JCS(event[i-1]))`, per-actor policy-version binding, override-row redaction discipline (applicant vs non-applicant baseline visibility).
 
@@ -158,8 +158,8 @@ Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff ch
 
 **Suggested first action in next session:**
 
-1. **Track 3.1 `apps/utility/` Tauri scaffold** (~1 d scaffold → 4–5 d full) — stand up the workspace; wire `@grid-passport/verifier`; write the first canary. Then build up the projection-render side in parallel to Track 2 SDK wiring. Becomes gate 15 (`canary:utility`) when landed.
-2. **Track 2.1 Interviewer SDK wiring** (~3–5 d) — the hard one; do this when fresh, not at the tail of a long session. Reads `docs/agents.md` §5c + the existing `apps/desktop/src/lib/skills-loader.ts` first.
+1. **Track 2.1 Interviewer SDK wiring** (~3–5 d) — the critical path for Track 2 (Explainer 2.2 serializes behind it). Read `docs/agents.md` §5c + existing `apps/desktop/src/lib/skills-loader.ts` first. Loader produces `LoadedSkill[]`; 2.1's job is to wire that through a Claude-Code-session-hosted transport with the paired `validate_caseinput.ts` validator gating every emission. Do this when fresh.
+2. **Track 3.1-polish `apps/utility/` full UX** (~3–4 d remainder) — scaffold already green; follow-up layers on: (a) real drop-zone via `@tauri-apps/plugin-dialog` + `plugin-fs`, (b) verified-bundle state carrying keyId + policy-hash display, (c) rendering `payload.projections.utility` with a utility-pinned `BenefitPanel` (hoist from web or reimplement locally), (d) trust-claim stamping (`no network · verify-only · pinned to keyId`). `canary:utility` already covers the write-scope contract and the verify/tamper e2e; UX work doesn't need new canaries.
 3. **Replay Track 1 invocations if needed** (for reproducibility):
    ```bash
    cd packages/eval-sim
@@ -230,27 +230,41 @@ grid-passport/
 │   │       └── privacy-canary.ts       structural + audit-action scan + TS↔Rego↔Python drift
 │   ├── api/                            FastAPI parity (uv · Python 3.11+) — Phase 2 target
 │   ├── verifier-py/                    Python reference verifier · single file · PyCA cryptography + stdlib only · demonstrates protocol portability
-│   └── desktop/                        Tauri 2.x shell · Vite + React + TS frontend · Rust core
+│   ├── desktop/                        Tauri 2.x shell · Vite + React + TS frontend · Rust core · applicant-side signing
+│   │   ├── src/
+│   │   │   ├── App.tsx                 top-level: two-mode (work/review) · case picker · file loader · review gate + export terminus
+│   │   │   ├── components/             ReviewColumn (work|review variant), MiniBenefit, ProjectionSections (bucket-tiered with ⓘ tooltips)
+│   │   │   ├── lib/
+│   │   │   │   ├── case-loader.ts      dialog.open + fs.readTextFile + structural validate against CaseInput
+│   │   │   │   ├── signer.ts           tauriSigner() → BundleSigner via applicant_public_key + applicant_sign IPC
+│   │   │   │   └── bundle.ts           buildAndSignBundle() · signs v1 bundle with OS-keychain-backed Ed25519 · dialog.save + fs.writeTextFile
+│   │   │   ├── styles.css              terminal-flavored vanilla CSS (no Tailwind on desktop yet)
+│   │   │   └── main.tsx
+│   │   ├── scripts/canary-desktop.ts   asserts @grid-passport/core imports + 3-case × 3-role projection invariant
+│   │   ├── vite.config.ts              port 1420 · strictPort · TAURI_ENV_* env · esnext target
+│   │   └── src-tauri/                  Rust crate `grid-passport-desktop` (lib `grid_passport_desktop_lib`)
+│   │       ├── tauri.conf.json         identifier app.gridpassport.desktop · window 1180×760
+│   │       ├── Cargo.toml              tauri 2.10 · tauri-plugin-{log,dialog,fs} 2 · keyring 3 · ed25519-dalek 2 · serde_json_canonicalizer · [[bin]] gp-sign · AGPL-3.0-or-later
+│   │       ├── capabilities/default.json  dialog + fs read/write scoped to `**` (narrow for prod in #12)
+│   │       ├── icons/                  generated via `cargo tauri icon` from a placeholder source
+│   │       └── src/
+│   │           ├── {main.rs,lib.rs}    Tauri builder · dialog/fs/log plugins · applicant_public_key + applicant_sign commands
+│   │           ├── signer.rs            Ed25519 keypair in OS keychain via `keyring` crate + `ed25519-dalek`; OnceLock-cached Entry; mock-keychain unit test exercises the full round-trip
+│   │           └── bin/gp-sign.rs       Standalone Rust signer CLI · JCS via serde_json_canonicalizer · proves Rust primitives produce verifier-compatible output
+│   └── utility/                        Tauri 2.x shell · utility-side verifier binary · scaffolded 2026-04-20 (Track 3.1) · structurally cannot reconstruct raw CaseInput
 │       ├── src/
-│       │   ├── App.tsx                 top-level: two-mode (work/review) · case picker · file loader · review gate + export terminus
-│       │   ├── components/             ReviewColumn (work|review variant), MiniBenefit, ProjectionSections (bucket-tiered with ⓘ tooltips)
-│       │   ├── lib/
-│       │   │   ├── case-loader.ts      dialog.open + fs.readTextFile + structural validate against CaseInput
-│       │   │   ├── signer.ts           tauriSigner() → BundleSigner via applicant_public_key + applicant_sign IPC
-│       │   │   └── bundle.ts           buildAndSignBundle() · signs v1 bundle with OS-keychain-backed Ed25519 · dialog.save + fs.writeTextFile
-│       │   ├── styles.css              terminal-flavored vanilla CSS (no Tailwind on desktop yet)
+│       │   ├── App.tsx                 placeholder paste+verify UI (real drop-zone is Track 3.1-polish); imports @grid-passport/verifier only
+│       │   ├── styles.css              minimal terminal-flavored CSS (card layout, mono telltale)
 │       │   └── main.tsx
-│       ├── scripts/canary-desktop.ts   asserts @grid-passport/core imports + 3-case × 3-role projection invariant
-│       ├── vite.config.ts              port 1420 · strictPort · TAURI_ENV_* env · esnext target
-│       └── src-tauri/                  Rust crate `grid-passport-desktop` (lib `grid_passport_desktop_lib`)
-│           ├── tauri.conf.json         identifier app.gridpassport.desktop · window 1180×760
-│           ├── Cargo.toml              tauri 2.10 · tauri-plugin-{log,dialog,fs} 2 · keyring 3 · ed25519-dalek 2 · serde_json_canonicalizer · [[bin]] gp-sign · AGPL-3.0-or-later
-│           ├── capabilities/default.json  dialog + fs read/write scoped to `**` (narrow for prod in #12)
-│           ├── icons/                  generated via `cargo tauri icon` from a placeholder source
+│       ├── scripts/canary-utility.ts   gate 15 · write-scope guard (no fixtures/forecast/audit imports in src/) + verifier-wiring positive + sign/verify/tamper/reject e2e
+│       ├── vite.config.ts              port 1430 · strictPort · TAURI_ENV_* env · esnext target
+│       └── src-tauri/                  Rust crate `grid-passport-utility` (lib `grid_passport_utility_lib`)
+│           ├── tauri.conf.json         identifier app.gridpassport.utility · window 1180×760 · productName "Grid Passport Utility"
+│           ├── Cargo.toml              tauri 2.10 · tauri-plugin-{log,dialog,fs} 2 · NO signer deps (keyring/ed25519-dalek omitted — utility verifies, never signs)
+│           ├── capabilities/default.json  dialog + fs read-only (no write capability — utility cannot emit bundles)
+│           ├── icons/                  copied from desktop placeholder
 │           └── src/
-│               ├── {main.rs,lib.rs}    Tauri builder · dialog/fs/log plugins · applicant_public_key + applicant_sign commands
-│               ├── signer.rs            Ed25519 keypair in OS keychain via `keyring` crate + `ed25519-dalek`; OnceLock-cached Entry; mock-keychain unit test exercises the full round-trip
-│               └── bin/gp-sign.rs       Standalone Rust signer CLI · JCS via serde_json_canonicalizer · proves Rust primitives produce verifier-compatible output
+│               └── {main.rs,lib.rs}    Tauri builder · dialog/fs/log plugins · NO invoke_handler (no signer commands)
 ├── packages/
 │   ├── core/                           @grid-passport/core · subpath exports · shared across web + desktop
 │   │   └── src/
@@ -425,20 +439,23 @@ Add a new case:
 | 2 | `pnpm privacy:canary` | Structural + audit-scan + TS↔Rego↔Python drift — `docs/privacy-claim.md` §2c |
 | 3 | `pnpm desktop:typecheck` | Desktop package types consistent |
 | 4 | `pnpm canary:desktop` | Desktop imports `@grid-passport/core` + projection invariant on 3 cases × 3 roles |
-| 5 | `pnpm core:test` | 57 tests across `crypto.test.ts` (9 — 6 official RFC 8785 JCS vectors incl. `weird.json` surrogate-pair + NaN/Infinity rejection + determinism) · `forecast.test.ts` (30 — tier-band invariants, quantize-to-5 under perturbation, confidence/flex/duration tier boundaries, override semantics, clamp) · `audit.test.ts` (18 — hash-chain integrity, policy-version binding per actor class, override-row redaction, sealed-field-count tripwire) |
-| 6 | `pnpm verifier:test` | 10 targeted tamper cases + 2000-iteration fuzz (zero false positives) |
-| 7 | `pnpm canary:bundle` | In-process sign → verify → tamper → reject × 3 cases |
-| 8 | `pnpm canary:roundtrip` | TS + Rust signers × TS + Python verifiers — 3-way parity on valid + tampered |
-| 9 | `pnpm desktop:test` | Rust keyring round-trip (generate → persist → reload → sign → verify), mock backend |
-| 10 | `(cd apps/desktop/src-tauri && cargo check)` | Rust signer + gp-sign binary compile clean |
-| 11 | `pnpm agents:typecheck` | All Skill-validator + baseline-derivation scripts compile under strict TS |
-| 12 | `pnpm agents:validate` | Write-scope contracts for all shipping Skills: Interviewer (3+3) + Cartographer (3+4 — privateProfile-leak · derivedProof-bleed · empty-sourceRefs · unknown-source-url) |
-| 13 | `pnpm agents:baseline:check` | Prompt-only baselines (all 3 shipping Skills) match current Skill source byte-for-byte; catches uncommitted Skill edits that would contaminate the Skill-vs-prompt comparison for #14 |
-| 14 | `pnpm agents:metrics:check` | Substrate-metrics report (`packages/agents/metrics.md` + `metrics.json`) matches current Skill source; the table is the slide — if a Skill edit changes the clause counts, the committed metrics should reflect it |
+| 5 | `pnpm utility:typecheck` | Utility package types consistent |
+| 6 | `pnpm canary:utility` | Utility write-scope guard (no `@grid-passport/core/{fixtures,forecast,audit}` imports in `apps/utility/src`) + positive `@grid-passport/verifier` wiring + sign/verify/tamper/reject e2e on a fresh owl-compute bundle |
+| 7 | `pnpm core:test` | 57 tests across `crypto.test.ts` (9 — 6 official RFC 8785 JCS vectors incl. `weird.json` surrogate-pair + NaN/Infinity rejection + determinism) · `forecast.test.ts` (30 — tier-band invariants, quantize-to-5 under perturbation, confidence/flex/duration tier boundaries, override semantics, clamp) · `audit.test.ts` (18 — hash-chain integrity, policy-version binding per actor class, override-row redaction, sealed-field-count tripwire) |
+| 8 | `pnpm verifier:test` | 10 targeted tamper cases + 2000-iteration fuzz (zero false positives) |
+| 9 | `pnpm canary:bundle` | In-process sign → verify → tamper → reject × 3 cases |
+| 10 | `pnpm canary:roundtrip` | TS + Rust signers × TS + Python verifiers — 3-way parity on valid + tampered |
+| 11 | `pnpm desktop:test` | Rust keyring round-trip (generate → persist → reload → sign → verify), mock backend |
+| 12 | `(cd apps/desktop/src-tauri && cargo check)` | Rust signer + gp-sign binary compile clean |
+| 13 | `pnpm agents:typecheck` | All Skill-validator + baseline-derivation scripts compile under strict TS |
+| 14 | `pnpm agents:validate` | Write-scope contracts for all shipping Skills: Interviewer (3+3) + Cartographer (3+4 — privateProfile-leak · derivedProof-bleed · empty-sourceRefs · unknown-source-url) |
+| 15 | `pnpm agents:baseline:check` | Prompt-only baselines (all 3 shipping Skills) match current Skill source byte-for-byte; catches uncommitted Skill edits that would contaminate the Skill-vs-prompt comparison for #14 |
+| 16 | `pnpm agents:metrics:check` | Substrate-metrics report (`packages/agents/metrics.md` + `metrics.json`) matches current Skill source; the table is the slide — if a Skill edit changes the clause counts, the committed metrics should reflect it |
+| —  | Optional: `(cd apps/utility/src-tauri && cargo check)` | Utility Rust crate compiles clean; slow on first run (~1m 40s) so not in the one-liner. Run once after scaffold edits |
 
-One-liner for a full sweep (~13s on M1):
+One-liner for a full sweep (~16s on M1 — 15 gates):
 ```bash
-pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:desktop && pnpm core:test && pnpm verifier:test && pnpm canary:bundle && pnpm canary:roundtrip && pnpm desktop:test && pnpm agents:typecheck && pnpm agents:validate && pnpm agents:baseline:check && pnpm agents:metrics:check
+pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:desktop && pnpm utility:typecheck && pnpm canary:utility && pnpm core:test && pnpm verifier:test && pnpm canary:bundle && pnpm canary:roundtrip && pnpm desktop:test && pnpm agents:typecheck && pnpm agents:validate && pnpm agents:baseline:check && pnpm agents:metrics:check
 ```
 
 ### Dev + build
@@ -448,6 +465,8 @@ pnpm typecheck && pnpm privacy:canary && pnpm desktop:typecheck && pnpm canary:d
 - FastAPI (optional): install uv, then `pnpm api:sync && pnpm api:dev` → http://localhost:8000
 - Desktop (Tauri) dev: `pnpm desktop:dev` (launches the Tauri window; requires `~/.cargo/bin` on PATH — `source ~/.cargo/env` if `cargo` is not found)
 - Desktop build: `pnpm desktop:build` (produces unsigned DMG + .app on macOS; MSI/AppImage on other platforms — untested for v0)
+- Utility (Tauri) dev: `pnpm utility:dev` (port 1430; same cargo requirement; scaffold ships with placeholder paste+verify UI, full drop-zone lands in Track 3.1-polish)
+- Utility build: `pnpm utility:build` (first-time Rust compile is ~1m 40s; subsequent builds fast; unsigned DMG under `apps/utility/src-tauri/target/release/bundle/`)
 
 ### Standalone CLIs (shipped, for utility-side consumption)
 

@@ -280,9 +280,9 @@ Replace the `responseClass: "A" | "B" | "C"` ordinal bucket with EPRI's publishe
 
 Each case study currently shows `displayName · MW · county`. Add a one-line pain framing per case (drawn from `docs/vision.md` §8) so the visitor sees *why this case matters* before clicking through projections. Owl Compute → "hyperscaler vs roadmap exposure"; Lantern Cloud → "applicant in genuine permit trouble"; Kraken Train → "flexibility commitment without exposure". Small UX item, high pedagogical lift. Pulls from `lib/pain-framings.ts` — same source as the landing page (#3) so the two stay in sync.
 
-### 11. Utility-side example application (~3–5 days)
+### 11. Utility-side example application — *scaffold shipped 2026-04-20*
 
-A second tiny app (could be a CLI, could be another desktop window) that simulates what a utility intake portal would do: receives a signed bundle, verifies signature + policy hash, renders the utility projection. Proves the protocol composes with existing utility infrastructure. **Demo moment:** export bundle from applicant Tauri app → drop into utility CLI → see the utility's view. End-to-end, no network in between.
+**Status: scaffold landed (Track 3.1 of sprint 2026-04-20).** `apps/utility/` is a separate pnpm workspace (Vite + React + TS + Tauri 2.10.3; crate `grid-passport-utility`, port 1430, identifier `app.gridpassport.utility`). Verifier-only — no `keyring`/`ed25519-dalek`/signing binary; capabilities scoped to dialog + fs read-only. Placeholder paste+verify UI proves the import chain; gate 15 `pnpm canary:utility` enforces the write-scope import contract (forbids `@grid-passport/core/{fixtures,forecast,audit}` in `apps/utility/src`) plus a sign+verify+tamper+reject e2e on a fresh owl-compute bundle. **Demo moment (applicant → utility end-to-end) waits on 3.1-polish**: real drop-zone via `@tauri-apps/plugin-dialog` + `plugin-fs`, verified-bundle state carrying keyId + policy-hash display, utility-pinned `BenefitPanel` rendering `payload.projections.utility`. ~3–4 days of follow-up; no new canaries needed since gate 15 already covers the structural contract.
 
 ### 12. Self-review trust panel in the desktop app (~1–2 days)
 
