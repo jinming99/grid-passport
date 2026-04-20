@@ -7,9 +7,11 @@ This is *prose*. It is not a slide deck. A presentation renders sections
 the demo embedded at section 5. Both ship from the same content so they
 cannot drift.
 
-When the eval harness produces numbers, the empirical results section (§6)
-becomes the load-bearing content. Until then, §6 is a placeholder; no
-public presentation should claim results while §6 is empty.
+§6 now carries 12-subset directional numbers from the pilot (OPR, Savage
+regret, Prometheus Likert, H-null, cross-family judge spot-check) landed
+2026-04-20. Seed expansion + main-run sweep remain deferred; living
+results at `docs/evals/sim-bench-results.md` track what's been measured
+and what's pending.
 
 ---
 
