@@ -158,6 +158,14 @@ import {
   extractFirstJsonObject,
   makeRequest,
 } from "../src/lib/interviewer-transport.ts";
+import {
+  ClaudeAgentSDKExplainerTransport,
+  FakeExplainerTransport,
+  defaultExplainerTransport,
+  forbiddenLiteralsFor,
+} from "../src/lib/explainer-transport.ts";
+import { buildRecord } from "@grid-passport/core/forecast";
+import { projectForRole } from "@grid-passport/core/projection";
 
 const minimalSkill = {
   slug: "interviewer",
@@ -270,6 +278,88 @@ if (extractFirstJsonObject("no json here, just words") !== null) {
 }
 console.log(
   `[canary:desktop] interviewer transport (json extraction): pass (fences stripped · prose-wrapped extracted · no-json returns null)`,
+);
+
+// ---------------------------------------------------------------------------
+// Explainer transport pipeline (Track 2.2-polish).
+//
+// FakeExplainerTransport emits canned narrations per role, each run through
+// `validateNarration` from @grid-passport/agents/explainer/validator. Guards
+// mirror the Interviewer transport block above.
+// ---------------------------------------------------------------------------
+
+const fakeExplainer = new FakeExplainerTransport();
+const owl = getCase("owl-compute")!;
+const owlApplicantView = projectForRole(buildRecord(owl), "applicant");
+const owlUtilityView = projectForRole(buildRecord(owl), "utility");
+const owlForbidden = forbiddenLiteralsFor(owl);
+
+// Happy path: applicant role narration passes validator (applicant bypass).
+const applicantNarration = await fakeExplainer.query({
+  view: owlApplicantView,
+  role: "applicant",
+  skill: minimalSkill,
+  forbiddenLiterals: owlForbidden,
+});
+if (applicantNarration.kind !== "narration") {
+  console.error(
+    `[canary:desktop] FAIL: Explainer applicant path returned ${applicantNarration.kind}`,
+  );
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] explainer transport (applicant): pass (FakeTransport → validator → narration; ${applicantNarration.text.length} chars)`,
+);
+
+// Happy path: utility narration passes validator (canned prose does not
+// leak Owl's raw private literals).
+const utilityNarration = await fakeExplainer.query({
+  view: owlUtilityView,
+  role: "utility",
+  skill: minimalSkill,
+  forbiddenLiterals: owlForbidden,
+});
+if (utilityNarration.kind !== "narration") {
+  console.error(
+    `[canary:desktop] FAIL: Explainer utility path returned ${utilityNarration.kind}; expected narration`,
+  );
+  if (utilityNarration.kind === "validatorRejection") {
+    for (const r of utilityNarration.reasons) console.error(`  - ${r}`);
+  }
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] explainer transport (utility): pass (FakeTransport → validator → narration; no raw private literals)`,
+);
+
+// SDK transport outside Tauri: clean transportError, no throw.
+const sdkExplainer = new ClaudeAgentSDKExplainerTransport();
+const sdkExplainerResult = await sdkExplainer.query({
+  view: owlUtilityView,
+  role: "utility",
+  skill: minimalSkill,
+  forbiddenLiterals: owlForbidden,
+});
+if (sdkExplainerResult.kind !== "transportError") {
+  console.error(
+    `[canary:desktop] FAIL: Explainer SDK outside Tauri expected 'transportError', got '${sdkExplainerResult.kind}'`,
+  );
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] explainer transport (sdk outside Tauri): pass (graceful transportError, no throw)`,
+);
+
+// Factory auto-detect in Node → Fake.
+const autoExplainer = defaultExplainerTransport();
+if (autoExplainer.label !== "fake") {
+  console.error(
+    `[canary:desktop] FAIL: defaultExplainerTransport() in Node expected 'fake', got '${autoExplainer.label}'`,
+  );
+  process.exit(1);
+}
+console.log(
+  `[canary:desktop] explainer transport (factory): pass (Node auto-detects Fake; desktop runtime selects SDK via __TAURI_INTERNALS__)`,
 );
 
 console.log("[canary:desktop] all clear");

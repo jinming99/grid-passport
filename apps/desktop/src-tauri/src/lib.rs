@@ -1,3 +1,4 @@
+mod explainer;
 mod interviewer;
 mod signer;
 
@@ -10,6 +11,7 @@ pub fn run() {
         signer::applicant_public_key,
         signer::applicant_sign,
         interviewer::interviewer_query,
+        explainer::explainer_query,
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

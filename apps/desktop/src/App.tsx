@@ -18,6 +18,7 @@ import { loadAllSkills, type LoadedSkill } from "./lib/skills-loader";
 import { defaultInterviewerTransport } from "./lib/interviewer-transport";
 import { ReviewColumn } from "./components/ReviewColumn";
 import { IntakePanel } from "./components/IntakePanel";
+import { ExplainerPanel } from "./components/ExplainerPanel";
 
 const ROLES: Role[] = ["applicant", "utility", "regulator"];
 
@@ -44,22 +45,26 @@ export function App() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [interviewerSkill, setInterviewerSkill] =
     useState<LoadedSkill | null>(null);
+  const [explainerSkill, setExplainerSkill] = useState<LoadedSkill | null>(
+    null,
+  );
 
   // Load shipping Skills into memory on first mount. Fails softly when the
   // Tauri resource path is unavailable (e.g., running `vite` alone without
-  // the Tauri host) — the IntakePanel disables its submit button and the
-  // rest of the app is unaffected. The real Agent SDK wiring in Track
-  // 2.1-polish will also feed off this loaded skill.
+  // the Tauri host) — panels disable their submit buttons and the rest of
+  // the app is unaffected.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
         const skills = await loadAllSkills();
         if (cancelled) return;
-        const iv = skills.find((s) => s.slug === "interviewer") ?? null;
-        setInterviewerSkill(iv);
+        setInterviewerSkill(
+          skills.find((s) => s.slug === "interviewer") ?? null,
+        );
+        setExplainerSkill(skills.find((s) => s.slug === "explainer") ?? null);
       } catch {
-        // Intentional: intake degrades to "skills not loaded" in the panel.
+        // Intentional: intake + explainer degrade to "skills not loaded".
       }
     })();
     return () => {
@@ -286,14 +291,29 @@ export function App() {
 
       <main className={`stage mode-${mode}`}>
         {mode === "work" ? (
-          <ReviewColumn view={projections.applicant} variant="work" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <ReviewColumn view={projections.applicant} variant="work" />
+            <ExplainerPanel
+              view={projections.applicant}
+              role="applicant"
+              caseInput={loaded.input}
+              skill={explainerSkill}
+            />
+          </div>
         ) : (
           ROLES.map((role) => (
-            <ReviewColumn
+            <div
               key={role}
-              view={projections[role]}
-              variant="review"
-            />
+              style={{ display: "flex", flexDirection: "column", gap: 10 }}
+            >
+              <ReviewColumn view={projections[role]} variant="review" />
+              <ExplainerPanel
+                view={projections[role]}
+                role={role}
+                caseInput={loaded.input}
+                skill={explainerSkill}
+              />
+            </div>
           ))
         )}
       </main>
