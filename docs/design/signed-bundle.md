@@ -389,7 +389,7 @@ None of these change the protocol. All of them change the *integration contract*
 
 ## 10. Demo defense — anticipated questions
 
-Material for the job-talk Q&A and any demo-day interrogation.
+Material for research-narrative Q&A and any demo-day interrogation.
 
 **Q1. "Why not just use JWT? Everyone uses JWT."**
 A. JWTs are for API authentication — claims about "who is making this request right now." Our artifact is a *document* that gets read, filed, and re-verified years later. JSON Web Signature's base64url payload would force every verifier to decode before reading; W3C chose the same embedded-proof model for Verifiable Credentials for exactly this reason. We followed their lead.

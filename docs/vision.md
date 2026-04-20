@@ -158,7 +158,7 @@ No field currently in the schema fails outright. The tightness matters: with eig
 
 The filter gives us a natural narrative arc, encoded directly in the desktop UI (`apps/desktop/src/components/ProjectionSections.tsx` groups by these buckets and the tooltip text comes from `packages/core/src/ask-reasons.ts`):
 
-| Tier | Fields | The line on stage |
+| Tier | Fields | The line in public presentation |
 |---|---|---|
 | **Identity** | org · site · MW · COD · phases | "Anyone could ask you this — it's how a filing even starts." |
 | **Operational profile** | flex · BESS · backup-gen | "Only you know this — and it produces the firmness + flexibility proofs the utility plans against." |
@@ -285,11 +285,11 @@ the NDA used to need to cover is no longer in scope.
 The local-first pivot answers the *who has the data* question. The
 reliability triad answers the *what if the agent misbehaves* question.
 Three structural properties, each testable independently of model
-behavior. This is the framing for the talk and the website.
+behavior. This is the framing for public presentations and the website.
 
 **Auditable.** Every action in the system is content-addressed (sha-256 of request, evidence, proof) and tagged with a policy version. Every audit event records actor, reason code, deterministic timestamp anchor. A regulator presented with a signed bundle and the open-source policy file can verify the projection released matches what the policy mandates — without any third-party service. Auditability is not a logging strategy; it is a property of the wire format.
 
-**Constrained.** The projection layer is a pure function from `(policy, request, role)` to `ProjectedView`. Implemented in `packages/core/src/projection.ts`, mirrored in Rego, verified by `pnpm privacy:canary` on every commit. There is no path through the system where a private field reaches a non-applicant projection. Agents that produce outputs feed *into* this layer; they cannot bypass it. The architecture makes the failure mode unrepresentable. This is the answer to "what if the model hallucinates?" — it doesn't matter; structure forbids it.
+**Constrained.** The projection layer is a pure function from `(policy, request, role)` to `ProjectedView`. Implemented in `packages/core/src/projection.ts`, mirrored in Rego, verified by `pnpm privacy:canary` on every commit. No path through the system carries a private field to a non-applicant projection. Agents that produce outputs feed *into* this layer; the deterministic projection boundary is what stakeholders see. If the model hallucinates, the hallucination lands in the typed record; the projection layer bounds what reaches the external view.
 
 **Calibratable.** Each AI agent ships as a [Claude Agent Skill](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) — a filesystem directory with explicit `SKILL.md` constraints. Skills are *inspectable* (markdown, not weights), *versionable* (compare two versions on the same eval), and *progressively-disclosed* (light context cost). Calibration along three named dimensions — workflow alignment, human-preference alignment, domain-spec compliance — is empirically tractable. See `docs/agents.md` §6 for the full framework.
 
@@ -318,7 +318,7 @@ constraint:
 - The reliability of the agent layer is judged on how well it accelerates the human's confirmation, not on whether it can take actions independently.
 - The closest analog from a different domain: tax-preparation software. The local app fills out your return; you review every line; you press the file button. Grid Passport applies the same shape to a higher-stakes multi-stakeholder workflow.
 
-Why this matters for the talk: "agents propose, humans dispose" is the
+Why this matters for the research narrative: "agents propose, humans dispose" is the
 sound-bite version of the design. It defuses the most common
 skepticism about agent-driven systems ("but what if the AI takes a
 wrong action?") by making the answer structural — the AI doesn't take
@@ -485,7 +485,7 @@ grounded in published industry data; the demo should label them as
 | TEE-attestation requirement to trust the platform | High (without TEE, applicant must trust the host)                                                          | **None** (no host)                                                  | Structural property of local-first.                                                                   |
 
 The 4-8-week gate-disclosure-friction estimate is the only one I'd
-flag as needing utility-partner validation before putting on stage.
+flag as needing utility-partner validation before citing it externally.
 The rest are mechanical properties of the architecture.
 
 These should also become a **"what changes" panel in the demo** — show
@@ -507,7 +507,7 @@ The web demo is the **public-facing landing page**. Its job is:
 - Show the benefit metrics live (the Privacy Benefit Panel).
 - Funnel serious users to the **download page** for the desktop app.
 - Surface the team, the docs, and the code repository.
-- Run the privacy canary as a demoable pass-fail check on stage.
+- Run the privacy canary as a demoable pass-fail check during any walkthrough.
 
 The web demo is *not* where production users disclose real data. The
 public version is honest about that — every page labels itself

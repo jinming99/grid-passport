@@ -23,7 +23,7 @@ Status snapshot:
 
 Only #2 remains open in the current sprint, and it's gated on a decision outside the build queue. Entries below retain their full breakdowns as landed-sprint records. **Next wave** picks up from near-term — #6 signed bundle **landed 2026-04-18** with a grounded design doc; next natural step is the re-scoped **#14 simulation bench** (pre-registration doc drafted 2026-04-19; blocks on Ming's sign-off of scenarios + role prompts + rubric + Bhawuk's utility-prompt review).
 
-**Parallel pre-talk track.** The re-scoped **#14 simulation bench** runs on its own ~4-week timeline with hybrid ownership — Ming owns scenario design + rubric + analysis; one student owner builds `packages/eval-sim/`. See §14 + `docs/evals/sim-bench-design.md` for the full design. Ming's week-1 deliverable (scenario cards, role prompts, judge rubric) is the one gate on the student engine work kicking off.
+**Parallel research track.** The re-scoped **#14 simulation bench** runs on its own ~4-week timeline with hybrid ownership — Ming owns scenario design + rubric + analysis; one student owner builds `packages/eval-sim/`. See §14 + `docs/evals/sim-bench-design.md` for the full design. Ming's week-1 deliverable (scenario cards, role prompts, judge rubric) is the one gate on the student engine work kicking off.
 
 ### 1. Privacy Benefit Panel (~1–2 days)
 
@@ -189,11 +189,11 @@ Only #2 remains open in the current sprint, and it's gated on a decision outside
 
 **Status: v1 shipped 2026-04-18.** `/about` renders `docs/story.md` at build time (`react-markdown` + `@tailwindcss/typography`), with a classified-briefing × SCADA-panel design pass applied via `/frontend-design:frontend-design` — grid backdrop, scan-reveal hero, §NN section plates, `mechanical canary · passing` telltale in §4, 3-card crew manifest in §9, "end of briefing" stamp. Cross-linked from landing + demo header. **Blocked:** §6 4×3 score matrix (needs #14 eval harness — currently flagged as `status · placeholder` on the page).
 
-> The talk-arc lives on the website. Demo-day walkthrough is a scroll, not a slide deck. Doubles as public-facing material.
+> The research narrative lives on the website. Demo walkthrough is a scroll, not a slide deck. Doubles as public-facing material.
 
-**Goal.** A new route at `/about` (or `/story`) that renders `docs/story.md` as a polished long-scroll page. Same content used for Ming's job talk and the website. Single source so the two cannot drift.
+**Goal.** A new route at `/about` (or `/story`) that renders `docs/story.md` as a polished long-scroll page. Same content used for public presentations and for the website. Single source so the two cannot drift.
 
-**Why now.** Demo day uses this page as the live walkthrough. The job talk pulls from the same source. The eval results (when they land from #14 below) update one place and propagate to both. Pre-talk, this page is also the artifact a visitor reads to understand "why does this exist?" without a stage presence.
+**Why now.** Demo walkthrough uses this page. Public presentations pull from the same source. The eval results (when they land from #14 below) update one place and propagate to both. Until then, this page is also the artifact a visitor reads to understand "why does this exist?" without needing to speak to anyone.
 
 **Success criteria.**
 - New route `/about` renders the story narrative.
@@ -215,7 +215,7 @@ Only #2 remains open in the current sprint, and it's gated on a decision outside
 5. Cross-link from the landing page (#3) hero or a navigation item.
 6. Verify at desktop + mobile widths. Run `pnpm typecheck`.
 
-**Demo moment.** On demo day, walk the audience through `/about` end-to-end. Click the embedded role-toggle teaser, click into a case study, scroll back, show the canary status, scroll to the team. The scroll IS the talk.
+**Demo moment.** Walk the audience through `/about` end-to-end. Click the embedded role-toggle teaser, click into a case study, scroll back, show the canary status, scroll to the team. The scroll IS the narrative.
 
 **Decisions needed.**
 - `/about` vs `/story` URL — recommendation: `/about` because it's conventional and SEO-discoverable; reserve `/story` for a playful name later if needed.
@@ -279,7 +279,7 @@ Generates plain-English narration of a `ProjectedView`, conditioned on the reque
 
 ### 14. Stakeholder-alignment simulation bench — *§17 signed off 2026-04-19; steps 1–6a of 7 complete; step-6 remainder (6b/6c/6d) + main run remain*
 
-> The empirical-results slide for Ming's job talk. Multi-agent simulation of the applicant ↔ utility ↔ regulator workflow under four conditions — **(A) Oracle** (upper bound), **(B) NDA-email** (status-quo lower bound), **(C) Prompt-only AI agent**, **(D) Grid Passport (Skill-based)** — scoring efficiency, outcome-preservation vs oracle, privacy leakage (direct / inferential / trace), mechanical compliance, and stakeholder-alignment quality (Opus-as-judge with pre-registered rubric) across 7 diverse applicant archetypes (S1–S6 grid + S7 HIPAA priorauth cross-domain).
+> The empirical-results artifact for #14. Multi-agent simulation of the applicant ↔ utility ↔ regulator workflow under four conditions — **(A) Oracle** (upper bound), **(B) NDA-email** (status-quo lower bound), **(C) Prompt-only AI agent**, **(D) Grid Passport (Skill-based)** — scoring efficiency, outcome-preservation vs oracle, privacy leakage (direct / inferential / trace), mechanical compliance, and stakeholder-alignment quality (Opus-as-judge with pre-registered rubric) across 7 diverse applicant archetypes (S1–S6 grid + S7 HIPAA priorauth cross-domain).
 
 **Full design + pre-registration: `docs/evals/sim-bench-design.md`.** Read that before starting work. Pre-registration locked 2026-04-19 with Amendments A-1 + A-2; post-lock changes require a §3.2 amendment.
 
@@ -337,7 +337,7 @@ Generates plain-English narration of a `ProjectedView`, conditioned on the reque
 
 **Demo moment.** `pnpm eval:sim` prints the scenario × condition matrix to the terminal. `docs/evals/sim-bench-results.md` (auto-generated) drops into `docs/story.md` §6 as the empirical-results section. The honest-limits slide runs alongside.
 
-**Why pre-talk.** Without this bench, the talk is a system demo + substrate-property argument. With it, the research claim — *Grid Passport compresses the workflow, preserves more of the no-privacy-constraint outcome, and reduces on-record leakage simultaneously* — has numbers attached. Highest-leverage item for research positioning; the substrate-metrics we shipped already are the leading indicators and explanation.
+**Why this matters.** Without this bench, the narrative is a system demo + substrate-property argument. With it, the research claim — *Grid Passport compresses the workflow, preserves more of the no-privacy-constraint outcome, and reduces on-record leakage simultaneously* — has numbers attached. Highest-leverage item for the research contribution; the substrate-metrics shipped already are the leading indicators and explanation.
 
 **Relationship to superseded artifacts.** `docs/evals/rubric.md` (judge rubric base shape) and `docs/evals/owner-briefs.md` (prior 3-owner allocation) are not invalidated — the rubric's core (H-workflow / H-spec / H-trigger / H-null) is folded into §8d; the owner briefs need an addendum noting the re-scope. Keep both as historical artifacts until this bench ships; then move to an `archived/` subdirectory.
 
@@ -383,7 +383,7 @@ In landing order. Newest at top. PR/commit ref where relevant.
 | 2026-04-18 | Derivation-band fix for `flexibilityPassport.durationHoursMin/Max` — replaced `max(2, bessHours)` identity with a coarse tier band (`[2,4]` / `[4,8]` / `[8,12]`) in `packages/core/src/forecast.ts` and `apps/api/gridpassport/forecast.py`. Observer can no longer invert the published band to the exact private `bessHours`. Canary + typecheck both pass. | this session |
 | 2026-04-18 | Decision fold — Tauri bundle format → JSON (folded into item #4); agent packaging → local SDK on desktop, hosted API on web demo (folded into items #7/#8/#13). Decision log slimmed from 9 to 6 open entries. | this session |
 | 2026-04-18 | Privacy Benefit Panel (`apps/web/components/BenefitPanel.tsx`) — three live metrics (competitive fields exposed / derived proofs released / regulator-auditable redactions) + role-aware trust framing + policy version chip. Replaces `LeakCounter`. Helpers `PRIVATE_FIELD_COUNT` / `DERIVED_FIELD_COUNT` / `countPrivateVisibleTo(role)` added to `lib/policy.ts` for reuse. | this session |
-| 2026-04-18 | Story doc (`docs/story.md`) — talk-arc narrative used both for Ming's job talk and the website /about page. Vision §5b reliability triad + §5c agents-propose-humans-dispose. Agents §7 expanded with concrete eval N-targets, baselines, and student-handoff task breakdown. Roadmap: Tauri decision resolved with design direction, Story page added to current sprint as #5, eval harness promoted from backlog to near-term as #14. | this session |
+| 2026-04-18 | Story doc (`docs/story.md`) — research narrative used both for public presentations and the website /about page. Vision §5b reliability triad + §5c agents-propose-humans-dispose. Agents §7 expanded with concrete eval N-targets, baselines, and student-handoff task breakdown. Roadmap: Tauri decision resolved with design direction, Story page added to current sprint as #5, eval harness promoted from backlog to near-term as #14. | this session |
 | 2026-04-18 | Agent architecture doc (`docs/agents.md`) — trust principles, agent roster, Claude Agent Skills implementation, calibration research connection. Vision §0 team section + §10 web-as-landing-page reframe. Roadmap landing-page item + Skills-based agent track elevated. | this session |
 | 2026-04-18 | Master plan doc (`docs/plans/roadmap.md`) — current sprint, near-term, backlog, decision log. Vision §12 + handoff Open items slimmed to point to it. | this session |
 | 2026-04-18 | Vision + trust-model pivot doc (`docs/vision.md`); local-first architecture decision; handoff updated | this session |

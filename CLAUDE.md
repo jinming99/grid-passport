@@ -16,14 +16,14 @@ This is not a generic chatbot and not a generic dashboard.
 
 ## Research framing (keep engaging with this; don't let it atrophy)
 
-This project is a research program, not just a product. The thesis — **"the schema is the safety case"** — lives in `docs/design/research-thesis.md`. It is load-bearing context for the job talk and for how we decide what's worth shipping.
+This project is a research program, not just a product. The thesis — **"the schema is the safety case"** — lives in `docs/design/research-thesis.md`. It is load-bearing context for the public research narrative and for how we decide what's worth shipping.
 
 Keep it alive:
 
 - Before scoping a new agent, add a row to §4 of the thesis articulating its **write-scope contract** and the research property it demonstrates. If you can't, the agent probably shouldn't ship.
 - Before adding a `CaseInput` field, run it through the 5-test filter (`docs/vision.md` §4b) *and* check whether it changes any of the four claims in §3 of the thesis.
 - When an eval result lands (#14), update §7 (honest gap inventory). If a result contradicts a claim in §3, update §3 — don't paper over.
-- When a design decision could be framed *either* as industry-standard ("we did this because Skills are good") *or* as a distinctive research claim ("this is a write-scope contract operationalizing revelation-principle X"), prefer the research framing in docs, PR descriptions, and the talk. Industry framing is table stakes; the research framing is what we actually own.
+- When a design decision could be framed *either* as industry-standard ("we did this because Skills are good") *or* as a distinctive research claim ("this is a write-scope contract that bounds agent amplification of strategic misreport"), prefer the research framing in docs and PR descriptions. Industry framing is table stakes; the research framing is what we actually own. Caveat: do NOT overclaim — see `docs/design/research-roadmap.md` §1 for the calibrated three-mechanism framing (non-amplification / cross-check / proper-scoring-rule), and avoid "revelation-principle" / "structurally incapable" / "capability-based security" without the scoping those terms require.
 
 Skip this reflex and the project drifts back into "nice hackathon app." Engage it and the project stays a defensible research contribution.
 

@@ -66,8 +66,9 @@ lives in §3.
 
 ### 2a. Agents never autonomously release data
 
-Every agent that touches a private field is **structurally incapable**
-of releasing it to a non-applicant projection:
+Every agent that touches a private field has a **declared write-scope**
+preventing release to a non-applicant projection, enforced at the paired
+CI validator boundary:
 
 - Agents read raw inputs from the applicant's local file. They write *only* to fields the applicant explicitly approves.
 - Agents that produce derived outputs (Forecaster) write to the `derivedProof` section, which the policy classifies as releasable. The release decision is made by the policy, not the agent.
@@ -379,10 +380,10 @@ agents on the same task.
 
 ---
 
-## 7. Eval framework — concrete pre-talk targets
+## 7. Eval framework — concrete research targets
 
-Promoted from "forward look" to **the empirical results slide for the
-job talk** (see `docs/story.md` §6). The eval harness is now a
+Promoted from "forward look" to **the empirical results section of the
+research narrative** (see `docs/story.md` §6). The eval harness is now a
 near-term roadmap item with concrete N-targets, baselines, and a
 student-handoff-friendly task breakdown. Tracked in
 `docs/plans/roadmap.md`.
@@ -456,8 +457,9 @@ matrix in the talk uses 3 Skills × 4 metrics × {Skill, prompt-only} =
   intelligence.
 - Output quality only. Token efficiency is a separate benchmark; don't
   fold the two claims together.
-- Empirical, not formal. The revelation-principle argument is still
-  §7 gap #2 of the research thesis.
+- Empirical, not formal. The non-amplification and proper-scoring-rule
+  arguments are still §7 gap #2 of the research thesis — theoretical
+  write-up is separate work.
 
 ### 7c. Student-handoff task breakdown
 
@@ -488,19 +490,19 @@ parallelizes well; each piece is small. Suggested allocation:
 **Owner A — analysis + writeup (week 3)**
 - Aggregate scores into the 4×3 matrix.
 - Plot the Skill-vs-prompt-only delta.
-- Hand to Ming for the talk slide.
+- Hand to Ming for the results summary.
 
 Total elapsed: 3 weeks with 2–3 owners working in parallel. Rubric
 approved 2026-04-18; lives at `docs/evals/rubric.md`. No remaining
 Ming-side blockers.
 
-### 7d. What we don't have to evaluate to pass the talk
+### 7d. What we don't have to evaluate to land the research claim
 
 Useful to be explicit:
 
 - **Counterfactual responsiveness** — already covered by the privacy canary's with-override scan.
-- **Forecaster correctness** — out of scope; deterministic linear formula for now. Probabilistic forecaster is a multi-week post-talk item.
-- **Switchboard orchestration** — not shipping for the talk; not an eval target.
+- **Forecaster correctness** — out of scope; deterministic linear formula for now. Probabilistic forecaster is a multi-week follow-up item.
+- **Switchboard orchestration** — not shipping in this phase; not an eval target.
 - **End-to-end performance / latency** — measure if asked, not load-bearing for the methodology claim.
 
 Each of these is in `docs/plans/roadmap.md` backlog.

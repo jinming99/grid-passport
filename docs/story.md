@@ -1,15 +1,15 @@
 # Grid Passport — The Story
 
-> The narrative used both for Ming Jin's job talk and for the public website's `/about` page. One source, two renderings.
+> The research narrative, used both for public presentations and for the project website's `/about` page. One source, two renderings.
 
-This is *prose*. It is not a slide deck. The talk renders sections 1–9
-as 12–14 slides; the website renders them as a long-scroll page with
-the demo embedded at section 5. The team ships them from the same
-content so they cannot drift.
+This is *prose*. It is not a slide deck. A presentation renders sections
+1–9 as 12–14 slides; the website renders them as a long-scroll page with
+the demo embedded at section 5. Both ship from the same content so they
+cannot drift.
 
-If the eval harness lands and produces numbers, the empirical
-results section (§6) becomes the load-bearing slide. Until then, §6
-is a placeholder; **the talk should not happen with §6 empty**.
+When the eval harness produces numbers, the empirical results section (§6)
+becomes the load-bearing content. Until then, §6 is a placeholder; no
+public presentation should claim results while §6 is empty.
 
 ---
 
@@ -47,7 +47,7 @@ The cryptographic answers are real but partial. Zero-knowledge proofs work for n
 
 Each of these is a tool. None is a workflow primitive. And once you put an LLM in the loop, "trust" becomes a question about model behavior — hallucination, prompt injection, capability drift — that the cryptographic substrates do not address.
 
-The reliability problem for AI agents in high-stakes workflows is not "make the model better." It is "make the system *structurally incapable* of the failure modes that matter, regardless of how the model behaves on a given turn."
+The reliability problem for AI agents in high-stakes workflows is not "make the model better." It is "make the system *catch the failure modes that matter at the substrate boundary*, so that model behavior on any given turn is absorbed before it reaches an external artifact." The write-scope contract plus paired validator is the substrate; the deterministic projection layer is what stakeholders see; the signed bundle is what they verify against.
 
 ---
 
@@ -143,18 +143,33 @@ Read these as leading indicators, not behavioral outcomes:
 - The **discovery-signal row** is the reason #14's H-trigger (Skill invokes correctly; prompt-only lacks routing signal) has a structural prior: one substrate *has* a trigger metadata layer, the other *does not*.
 - The **write-scope density rows** are the schema-discipline claim (§3.1 of the research thesis) made countable. Each clause is a thing the substrate refuses by construction, not a thing it advises against. 6 "never"s + 6–9 "halt"s is a crowded refusal surface; the paired CI validator refuses 3–4 additional contract violations at the artifact boundary. The flat prompt has the same textual content but zero paired validator.
 
-### 6b. Behavioral metrics — the #14 4-axis × 2-Skill bench
+### 6b. Behavioral metrics — the #14 simulation bench
 
-When #14's harness runs (2–3 weeks, 20-case grid per axis per Skill), the behavioral results slot in here. The hypotheses being tested — each derived from a substrate-property metric above — are:
+The #14 harness runs a pre-registered multi-agent simulation of the applicant ↔ utility ↔ regulator workflow under four conditions: **(A) Oracle** (all information shared; upper bound), **(B) NDA-email** (status-quo baseline), **(C) Prompt-only AI agent** (mechanically-derived flat-prompt baseline), **(D) Grid Passport** (Skill substrate + signed bundle). Pre-registration is at `docs/evals/sim-bench-design.md`; living results at `docs/evals/sim-bench-results.md`.
+
+**Early signal (2026-04-20; n=1 per cell across 12 cells — directional only, no CIs).** On the mechanical canary H-null (raw private-field value appearing verbatim in a cross-org turn):
+
+|           | S1 | S2 | S3 |
+|-----------|---:|---:|---:|
+| A Oracle  | 1  | 0  | 1  |
+| B Email   | 4  | 4  | 0  |
+| C Prompt  | 1  | 0  | 0  |
+| **D Skill** | **0** | **0** | **0** |
+
+D is clean across all three scenarios; B averages 4× more cross-org leaks than C, which is at or near zero. Direction matches the pre-registered §9 prediction. n=1 is too small for a statistical claim; the 5-seed sweep + three additional scenarios (S4/S5/S6) + LLM-gated axes (direct-leakage WLS, trace WLS, Prometheus-rubric judge) are pending.
+
+The hypotheses being tested — each derived from a substrate-property metric above — are:
 
 - **H-workflow.** Skill version stays in its declared write-scope more reliably than prompt-only. Predicted by the 6×never / 6–9×halt / 3–4 validator-refused-violations rows above.
 - **H-spec.** Skill version cites `FieldPath` buckets + ask-reasons / `SOURCES.md` correctly more often. Predicted by the navigable-structure row — on-demand references vs homogenized prompt.
 - **H-trigger.** Skill version invokes at the right times (and not the wrong ones) more reliably. Predicted by the discovery-signal row.
-- **H-null (leak).** Both substrates should hold the zero-leakage floor. Either leaking competitive fields without explicit confirmation would collapse the whole claim; the privacy canary would have caught us long before this point.
+- **H-null (leak).** Both substrates should hold the zero-leakage floor. The early-signal table above is H-null on the 12-subset — D holds zero; C is at zero on 2/3 scenarios.
 
-The hypothesis the slide tests: *Skill-as-substrate beats prompt-as-substrate on workflow and domain-spec alignment, with mechanically-derived baselines keeping the comparison fair. The substrate-property deltas (§6a) predict the behavioral deltas (§6b).*
+The hypothesis the full results test: *Skill-as-substrate beats prompt-as-substrate on workflow and domain-spec alignment, with mechanically-derived baselines keeping the comparison fair. The substrate-property deltas (§6a) predict the behavioral deltas (§6b).*
 
-The forward claim, if the data land: *the packaging is the safety case.* Skill-bound writing + policy-bound projection + signed-bundle attestation is a generalizable recipe for agent reliability in workflows where the policy is real, the stakes are high, and the spec changes faster than model retraining cycles can keep up. Grid interconnection is the testbed; HIPAA prior-authorization and financial-rails disclosure are where the recipe should travel next (see §7).
+**Methodology note.** The 12-subset run surfaced a false-positive class in the substring tier of the direct-leakage scorer (bare-digit tokens matching inside unrelated longer numerics). Three §3.2 amendments landed before the main sweep: a schema-level validator on `private_token_set`, a word-boundary regex in the H-null scorer, and cleaned scenario cards. The pre-register → run → scorer-surfaced-issue → amendment → re-score cycle is what the design doc committed to; this was the first instance of it firing. See `sim-bench-results.md` "Methodology findings" for the full story.
+
+The forward claim, when the full data land: *the packaging is the safety case.* Skill-bound writing + policy-bound projection + signed-bundle attestation is a generalizable recipe for agent reliability in workflows where the policy is real, the stakes are high, and the spec changes faster than model retraining cycles can keep up. Grid interconnection is the testbed; HIPAA prior-authorization and financial-rails disclosure are where the recipe should travel next (see §7).
 
 ---
 

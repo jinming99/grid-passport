@@ -92,7 +92,7 @@ Catches issues the axes miss: hallucinated numbers that happen to be plausible, 
 
 ## Baseline
 
-Same prompt, same view, same model — but without the SKILL.md packaging. Score against the same rubric. The delta between Skill and baseline is the finding for the talk.
+Same prompt, same view, same model — but without the SKILL.md packaging. Score against the same rubric. The delta between Skill and baseline is the research finding.
 
 ## What "pass" looks like
 
