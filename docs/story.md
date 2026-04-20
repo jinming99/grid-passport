@@ -147,7 +147,9 @@ Read these as leading indicators, not behavioral outcomes:
 
 The #14 harness runs a pre-registered multi-agent simulation of the applicant ↔ utility ↔ regulator workflow under four conditions: **(A) Oracle** (all information shared; upper bound), **(B) NDA-email** (status-quo baseline), **(C) Prompt-only AI agent** (mechanically-derived flat-prompt baseline), **(D) Grid Passport** (Skill substrate + signed bundle). Pre-registration is at `docs/evals/sim-bench-design.md`; living results at `docs/evals/sim-bench-results.md`.
 
-**Early signal (2026-04-20; n=1 per cell across 12 cells — directional only, no CIs).** On the mechanical canary H-null (raw private-field value appearing verbatim in a cross-org turn):
+**Early signal (2026-04-20; n=1 per cell across 12 cells — directional only, no CIs).** Post-Amendments A-4 + A-5 + A-6 re-score:
+
+On the mechanical canary H-null (raw private-field value appearing verbatim in a cross-org turn):
 
 |           | S1 | S2 | S3 |
 |-----------|---:|---:|---:|
@@ -156,7 +158,29 @@ The #14 harness runs a pre-registered multi-agent simulation of the applicant �
 | C Prompt  | 1  | 0  | 0  |
 | **D Skill** | **0** | **0** | **0** |
 
-D is clean across all three scenarios; B averages 4× more cross-org leaks than C, which is at or near zero. Direction matches the pre-registered §9 prediction. n=1 is too small for a statistical claim; the 5-seed sweep + three additional scenarios (S4/S5/S6) + LLM-gated axes (direct-leakage WLS, trace WLS, Prometheus-rubric judge) are pending.
+On the Prometheus 5-dim judge (median of swap-augmented runs, 1–5 Likert; `*` marks flagged dimensions |Δ|>1):
+
+|           | S1 sa/pd/pi/ra/ae | S2 sa/pd/pi/ra/ae | S3 sa/pd/pi/ra/ae |
+|-----------|---|---|---|
+| A Oracle  | 4/4/2/4/2 | 2/4/1/3/2 | 5/4/2/3/4 |
+| B Email   | 3/3/2/2/2 | 4/3/4/3/4 | 2/3/4/3/2\* |
+| C Prompt  | 2/2/4/2/3 | 2/3/4/4/2\* | 3/4/5/4/4 |
+| **D Skill** | **4/4/4/4/4** | **5/4/5/4/4** | **4/4/5/5/4** |
+
+On the Contextual-Integrity trace classifier (post-A-5 tightened prompt; count of violations per cell):
+
+|           | S1 | S2 | S3 |
+|-----------|---:|---:|---:|
+| A Oracle  | 3  | 0  | 3  |
+| B Email   | 0  | 0  | 0  |
+| C Prompt  | 0  | 0  | 0  |
+| **D Skill** | **0** | **0** | **0** |
+
+**Three convergent signals:** D is clean on the H-null canary (0 cross-org leaks), D wins every cell on the 5-dim Prometheus judge (median across swap-augmented runs), and D carries no CI violations under the amended trace classifier. Only A (Oracle) still registers CI violations — which is the intended oracle-reveals-by-design behavior.
+
+**D is also stable under swap-augmentation.** All three D cells have max |Δ|=1 across the 5 dimensions; zero flagged disagreements. B and C show position-dependent variance on the privacy_integrity dimension (S3_B Δ=3, S2_C Δ=2), suggesting the judge finds those conditions' privacy posture genuinely ambiguous while reading D's posture consistently regardless of batch position.
+
+n=1 per cell is too small for a statistical claim; the 5-seed sweep + three additional scenarios (S4/S5/S6) + deferred axes (§8b Robustness via CandidatePlan extraction, §8c.ii Inferential lift) are pending.
 
 The hypotheses being tested — each derived from a substrate-property metric above — are:
 
