@@ -139,10 +139,17 @@ class SkillBundleChannel:
     `max_query_rounds` caps the bounded-query loop (default 2 — most
     well-formed bundles need ≤1 round). The loop terminates earlier
     when the utility writes the no-clarification sentinel.
+
+    `cartographer_mode_override` is the §6e fairness-pilot escape hatch:
+    when set to `'live'`, D calls Cartographer live just like C so the
+    cache-vs-no-cache effect is isolated from the substrate effect.
+    Native-condition default is `None` → `'cached'` is recorded on the
+    ledger. Any caller setting this owns the cost implications.
     """
 
     cache_hash: str = ""
     max_query_rounds: int = 2
+    cartographer_mode_override: str | None = None
     condition: Condition = field(default=Condition.D_GRID_PASSPORT, init=False)
 
     def run(
@@ -161,7 +168,7 @@ class SkillBundleChannel:
             cache_hash=self.cache_hash,
             max_query_rounds=self.max_query_rounds,
             max_turns=max_turns,
-            cartographer_mode="cached",
+            cartographer_mode=self.cartographer_mode_override or "cached",
         )
 
 

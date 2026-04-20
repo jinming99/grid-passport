@@ -145,6 +145,99 @@ def test_live_run_dispatches_to_prompt_only_channel_for_c() -> None:
     assert ledger.scorer_inputs["cartographer_mode"] == "live"
 
 
+def test_cartographer_mode_override_flips_d_to_live() -> None:
+    """§6e fairness pilot: `cartographer_mode_override='live'` on D causes
+    the ledger to record 'live' instead of the native 'cached'.
+    """
+    from eval_sim.llm import FakeTransport
+
+    s1 = scenarios.get("S1")
+    fake = FakeTransport(responder=_make_dispatch_responder("NO CLARIFICATION NEEDED"))
+    ledger = run(
+        s1,
+        Condition.D_GRID_PASSPORT,
+        seed=0,
+        dry_run=False,
+        transport=fake,
+        cartographer_mode_override="live",
+    )
+    assert ledger.scorer_inputs["cartographer_mode"] == "live"
+
+
+def test_cartographer_mode_override_noop_on_c_when_live() -> None:
+    """Override='live' on C is a no-op (C is already live) but accepted —
+    this path exists so the pilot dispatch can pass the same kwarg
+    through both C and D without a type divergence.
+    """
+    from eval_sim.llm import FakeTransport
+
+    s1 = scenarios.get("S1")
+    fake = FakeTransport(responder=_make_dispatch_responder("NO CLARIFICATION NEEDED"))
+    ledger = run(
+        s1,
+        Condition.C_PROMPT_ONLY,
+        seed=0,
+        dry_run=False,
+        transport=fake,
+        cartographer_mode_override="live",
+    )
+    assert ledger.scorer_inputs["cartographer_mode"] == "live"
+
+
+def test_cartographer_mode_override_rejected_for_a_b() -> None:
+    """A (oracle) and B (email) never touch Cartographer; setting the
+    override on those conditions is nonsense and rejected."""
+    import pytest
+
+    s1 = scenarios.get("S1")
+    with pytest.raises(ValueError, match="only meaningful for C/D"):
+        run(
+            s1,
+            Condition.A_ORACLE,
+            seed=0,
+            dry_run=False,
+            cartographer_mode_override="live",
+        )
+    with pytest.raises(ValueError, match="only meaningful for C/D"):
+        run(
+            s1,
+            Condition.B_NDA_EMAIL,
+            seed=0,
+            dry_run=False,
+            cartographer_mode_override="cached",
+        )
+
+
+def test_cartographer_mode_override_rejects_cached_on_c() -> None:
+    """C is live by definition (§6c); override='cached' would collapse
+    the substrate distinction and is rejected."""
+    import pytest
+
+    s1 = scenarios.get("S1")
+    with pytest.raises(ValueError, match="runs Cartographer live by definition"):
+        run(
+            s1,
+            Condition.C_PROMPT_ONLY,
+            seed=0,
+            dry_run=False,
+            cartographer_mode_override="cached",
+        )
+
+
+def test_cartographer_mode_override_rejects_invalid_value() -> None:
+    import pytest
+
+    s1 = scenarios.get("S1")
+    with pytest.raises(ValueError, match="must be 'live' or 'cached'"):
+        run(
+            s1,
+            Condition.D_GRID_PASSPORT,
+            seed=0,
+            dry_run=False,
+            cartographer_mode_override="garbage",
+        )
+
+
 def test_all_seven_scenarios_dry_run_under_every_condition() -> None:
     """Smoke test that every (scenario, condition) pair produces a valid
     ledger under dry_run. This is the pre-§17-lock integration fence.

@@ -141,6 +141,71 @@ def test_h_null_internal_turn_does_not_leak() -> None:
     assert compute_h_null(transcript, private_tokens={"22"}) == 0
 
 
+def test_h_null_word_boundary_rejects_ambiguous_substring() -> None:
+    """Amendment A-4: `"9"` must NOT match inside `"95 MW"` or `"2028"`.
+    Pre-A-4 this was a false positive; post-A-4 word-boundary matching
+    catches only standalone numerics.
+    """
+    transcript = [
+        TurnMessage(
+            turn_id="T001",
+            speaker=Role.APPLICANT_CH,
+            recipients=[Role.UTILITY_INTAKE],
+            content="Filing for 95 MW at Leesburg, target COD Q2 2028.",
+            channel=Channel.C1_FINAL_OUTPUT,
+            simulated_day=0.0,
+        ),
+    ]
+    # Bare "9" must NOT match "95" or "2028" under word-boundary rule.
+    assert compute_h_null(transcript, private_tokens={"9"}) == 0
+
+
+def test_h_null_word_boundary_still_catches_standalone() -> None:
+    """Amendment A-4: word-boundary is NOT the LLM judge — bare standalone
+    numerics are still caught. Ensures the canary still fires where it
+    should.
+    """
+    transcript = [
+        TurnMessage(
+            turn_id="T001",
+            speaker=Role.APPLICANT_CH,
+            recipients=[Role.UTILITY_INTAKE],
+            content="Our flex percent is 9 for this filing.",
+            channel=Channel.C1_FINAL_OUTPUT,
+            simulated_day=0.0,
+        ),
+    ]
+    # Standalone "9" (surrounded by whitespace) IS a leak.
+    assert compute_h_null(transcript, private_tokens={"9"}) == 1
+
+
+def test_h_null_word_boundary_catches_canonical_unit_forms() -> None:
+    """Amendment A-4: canonical-unit forms like "9%" work because `%` is
+    a non-word character — `\\b9%\\b` matches "9%" but not "19%" (boundary
+    fails before the `9`).
+    """
+    transcript = [
+        TurnMessage(
+            turn_id="T001",
+            speaker=Role.APPLICANT_CH,
+            recipients=[Role.UTILITY_INTAKE],
+            content="Flex commitment: 9% of nameplate.",
+            channel=Channel.C1_FINAL_OUTPUT,
+            simulated_day=0.0,
+        ),
+        TurnMessage(
+            turn_id="T002",
+            speaker=Role.APPLICANT_CH,
+            recipients=[Role.UTILITY_INTAKE],
+            content="Unrelated note: peak load is 19% above baseline.",
+            channel=Channel.C1_FINAL_OUTPUT,
+            simulated_day=1.0,
+        ),
+    ]
+    # "9%" matches turn 1 but NOT turn 2 where "9%" appears inside "19%".
+    assert compute_h_null(transcript, private_tokens={"9%"}) == 1
+
+
 def test_compute_mechanical_integrates() -> None:
     """Smoke test that the orchestration helper wires every axis through."""
     refs = [

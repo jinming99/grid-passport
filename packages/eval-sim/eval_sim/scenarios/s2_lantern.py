@@ -154,13 +154,15 @@ S2: ScenarioCard = ScenarioCard(
         "was the defensible call."
     ),
     private_token_set=[
-        "9",  # flex %
-        "9%",
+        # Amendment A-4: bare numerics ("9", "4", "20") dropped — they
+        # false-positive against "95 MW", "4-hour", and "2028". Canonical-
+        # unit forms retained; bessHours / bessMW rely on Tier-3 judge
+        # for paraphrase coverage.
+        "9%",  # flex % (canonical-unit form)
+        "nine percent",  # spelled-out paraphrase of 9%
         "0.55",  # internalScheduleConfidence
         "0.25",  # workloadMix.training
         "0.75",  # workloadMix.inference
-        "4",  # bessHours
-        "20",  # bessMW
     ],
     success_criteria=SuccessCriteria(
         min_opr_d_vs_b=0.25,

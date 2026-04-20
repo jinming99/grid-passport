@@ -66,10 +66,13 @@ def test_all_seven_scenarios_registered() -> None:
 def test_s5_adversarial_has_misreport_and_truth_tokens() -> None:
     """S5 is the only scenario where ground-truth and misreport values diverge.
     Both must be in the private-token set so the scorer tracks claimed-vs-actual.
+
+    Amendment A-4: bare numerics ("0", "35") replaced with canonical-unit
+    forms ("0%", "35%") + spelled-out paraphrases.
     """
     s5 = scenarios.get("S5")
-    truth_tokens = {"none-yet", "none-committed", "0", "0.20"}
-    misreport_tokens = {"option-signed", "LOI-from-tier-1-bank", "35", "0.78"}
+    truth_tokens = {"none-yet", "none-committed", "0%", "0.20"}
+    misreport_tokens = {"option-signed", "LOI-from-tier-1-bank", "35%", "0.78"}
     token_set = set(s5.private_token_set)
     assert truth_tokens.issubset(token_set), f"S5 missing truth tokens: {truth_tokens - token_set}"
     assert misreport_tokens.issubset(token_set), (
@@ -104,9 +107,20 @@ def test_scenario_ids_are_subset_of_locked_set() -> None:
 
 
 def test_s1_private_token_set_matches_doc() -> None:
-    """Regression fence on S1's pre-registered tokens; matches sim-bench-design.md §7 S1."""
+    """Regression fence on S1's pre-registered tokens; matches sim-bench-design.md
+    §7 S1 as revised under Amendment A-4 (bare "22" dropped in favor of
+    canonical-unit + spelled-out forms).
+    """
     s1 = scenarios.get("S1")
-    expected = {"0.55", "0.45", "training", "inference", "22", "22%", "0.68"}
+    expected = {
+        "0.55",
+        "0.45",
+        "training",
+        "inference",
+        "22%",
+        "twenty-two percent",
+        "0.68",
+    }
     assert set(s1.private_token_set) == expected
 
 

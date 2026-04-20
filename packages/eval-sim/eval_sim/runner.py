@@ -116,6 +116,7 @@ def run(
     failure_rate_scale: float = 1.0,
     transport: object | None = None,
     max_turns: int = 12,
+    cartographer_mode_override: str | None = None,
 ) -> RunLedger:
     """Execute one sim run.
 
@@ -125,6 +126,13 @@ def run(
 
     `transport` is a `eval_sim.llm.Transport`; if `None` and
     `dry_run=False`, the default claude-agent-sdk transport is used.
+
+    `cartographer_mode_override` is the §6e fairness-pilot escape hatch.
+    When set to `'live'` under Condition D, D calls Cartographer live
+    like C — isolating the cache-vs-no-cache effect from the substrate
+    effect. Legal values: `None` (native behavior), `'live'`, `'cached'`.
+    Rejected for conditions A/B where Cartographer is not on the path,
+    and for C when set to `'cached'` (nonsense per §6c).
     """
     # Lazy-import the failure-mode sampler so the channels package isn't
     # eagerly loaded at runner-import time (channels.base imports back
@@ -201,14 +209,41 @@ def run(
         ),
     )
 
+    if cartographer_mode_override is not None:
+        if cartographer_mode_override not in {"live", "cached"}:
+            raise ValueError(
+                f"cartographer_mode_override must be 'live' or 'cached'; "
+                f"got {cartographer_mode_override!r}"
+            )
+        if condition in {Condition.A_ORACLE, Condition.B_NDA_EMAIL}:
+            raise ValueError(
+                f"cartographer_mode_override is only meaningful for C/D; "
+                f"got condition={condition!r}"
+            )
+        if (
+            condition is Condition.C_PROMPT_ONLY
+            and cartographer_mode_override == "cached"
+        ):
+            raise ValueError(
+                "Condition C runs Cartographer live by definition (§6c); "
+                "cartographer_mode_override='cached' would collapse the "
+                "substrate distinction. Use condition=D instead."
+            )
+
     if condition is Condition.A_ORACLE:
         channel = OracleChannel(cache_hash=cache_hash)
     elif condition is Condition.B_NDA_EMAIL:
         channel = EmailChannel(failure_rate_scale=failure_rate_scale)
     elif condition is Condition.C_PROMPT_ONLY:
-        channel = PromptOnlyBundleChannel(cache_hash=cache_hash)
+        channel = PromptOnlyBundleChannel(
+            cache_hash=cache_hash,
+            cartographer_mode_override=cartographer_mode_override,
+        )
     elif condition is Condition.D_GRID_PASSPORT:
-        channel = SkillBundleChannel(cache_hash=cache_hash)
+        channel = SkillBundleChannel(
+            cache_hash=cache_hash,
+            cartographer_mode_override=cartographer_mode_override,
+        )
     else:
         raise ValueError(f"unknown condition: {condition!r}")
 

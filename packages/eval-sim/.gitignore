@@ -13,8 +13,10 @@ uv.lock
 # Raw transcripts and per-run judge outputs are gitignored per §12.1.
 results/pilot/transcripts/
 results/pilot/judge-runs/
+results/pilot/scores/
 results/main/transcripts/
 results/main/judge-runs/
+results/main/scores/
 
 # OS noise
 .DS_Store

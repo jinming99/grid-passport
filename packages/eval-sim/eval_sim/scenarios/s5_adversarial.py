@@ -151,17 +151,21 @@ S5: ScenarioCard = ScenarioCard(
         "adversarial discovery; queue positions behind this filing are preserved."
     ),
     private_token_set=[
+        # Amendment A-4: bare numerics ("0", "35") dropped. Truth
+        # ("0% flexibility") expressed as canonical-unit + paraphrase.
+        # Misreport "35" retained as "35%" only.
         # Ground-truth-private (actual internal state of Talon)
         "none-yet",  # siteControlStatus truth
         "none-committed",  # financingStatus truth
-        "0",  # flexPercent truth (no schedulable load)
+        "0%",  # flexPercent truth — no schedulable load
+        "zero percent",  # spelled-out paraphrase of 0%
         "0.20",  # internalScheduleConfidence truth
         # Misreport tokens (what Talon claims on-record — these are the
         # strings we want to see the utility detect as unverifiable)
         "option-signed",  # siteControlStatus misreport
         "LOI-from-tier-1-bank",  # financingStatus misreport
-        "35",  # flexPercent misreport
-        "35%",
+        "35%",  # flexPercent misreport (canonical-unit form)
+        "thirty-five percent",  # spelled-out paraphrase
         "0.78",  # internalScheduleConfidence misreport
     ],
     success_criteria=SuccessCriteria(

@@ -43,15 +43,17 @@ class PromptOnlyBundleChannel:
     Cartographer runs live every turn — but the cache hash is part of
     the run's reproducibility envelope per §15.5).
 
-    The §6e Cartographer-fairness-pilot path runs both C and D against
-    the **live SDK** to isolate the cache-vs-no-cache effect from the
-    substrate effect; in that path the runner also sets D's
-    `cache_hash` to a sentinel + `cartographer_mode='live'` (a separate
-    code path documented in step 4e dispatch).
+    `cartographer_mode_override` is symmetrical to the one on
+    `SkillBundleChannel`: native C is always 'live', but the override
+    field is present so the runner can carry the same plumbing through
+    both condition paths without a type divergence. Setting it to
+    `'cached'` on C would be nonsense (C's whole point is live SDK) and
+    is rejected at runner level.
     """
 
     cache_hash: str = ""
     max_query_rounds: int = 2
+    cartographer_mode_override: str | None = None
     condition: Condition = field(default=Condition.C_PROMPT_ONLY, init=False)
 
     def run(
@@ -70,5 +72,5 @@ class PromptOnlyBundleChannel:
             cache_hash=self.cache_hash,
             max_query_rounds=self.max_query_rounds,
             max_turns=max_turns,
-            cartographer_mode="live",
+            cartographer_mode=self.cartographer_mode_override or "live",
         )

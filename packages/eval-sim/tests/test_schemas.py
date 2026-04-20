@@ -140,3 +140,51 @@ def test_disposition_enum_has_expected_values() -> None:
         "adversarial-deceptive",
         "honest",
     }
+
+
+def test_private_token_set_rejects_bare_digits() -> None:
+    """Amendment A-4: the ScenarioCard validator rejects bare 1-2-digit
+    numeric tokens that would Tier-2 false-positive inside longer numerics.
+    """
+    import pytest
+    from pydantic import ValidationError
+
+    from eval_sim import scenarios
+
+    # Load S1 and mutate into an invalid shape via model_validate.
+    s1 = scenarios.get("S1")
+    payload = s1.model_dump()
+    payload["private_token_set"] = ["9", "0.55"]  # "9" should fail
+    with pytest.raises(ValidationError, match="ambiguous tokens"):
+        type(s1).model_validate(payload)
+
+
+def test_private_token_set_accepts_canonical_units() -> None:
+    """Amendment A-4: canonical-unit forms like "9%", "22%", and decimal
+    floats like "0.55" must pass — the non-digit neighbor creates a word
+    boundary that prevents ambiguous-numeric false positives.
+    """
+    from eval_sim import scenarios
+
+    s1 = scenarios.get("S1")
+    payload = s1.model_dump()
+    payload["private_token_set"] = ["9%", "22%", "0.55", "nine percent"]
+    revalidated = type(s1).model_validate(payload)
+    assert revalidated.private_token_set == ["9%", "22%", "0.55", "nine percent"]
+
+
+def test_private_token_set_rejects_single_char_tokens() -> None:
+    """Amendment A-4: single-character tokens are rejected regardless
+    of whether they are digit or letter — matching "a" or "0" anywhere
+    is an unbounded false-positive risk.
+    """
+    import pytest
+    from pydantic import ValidationError
+
+    from eval_sim import scenarios
+
+    s1 = scenarios.get("S1")
+    payload = s1.model_dump()
+    payload["private_token_set"] = ["0", "training"]
+    with pytest.raises(ValidationError, match="ambiguous tokens"):
+        type(s1).model_validate(payload)

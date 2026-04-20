@@ -147,8 +147,16 @@ def pilot(
         "--fairness",
         help=(
             "Append the §6e Cartographer fairness-pilot runs "
-            "(C+D both-live; requires runner.run to accept a cartographer-"
-            "mode override — currently NOT wired, so this flag errors out)."
+            "(C+D both-live against CARTOGRAPHER_FAIRNESS_PILOT_SCENARIOS × "
+            "CARTOGRAPHER_FAIRNESS_PILOT_SEEDS). Requires --live."
+        ),
+    ),
+    fairness_only: bool = typer.Option(
+        False,
+        "--fairness-only",
+        help=(
+            "Skip the main-pilot matrix entirely and run ONLY the §6e "
+            "fairness-pilot cells. Implies --fairness."
         ),
     ),
 ) -> None:
@@ -181,31 +189,43 @@ def pilot(
     seed_count = max_seeds if max_seeds > 0 else PILOT_SEEDS
     seeds = list(range(seed_count))
 
-    total = len(sids) * len(conds) * len(seeds)
+    if fairness_only:
+        fairness = True
+
+    total = 0 if fairness_only else len(sids) * len(conds) * len(seeds)
+    # §6e fairness pilot: C + D both forced to cartographer_mode='live' on
+    # CARTOGRAPHER_FAIRNESS_PILOT_SCENARIOS × CARTOGRAPHER_FAIRNESS_PILOT_SEEDS.
+    fairness_sids = [
+        s for s in CARTOGRAPHER_FAIRNESS_PILOT_SCENARIOS
+        if include_s7 or s not in _DEFAULT_SKIP_SCENARIOS
+    ]
     fairness_runs = (
-        len(CARTOGRAPHER_FAIRNESS_PILOT_SCENARIOS)
-        * CARTOGRAPHER_FAIRNESS_PILOT_SEEDS
-        if fairness
-        else 0
+        len(fairness_sids) * CARTOGRAPHER_FAIRNESS_PILOT_SEEDS * 2 if fairness else 0
     )
     console.print(
         f"[bold]pilot[/bold] · {total} main-pilot runs"
         + (
-            f" + {fairness_runs} fairness-check runs"
+            f" + {fairness_runs} fairness-pilot runs "
+            f"({len(fairness_sids)} scenarios × "
+            f"{CARTOGRAPHER_FAIRNESS_PILOT_SEEDS} seeds × C+D live)"
             if fairness
             else ""
         )
     )
-    console.print(f"  scenarios: {', '.join(sids)}")
-    console.print(f"  conditions: {', '.join(c.value for c in conds)}")
-    console.print(f"  seeds: {seeds}")
-    console.print(f"  out: {out_dir}")
-
+    if not fairness_only:
+        console.print(f"  main scenarios: {', '.join(sids)}")
+        console.print(f"  main conditions: {', '.join(c.value for c in conds)}")
+        console.print(f"  main seeds: {seeds}")
     if fairness:
         console.print(
-            "[red]--fairness not wired yet[/red] — requires `runner.run()` "
-            "to accept a Cartographer-mode override so D can be forced to "
-            "'live'. Raise an issue and wire before enabling this flag."
+            f"  fairness scenarios: {', '.join(fairness_sids) or '(none — S7 skipped)'}"
+        )
+    console.print(f"  out: {out_dir}")
+
+    if fairness and not live:
+        console.print(
+            "[red]--fairness requires --live[/red] — fairness runs call "
+            "Cartographer live on both C and D and need the SDK transport."
         )
         raise typer.Exit(code=1)
 
@@ -226,10 +246,17 @@ def pilot(
         "seeds": seeds,
         "default_skip_scenarios": sorted(_DEFAULT_SKIP_SCENARIOS),
         "include_s7": include_s7,
+        "fairness": fairness,
+        "fairness_scenarios": fairness_sids if fairness else [],
+        "fairness_seeds": (
+            list(range(CARTOGRAPHER_FAIRNESS_PILOT_SEEDS)) if fairness else []
+        ),
         "runs": [],
     }
 
     had_failure = False
+    if fairness_only:
+        sids = []  # skip main pilot entirely
     for sid in sids:
         scenario_card = scenarios.get(sid)
         for cond in conds:
@@ -290,6 +317,82 @@ def pilot(
                 )
                 _write_manifest(manifest_path, manifest)
 
+    # §6e fairness-pilot dispatch — C + D both forced to cartographer_mode='live'
+    # so the cache-vs-no-cache effect is isolated from the substrate effect.
+    if fairness:
+        fairness_seeds = list(range(CARTOGRAPHER_FAIRNESS_PILOT_SEEDS))
+        fairness_total = len(fairness_sids) * len(fairness_seeds) * 2
+        f_idx = 0
+        for sid in fairness_sids:
+            scenario_card = scenarios.get(sid)
+            for seed in fairness_seeds:
+                for cond in (Condition.C_PROMPT_ONLY, Condition.D_GRID_PASSPORT):
+                    f_idx += 1
+                    console.print(
+                        f"\n[bold]── fairness [{f_idx}/{fairness_total}] "
+                        f"{sid} × {cond.value} × seed={seed} · "
+                        f"cartographer=live ──[/bold]"
+                    )
+                    t0 = time.time()
+                    try:
+                        ledger = run(
+                            scenario_card,
+                            cond,
+                            seed=seed,
+                            dry_run=False,
+                            cartographer_mode_override="live",
+                        )
+                    except Exception as err:
+                        had_failure = True
+                        wall = time.time() - t0
+                        console.print(
+                            f"  [red]FAILED after {wall:.1f}s:[/red] {err}"
+                        )
+                        manifest["runs"].append({
+                            "scenario": sid,
+                            "condition": cond.value,
+                            "seed": seed,
+                            "status": "failed",
+                            "pilot_kind": "fairness",
+                            "cartographer_mode_override": "live",
+                            "wall_s": round(wall, 1),
+                            "error": str(err),
+                        })
+                        _write_manifest(manifest_path, manifest)
+                        continue
+
+                    wall = time.time() - t0
+                    fname = "fairness_" + _ledger_filename(sid, cond, seed)
+                    fpath = transcripts_dir / fname
+                    payload = _ledger_to_jsonable(ledger)
+                    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+                    fpath.write_text(text, encoding="utf-8")
+                    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+                    final_day = (
+                        ledger.transcript[-1].simulated_day
+                        if ledger.transcript
+                        else 0.0
+                    )
+                    manifest["runs"].append({
+                        "scenario": sid,
+                        "condition": cond.value,
+                        "seed": seed,
+                        "status": "ok",
+                        "pilot_kind": "fairness",
+                        "cartographer_mode_override": "live",
+                        "wall_s": round(wall, 1),
+                        "turns": len(ledger.transcript),
+                        "final_simulated_day": final_day,
+                        "file": f"transcripts/{fname}",
+                        "sha256": digest,
+                        "cache_hash": ledger.cache_hash,
+                    })
+                    console.print(
+                        f"  [green]ok[/green] · {len(ledger.transcript)} turns · "
+                        f"day {final_day:.1f} · {wall:.1f}s · sha {digest[:16]}…"
+                    )
+                    _write_manifest(manifest_path, manifest)
+
     manifest["finished_at_unix"] = time.time()
     _write_manifest(manifest_path, manifest)
 
@@ -299,8 +402,9 @@ def pilot(
         )
         raise typer.Exit(code=1)
 
+    n_ran = len(manifest["runs"])
     console.print(
-        f"\n[bold green]pilot complete · {total} runs · "
+        f"\n[bold green]pilot complete · {n_ran} runs · "
         f"manifest: {manifest_path}[/bold green]"
     )
 

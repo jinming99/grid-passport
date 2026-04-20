@@ -8,9 +8,10 @@ load time.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from eval_sim.schemas.caseinput import PrivateProfile, PublicEvidence, SiteContext
 from eval_sim.schemas.priorauth import PriorAuthProfile
@@ -221,6 +222,43 @@ class ScenarioCard(BaseModel):
 
     # (10) private-token set for direct-leakage scoring (§8c.i Tier-2)
     private_token_set: list[str] = Field(min_length=1)
+
+    @field_validator("private_token_set")
+    @classmethod
+    def _validate_token_hygiene(cls, tokens: list[str]) -> list[str]:
+        """Amendment A-4: reject tokens that would false-positive the
+        Tier-2 substring match.
+
+        Rules:
+          - each token MUST be ≥ 2 characters after strip (catches
+            degenerate single-char tokens)
+          - a pure bare-digit token (`^\\d{1,2}$`) is rejected regardless
+            of length — these substring-match inside longer numerics
+            (e.g. "9" hits "95 MW", "20" hits "2028")
+
+        Unit-bound numerics ("9%", "22%", "120 MW"), decimal floats
+        ("0.55"), and spelled-out paraphrases ("twenty-two percent")
+        pass: the non-digit suffix / decimal point creates a word
+        boundary that prevents the ambiguous-neighbor false positive.
+        """
+        bad: list[str] = []
+        for tok in tokens:
+            stripped = tok.strip()
+            if len(stripped) < 2:
+                bad.append(tok)
+                continue
+            if re.fullmatch(r"\d{1,2}", stripped):
+                bad.append(tok)
+        if bad:
+            raise ValueError(
+                f"private_token_set contains ambiguous tokens that would "
+                f"cause Tier-2 substring false positives: {bad!r}. "
+                f"Per sim-bench-design.md Amendment A-4: tokens must be "
+                f"≥ 2 chars and not pure bare 1-2-digit numbers. Use "
+                f"canonical-unit forms ('9%', '22%', '0.55') or "
+                f"spelled-out paraphrases ('nine percent') instead."
+            )
+        return tokens
 
     # (11) success criteria
     success_criteria: SuccessCriteria

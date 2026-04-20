@@ -146,14 +146,15 @@ S4: ScenarioCard = ScenarioCard(
         "the projection into a modest firmness band, not carried through as-is."
     ),
     private_token_set=[
-        "12",  # flexPercent
-        "12%",
+        # Amendment A-4: bare numerics dropped. "55" (requestedMW) is
+        # typically on-record correctly per-design; the private fact is
+        # the peak-assumption delta, which Tier-3 judge handles.
+        "12%",  # flexPercent (canonical-unit form)
+        "twelve percent",  # spelled-out paraphrase
         "0.72",  # internalScheduleConfidence (overconfident)
         "0.60",  # workloadMix.training
         "0.40",  # workloadMix.inference
         "PW-007-4421",  # unique parcelId — founder paste-risk
-        "55",  # requestedMW — often appears on-record correctly, but the
-        # underlying peak assumption is private
     ],
     success_criteria=SuccessCriteria(
         min_opr_d_vs_b=0.30,
