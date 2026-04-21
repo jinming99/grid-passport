@@ -26,6 +26,10 @@ export default function Home() {
               the story
             </Link>
             <span className="text-neutral-700">·</span>
+            <Link href="/technical" className="hover:text-neutral-200">
+              technical
+            </Link>
+            <span className="text-neutral-700">·</span>
             <Link href="/demo/owl-compute" className="hover:text-neutral-200">
               demo
             </Link>
@@ -272,6 +276,10 @@ export default function Home() {
           <nav className="flex flex-wrap items-center gap-3">
             <Link href="/about" className="hover:text-neutral-300">
               story
+            </Link>
+            <span className="text-neutral-700">·</span>
+            <Link href="/technical" className="hover:text-neutral-300">
+              technical
             </Link>
             <span className="text-neutral-700">·</span>
             <Link href="/demo/owl-compute" className="hover:text-neutral-300">

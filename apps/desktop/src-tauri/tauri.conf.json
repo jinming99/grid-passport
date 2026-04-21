@@ -36,7 +36,10 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../../../.claude/skills/**/*.md": "skills/"
+      "../../../.claude/skills/interviewer": "skills/interviewer",
+      "../../../.claude/skills/cartographer": "skills/cartographer",
+      "../../../.claude/skills/priorauth-interviewer": "skills/priorauth-interviewer",
+      "../../../.claude/skills/explainer": "skills/explainer"
     }
   }
 }

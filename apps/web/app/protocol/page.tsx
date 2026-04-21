@@ -133,6 +133,8 @@ function Header() {
         <nav className="flex items-center gap-4 text-[11px] uppercase tracking-[0.18em] text-neutral-500">
           <Link href="/about" className="hover:text-neutral-200">the story</Link>
           <span className="text-neutral-700">·</span>
+          <Link href="/technical" className="hover:text-neutral-200">technical</Link>
+          <span className="text-neutral-700">·</span>
           <Link href="/demo/owl-compute" className="hover:text-neutral-200">demo</Link>
           <span className="text-neutral-700">·</span>
           <Link href="/protocol" className="text-sky-400">protocol</Link>
@@ -394,6 +396,8 @@ export default function ProtocolPage() {
           <span>synthetic composite · illustrative only · bundle v1.0.0</span>
           <nav className="flex flex-wrap items-center gap-3">
             <Link href="/about" className="hover:text-neutral-300">story</Link>
+            <span className="text-neutral-700">·</span>
+            <Link href="/technical" className="hover:text-neutral-300">technical</Link>
             <span className="text-neutral-700">·</span>
             <Link href="/demo/owl-compute" className="hover:text-neutral-300">demo</Link>
             <span className="text-neutral-700">·</span>

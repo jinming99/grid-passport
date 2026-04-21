@@ -19,6 +19,9 @@ __pycache__
 
 .vercel
 
+# personal notes / session-planning scratch not part of the product
+docs/human_inputs/
+
 # claude code: ship project-shared config (skills/, agents/, commands/, settings.json);
 # keep per-user local state out. Update the allowlist if we add new shared subdirs.
 .claude/*

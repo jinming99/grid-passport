@@ -68,6 +68,15 @@ Sprint outcomes:
 
 No new sprint scoped yet. See the brief's "Four student paths" section for routes into still-deferred items: (a) main sim-bench sweep, (b) Explainer refinements, (c) utility-binary extension (trust store, prod-launch PATH, Windows/Linux builds, Dominion handshake), (d) derivation-correctness test expansion (Python mirror, route-handler tests, property-based via fast-check).
 
+**Post-close consolidation docs (2026-04-20).** Three new role-targeted onboarding surfaces landed after the sprint-brief so that a cold-reading developer / utility reviewer / presenter can find the right entry point without reading 15 design docs:
+- `README.md` — refreshed from Phase-0-era Next.js stock copy to current state (4 apps + 6 packages + 15 gates + live surfaces table + honest-limits list + doc navigation).
+- `docs/tech-overview.md` — 11-section single-doc technical tour (problem → existing-practice critique → four architectural decisions → schema-as-safety-case → privacy mechanism end-to-end → signed bundle → where AI lives → evaluation → honest limits → innovation summary → where-to-go-next). Audience: developers, utility reviewers, research panels, hackathon judges who want depth in one place.
+- `docs/plans/student-handoff.md` — hackathon-ready onboarding, deliberately narrow scope: seven Claude Code prompts (pasted one at a time, in order) that have Claude Code read the repo on the student's behalf and explain each layer in context. No commands for the student to run; no research backlog; no follow-on-path decision tree. Job scope is absorb → rehearse → polish. Includes the one-paragraph story, the eight killer moments, three honest-limits lines to rehearse, and three "polish prompts" (section-is-confusing / number-needs-caveat / visual-could-be-punchier) for when rehearsal surfaces something to tighten.
+- `docs/demo-casebook.md` — eight case studies (A–H) mapped to eight killer moments; split into *mechanism cases* (A–F: privacy and crypto in action) and *outcome cases* (G–H: efficiency delta of 3.7× fewer rounds + OPR evidence panel). Each case has pre-flight commands, step-by-step demo flow, expected observations with exact numbers from committed pilot artifacts, and a reproducible Claude Code prompt. Appendix 4 is a self-contained "first 30 minutes" linear exercise.
+- `docs/hackathon-presentation.md` — 10-minute talk plan with 13-slide outline + two live-demo scripts (applicant 3 min · utility 2 min) + 15-question anticipated Q&A bank + no-overclaim checklist + rehearsal checklist.
+- New website route `/technical` renders `docs/tech-overview.md` at build time (mirror of `/about` pattern). Nav added to landing, `/about`, `/protocol`, and footers.
+- `docs/human_inputs/` gitignored (personal planning notes, not product artifacts).
+
 **Track 1 headline numbers, n=1 per cell (from `docs/evals/sim-bench-results.md`):**
 - **OPR Δ = D − B**: S1 **+0.328 ✓** (clears §9.1 threshold); S3 +0.194 borderline; S2 +0.047 flat.
 - **Savage regret (max)**: D=0.00 (S1), 0.40 (S2 ties B), 0.20 (S3 ties C lowest).
