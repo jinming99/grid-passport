@@ -57,7 +57,16 @@ Durable record of project state, decisions, and what future work needs to know. 
 
 ### Now
 
-**Sprint 2026-04-20 ("demo-ready everything") — all in-scope tracks landed 2026-04-20; main run still deferred.** Sprint plan at `docs/plans/sprint-2026-04-20.md`: four tracks completed across ~1 effective day of work (parallelized). **Tracks 1 + 4** — eval evidence into `/about` §6 + 48-unit `forecast/audit.test.ts` suite (core:test: 9 → 57 tests). **Track 2 (Interviewer + Explainer)** — 2.1a transport seam + `IntakePanel` + validator gating; 2.1b real `claude -p` subprocess via Rust IPC (OAuth session-inherited); 2.2 Explainer Skill v0 (SKILL.md + ROLE_VOICES.md + 3 role examples + validator + baseline + substrate-metrics row); 2.2-polish `ExplainerPanel` + `explainer_query` Rust command. canary:desktop now runs **12 guards** (was 3 at sprint start). **Track 3 (utility binary)** — 3.1 scaffold with write-scope import guard (gate 15); 3.1-polish real drop-zone via `plugin-dialog` + `plugin-fs`, verified-bundle state carrying keyId + policyHash, `UtilityProjection` renderer, trust-claim stamp. 3.2 `TrustPanel` live-state chrome in desktop. **Research-thesis §6a substrate-metrics panel now spans 4 Skills across 2 domains × 2 contract axes** (write-scope × read-scope). All 15 gates green. Sprint deliverable `docs/plans/sprint-2026-04-20-brief.md` is the one remaining item (consolidation doc at sprint close per the plan).
+**Sprint 2026-04-20 ("demo-ready everything") — closed 2026-04-20. All four tracks + all polish items landed. Master student brief at `docs/plans/sprint-2026-04-20-brief.md` — single-doc onboarding with four follow-on paths.**
+
+Sprint outcomes:
+- **Track 1 + 4**: eval evidence into `/about` §6 + 48-unit `forecast/audit.test.ts` suite. `core:test` 9 → 57 tests.
+- **Track 2 (Interviewer + Explainer)**: 2.1a transport seam + `IntakePanel` + validator gating; 2.1b real `claude -p` subprocess via Rust IPC (OAuth session-inherited, no API-key UX); 2.2 Explainer Skill v0 (SKILL.md + ROLE_VOICES.md + 3 role examples + validator + baseline + substrate-metrics row at −96.2% upfront); 2.2-polish `ExplainerPanel` + `explainer_query` Rust command.
+- **Track 3 (utility binary)**: 3.1 scaffold with write-scope import guard (gate 15); 3.1-polish real drop-zone via `plugin-dialog` + `plugin-fs`, verified-bundle state carrying keyId + policyHash, `UtilityProjection` renderer, lime-accented trust-claim card. 3.2 `TrustPanel` live-state chrome in desktop.
+- **Research-thesis §6a substrate-metrics panel now spans 4 Skills × 2 domains × 2 contract axes** (write-scope: Interviewer + Cartographer + priorauth-Interviewer; read-scope: Explainer). Uniform −93.8% to −96.4% upfront context saving across all four.
+- `canary:desktop` grew 3 → 12 guards over the sprint; `canary:utility` is new gate 15. All 15 gates green.
+
+No new sprint scoped yet. See the brief's "Four student paths" section for routes into still-deferred items: (a) main sim-bench sweep, (b) Explainer refinements, (c) utility-binary extension (trust store, prod-launch PATH, Windows/Linux builds, Dominion handshake), (d) derivation-correctness test expansion (Python mirror, route-handler tests, property-based via fast-check).
 
 **Track 1 headline numbers, n=1 per cell (from `docs/evals/sim-bench-results.md`):**
 - **OPR Δ = D − B**: S1 **+0.328 ✓** (clears §9.1 threshold); S3 +0.194 borderline; S2 +0.047 flat.
@@ -160,8 +169,8 @@ Gates: `cd packages/eval-sim && uv sync --dev && uv run pytest && uv run ruff ch
 
 **Suggested first action in next session:**
 
-1. **Track 2.2-polish** (~1–2 d) — desktop `ExplainerPanel` React component + `explainer_query` Rust Tauri command. The Skill source + validator + baseline + metrics are all shipped. The polish is purely runtime wiring: straight copy of `apps/desktop/src-tauri/src/interviewer.rs` with a different system prompt (Explainer's SKILL.md + ROLE_VOICES.md + examples) and a different user prompt (a `ProjectedView` JSON + role). The transport seam and tolerant JSON extraction in `apps/desktop/src/lib/interviewer-transport.ts` can be generalized into a shared helper, or a parallel `explainer-transport.ts` can copy the pattern. Research-thesis-wise: the substrate-metrics panel already shows the 4-Skill / 2-domain / 2-axis table with Explainer's −96.2% upfront delta; the polish doesn't change that claim, just makes it demo-visible.
-2. **Track 3.1-polish `apps/utility/` full UX** (~3–4 d remainder) — scaffold already green; follow-up layers on: (a) real drop-zone via `@tauri-apps/plugin-dialog` + `plugin-fs`, (b) verified-bundle state carrying keyId + policy-hash display, (c) rendering `payload.projections.utility` with a utility-pinned `BenefitPanel` (hoist from web or reimplement locally), (d) trust-claim stamping (`no network · verify-only · pinned to keyId`). `canary:utility` already covers the write-scope contract and the verify/tamper e2e; UX work doesn't need new canaries.
+1. **Read `docs/plans/sprint-2026-04-20-brief.md`** — the cold-read onboarding doc. Its "Four student paths" section (A: main sweep · B: Explainer refinements · C: utility extension / Dominion handshake · D: derivation-test expansion) re-packages the deferred work into self-contained chunks a student can pick up.
+2. **Scope the next sprint.** Nothing is actively in range today. Pick a combination of paths and write `docs/plans/sprint-<date>.md` before starting code; the 2026-04-20 plan doc is the template to follow.
 3. **Replay Track 1 invocations if needed** (for reproducibility):
    ```bash
    cd packages/eval-sim
