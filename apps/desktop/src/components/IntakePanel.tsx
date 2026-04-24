@@ -63,6 +63,7 @@ export function IntakePanel({
 
   return (
     <section
+      id="intake-fresh-start"
       className="intake-panel"
       style={{
         border: "1px solid var(--border)",

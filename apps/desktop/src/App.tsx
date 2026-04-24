@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CASE_METAS,
-  DEFAULT_CASE_ID,
   getCase,
 } from "@grid-passport/core/fixtures";
 import { buildRecord } from "@grid-passport/core/forecast";
@@ -39,9 +38,11 @@ function bundledLoaded(caseId: string): LoadedCase {
 }
 
 export function App() {
-  const [loaded, setLoaded] = useState<LoadedCase>(() =>
-    bundledLoaded(DEFAULT_CASE_ID),
-  );
+  // Start empty — the app boots to a landing view that only reveals the
+  // work/review UI once a case is loaded (via Interviewer prose, a case
+  // chip, or open-case.json). This matches the demo narrative: the
+  // audience sees nothing pre-loaded.
+  const [loaded, setLoaded] = useState<LoadedCase | null>(null);
   const [mode, setMode] = useState<Mode>("work");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [interviewerSkill, setInterviewerSkill] =
@@ -85,14 +86,14 @@ export function App() {
     setStatus({ kind: "idle" });
   }, []);
 
-  const projections = useMemo(() => {
+  const projections = useMemo<Record<Role, ProjectedView> | null>(() => {
+    if (!loaded) return null;
     const record = buildRecord(loaded.input);
-    const out: Record<Role, ProjectedView> = {
+    return {
       applicant: projectForRole(record, "applicant"),
       utility: projectForRole(record, "utility"),
       regulator: projectForRole(record, "regulator"),
     };
-    return out;
   }, [loaded]);
 
   const onPickBundled = useCallback((caseId: string) => {
@@ -124,6 +125,7 @@ export function App() {
   }, []);
 
   const onExport = useCallback(async () => {
+    if (!loaded || !projections) return;
     setStatus({ kind: "exporting" });
     try {
       const bundle = await buildAndSignBundle(
@@ -151,7 +153,20 @@ export function App() {
   }, []);
   const exitReview = useCallback(() => setMode("work"), []);
 
-  const input: CaseInput = loaded.input;
+  // "New case · clear & start over" — returns the app to the empty landing
+  // state, ready for a fresh demo. Clears any exported-bundle or error
+  // status. Landing's IntakePanel auto-focuses on next paint.
+  const onClearCase = useCallback(() => {
+    setLoaded(null);
+    setMode("work");
+    setStatus({ kind: "idle" });
+    requestAnimationFrame(() => {
+      const ta = document.querySelector<HTMLTextAreaElement>(
+        "#intake-fresh-start textarea",
+      );
+      ta?.focus();
+    });
+  }, []);
 
   return (
     <div className="shell">
@@ -164,209 +179,304 @@ export function App() {
         </div>
         <div className="banner-right">
           <div className="telltale">
-            <span className="telltale-dot" /> projection · in-process · no
-            network
+            <span className="telltale-dot" />{" "}
+            {loaded
+              ? "projection · in-process · no network"
+              : "ready · no case loaded"}
           </div>
         </div>
       </header>
 
       <TrustPanel loaded={loaded} />
 
-      {mode === "work" ? (
-        <section className="case-bar">
-          <div className="case-meta">
-            <div className="case-title">
-              {input.applicantOrg}
-              <span className="dim">
-                {" "}
-                · {input.requestedMW} MW · {input.site.county},{" "}
-                {input.site.state}
-              </span>
-            </div>
-            <div className="case-source">
-              {loaded.source.kind === "file" ? (
-                <>
-                  <span className="source-tag">source · file</span>
-                  <span
-                    className="source-path mono"
-                    title={loaded.source.path}
-                  >
-                    {loaded.source.path}
-                  </span>
-                </>
-              ) : loaded.source.kind === "interviewer" ? (
-                <>
-                  <span className="source-tag">source · interviewer</span>
-                  <span className="source-path mono">
-                    transport {loaded.source.transport} · at{" "}
-                    {loaded.source.at.slice(11, 19)}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="source-tag">source · bundled fixture</span>
-                  <span className="source-path mono">
-                    {loaded.source.caseId}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="case-controls">
-            <div className="control-group">
-              <div className="label">bundled</div>
-              <div className="chips">
-                {CASE_METAS.map((c) => (
-                  <button
-                    key={c.caseId}
-                    type="button"
-                    className={`chip ${
-                      loaded.source.kind === "bundled" &&
-                      loaded.source.caseId === c.caseId
-                        ? "on"
-                        : ""
-                    }`}
-                    onClick={() => onPickBundled(c.caseId)}
-                  >
-                    {c.displayName}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="control-group">
-              <div className="label">or</div>
-              <div className="chips">
-                <button
-                  type="button"
-                  className="chip chip-action"
-                  onClick={onOpenFile}
-                  disabled={status.kind === "loading"}
-                >
-                  {status.kind === "loading" ? "opening…" : "open case.json…"}
-                </button>
-              </div>
-            </div>
-            <div className="control-group control-spacer" />
-            <div className="control-group">
-              <div className="label">next</div>
-              <div className="chips">
-                <button
-                  type="button"
-                  className="chip chip-primary"
-                  onClick={enterReview}
-                >
-                  review disclosure →
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {status.kind === "error" ? (
-            <div className="status-line status-err">✘ {status.message}</div>
-          ) : null}
-
-          <IntakePanel
-            skill={interviewerSkill}
-            onAccept={onInterviewerAccept}
-          />
-        </section>
+      {loaded === null ? (
+        <LandingView
+          skill={interviewerSkill}
+          onInterviewerAccept={onInterviewerAccept}
+          onPickBundled={onPickBundled}
+          onOpenFile={onOpenFile}
+          status={status}
+        />
       ) : (
-        <section className="review-gate">
-          <div className="review-gate-head">
-            <button
-              type="button"
-              className="link-back"
-              onClick={exitReview}
-            >
-              ← back to editing
-            </button>
-            <div className="review-gate-title">
-              <div className="rg-title">review disclosure</div>
-              <div className="rg-sub">
-                preview three audiences before you export ·{" "}
-                <span className="mono">{input.applicantOrg}</span>
+        <>
+          {mode === "work" ? (
+            <section className="case-bar">
+              <div className="case-meta">
+                <div className="case-title">
+                  {loaded.input.applicantOrg}
+                  <span className="dim">
+                    {" "}
+                    · {loaded.input.requestedMW} MW · {loaded.input.site.county},{" "}
+                    {loaded.input.site.state}
+                  </span>
+                </div>
+                <div className="case-source">
+                  {loaded.source.kind === "file" ? (
+                    <>
+                      <span className="source-tag">source · file</span>
+                      <span
+                        className="source-path mono"
+                        title={loaded.source.path}
+                      >
+                        {loaded.source.path}
+                      </span>
+                    </>
+                  ) : loaded.source.kind === "interviewer" ? (
+                    <>
+                      <span className="source-tag">source · interviewer</span>
+                      <span className="source-path mono">
+                        transport {loaded.source.transport} · at{" "}
+                        {loaded.source.at.slice(11, 19)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="source-tag">source · bundled fixture</span>
+                      <span className="source-path mono">
+                        {loaded.source.caseId}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
-      )}
 
-      <main className={`stage mode-${mode}`}>
-        {mode === "work" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <ReviewColumn view={projections.applicant} variant="work" />
-            <ExplainerPanel
-              view={projections.applicant}
-              role="applicant"
-              caseInput={loaded.input}
-              skill={explainerSkill}
-            />
-          </div>
-        ) : (
-          ROLES.map((role) => (
-            <div
-              key={role}
-              style={{ display: "flex", flexDirection: "column", gap: 10 }}
-            >
-              <ReviewColumn view={projections[role]} variant="review" />
-              <ExplainerPanel
-                view={projections[role]}
-                role={role}
-                caseInput={loaded.input}
-                skill={explainerSkill}
+              <div className="case-controls">
+                <div className="control-group">
+                  <div className="label">bundled</div>
+                  <div className="chips">
+                    {CASE_METAS.map((c) => (
+                      <button
+                        key={c.caseId}
+                        type="button"
+                        className={`chip ${
+                          loaded.source.kind === "bundled" &&
+                          loaded.source.caseId === c.caseId
+                            ? "on"
+                            : ""
+                        }`}
+                        onClick={() => onPickBundled(c.caseId)}
+                      >
+                        {c.displayName}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="control-group">
+                  <div className="label">or</div>
+                  <div className="chips">
+                    <button
+                      type="button"
+                      className="chip chip-action"
+                      onClick={onClearCase}
+                      title="return to the empty landing state"
+                    >
+                      ▶ new case · clear &amp; start over
+                    </button>
+                    <button
+                      type="button"
+                      className="chip chip-action"
+                      onClick={onOpenFile}
+                      disabled={status.kind === "loading"}
+                    >
+                      {status.kind === "loading" ? "opening…" : "open case.json…"}
+                    </button>
+                  </div>
+                </div>
+                <div className="control-group control-spacer" />
+                <div className="control-group">
+                  <div className="label">next</div>
+                  <div className="chips">
+                    <button
+                      type="button"
+                      className="chip chip-primary"
+                      onClick={enterReview}
+                    >
+                      review disclosure →
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {status.kind === "error" ? (
+                <div className="status-line status-err">✘ {status.message}</div>
+              ) : null}
+
+              <IntakePanel
+                skill={interviewerSkill}
+                onAccept={onInterviewerAccept}
               />
-            </div>
-          ))
-        )}
-      </main>
+            </section>
+          ) : (
+            <section className="review-gate">
+              <div className="review-gate-head">
+                <button
+                  type="button"
+                  className="link-back"
+                  onClick={exitReview}
+                >
+                  ← back to editing
+                </button>
+                <div className="review-gate-title">
+                  <div className="rg-title">review disclosure</div>
+                  <div className="rg-sub">
+                    preview three audiences before you export ·{" "}
+                    <span className="mono">{loaded.input.applicantOrg}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
 
-      {mode === "review" ? (
-        <section className="review-terminus">
-          <div className="rt-copy">
-            <div className="rt-title">export this disclosure</div>
-            <div className="rt-sub">
-              bundle v1 · Ed25519 signed · audit chain included · verify with{" "}
-              <span className="mono">pnpm canary:bundle</span>
-            </div>
-          </div>
-          <div className="rt-actions">
+          {projections ? (
+            <main className={`stage mode-${mode}`}>
+              {mode === "work" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <ReviewColumn view={projections.applicant} variant="work" />
+                  <ExplainerPanel
+                    view={projections.applicant}
+                    role="applicant"
+                    caseInput={loaded.input}
+                    skill={explainerSkill}
+                  />
+                </div>
+              ) : (
+                ROLES.map((role) => (
+                  <div
+                    key={role}
+                    style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                  >
+                    <ReviewColumn view={projections[role]} variant="review" />
+                    <ExplainerPanel
+                      view={projections[role]}
+                      role={role}
+                      caseInput={loaded.input}
+                      skill={explainerSkill}
+                    />
+                  </div>
+                ))
+              )}
+            </main>
+          ) : null}
+
+          {mode === "review" ? (
+            <section className="review-terminus">
+              <div className="rt-copy">
+                <div className="rt-title">export this disclosure</div>
+                <div className="rt-sub">
+                  bundle v1 · Ed25519 signed · audit chain included · verify with{" "}
+                  <span className="mono">pnpm canary:bundle</span>
+                </div>
+              </div>
+              <div className="rt-actions">
+                <button
+                  type="button"
+                  className="chip chip-primary chip-big"
+                  onClick={onExport}
+                  disabled={status.kind === "exporting"}
+                >
+                  {status.kind === "exporting"
+                    ? "signing + writing…"
+                    : "export signed bundle.json"}
+                </button>
+              </div>
+              {status.kind === "error" ? (
+                <div className="status-line status-err">✘ {status.message}</div>
+              ) : null}
+              {status.kind === "exported" ? (
+                <div className="status-line status-ok">
+                  ✔ wrote <span className="mono">{status.path}</span>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          {projections ? (
+            <footer className="foot">
+              <span>
+                policy ·{" "}
+                <span className="mono">{projections.applicant.policyVersion}</span>
+              </span>
+              <span>
+                request ·{" "}
+                <span className="mono">{projections.applicant.requestId}</span>
+              </span>
+              <span className="dim">
+                all data synthetic · simulated confidential boundary · bundle v1 ·
+                Ed25519
+              </span>
+            </footer>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LandingView — the empty "welcome" state.
+//
+// Shown when no case is loaded. Renders only the IntakePanel as the primary
+// affordance, with a subtle "or try a bundled example" row below. Clicking
+// any case chip, opening a file, or submitting Interviewer prose will set
+// `loaded` in the parent App, which triggers the work-mode reveal.
+// ---------------------------------------------------------------------------
+
+interface LandingViewProps {
+  skill: LoadedSkill | null;
+  onInterviewerAccept: (input: CaseInput) => void;
+  onPickBundled: (caseId: string) => void;
+  onOpenFile: () => void;
+  status: Status;
+}
+
+function LandingView({
+  skill,
+  onInterviewerAccept,
+  onPickBundled,
+  onOpenFile,
+  status,
+}: LandingViewProps) {
+  return (
+    <section className="landing">
+      <div className="landing-inner">
+        <div className="landing-label">// start a new interconnection</div>
+        <p className="landing-sub">
+          Describe the request in your own words. Grid Passport parses it into
+          a structured case, projects the three role views, and readies a
+          signed disclosure for the utility.
+        </p>
+
+        <IntakePanel skill={skill} onAccept={onInterviewerAccept} />
+
+        <div className="landing-or">
+          <span className="landing-or-label">
+            or try a bundled example
+          </span>
+          <div className="landing-chips">
+            {CASE_METAS.map((c) => (
+              <button
+                key={c.caseId}
+                type="button"
+                className="chip"
+                onClick={() => onPickBundled(c.caseId)}
+              >
+                {c.displayName}
+              </button>
+            ))}
             <button
               type="button"
-              className="chip chip-primary chip-big"
-              onClick={onExport}
-              disabled={status.kind === "exporting"}
+              className="chip chip-action"
+              onClick={onOpenFile}
+              disabled={status.kind === "loading"}
             >
-              {status.kind === "exporting"
-                ? "signing + writing…"
-                : "export signed bundle.json"}
+              {status.kind === "loading" ? "opening…" : "open case.json…"}
             </button>
           </div>
           {status.kind === "error" ? (
             <div className="status-line status-err">✘ {status.message}</div>
           ) : null}
-          {status.kind === "exported" ? (
-            <div className="status-line status-ok">
-              ✔ wrote <span className="mono">{status.path}</span>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      <footer className="foot">
-        <span>
-          policy ·{" "}
-          <span className="mono">{projections.applicant.policyVersion}</span>
-        </span>
-        <span>
-          request ·{" "}
-          <span className="mono">{projections.applicant.requestId}</span>
-        </span>
-        <span className="dim">
-          all data synthetic · simulated confidential boundary · bundle v1 ·
-          Ed25519
-        </span>
-      </footer>
-    </div>
+        </div>
+      </div>
+    </section>
   );
 }

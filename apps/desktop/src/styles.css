@@ -702,3 +702,73 @@ button {
   font-family: var(--mono);
   color: var(--ink-dim);
 }
+
+/* ---- landing / empty state ---------------------------------------------- */
+
+.landing {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 56px 24px 80px;
+  animation: landing-fade-in 360ms ease-out both;
+}
+
+.landing-inner {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.landing-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--sky);
+  margin-bottom: 4px;
+}
+
+.landing-sub {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink-dim);
+  margin: 0 0 18px;
+}
+
+/* The IntakePanel sits flush inside the landing with a subtle cyan glow
+   so it reads as the primary affordance. Component owns its border/bg. */
+.landing .intake-panel {
+  box-shadow: 0 0 0 1px var(--sky-deep), 0 0 40px rgba(56, 189, 248, 0.06);
+}
+
+.landing-or {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.landing-or-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.landing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@keyframes landing-fade-in {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
