@@ -239,9 +239,11 @@ This project is submitted to a Special Competitive Studies Project (SCSP) hackat
 |---|---|
 | Title | Grid Passport |
 | One-line description | Confidential-coordination workflow for large-load electric-grid interconnection — applicants disclose only what policy releases; utilities verify a signed bundle locally; no shared server, no trusted third party. |
+| Track | Electric Grid |
 | Participants | Bhati, Vikrant · Luthra, Bhawuk |
 | Faculty advisor | Ming Jin (Virginia Tech · ECE) |
 | Tech stack | TypeScript · React 19 · Tauri 2 · Rust · Next.js 16 · Tailwind 4 · FastAPI · Python (uv) · OPA Rego · Ed25519 (`@noble/ed25519` + PyCA cryptography) · JCS (RFC 8785) · Claude Agent SDK · Concordia (multi-agent sim) · pnpm 10 monorepo |
+| Datasets / APIs used | Synthetic interconnection-case fixtures, synthetic geo / corridor fixtures, and synthetic utility load fixtures committed in-repo; source-cited public evidence references from FEMA National Flood Hazard Layer, Virginia DEQ air-permit materials, Dominion Energy Facility Interconnection Requirements, Virginia SCC data-center initiatives materials, and Loudoun County zoning context; optional Claude Code / Claude Agent SDK transport for the Interviewer, Cartographer, and Explainer agent flows. |
 | Repository | this GitHub repo (link as provided at submission time) |
 | License | AGPL v3 — utility forks publish their changes |
 | Slide deck | (linked at submission time) |
