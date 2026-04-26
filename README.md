@@ -214,14 +214,9 @@ The utility binary's import graph is a compile-time write-scope proof. Gate 15 (
 
 ## Team
 
-**Hackathon participants**
-
-- **Bhati, Vikrant** · co-developer (Virginia Tech · ECE)
-- **Luthra, Bhawuk** · co-conceptualizer · co-developer (Dominion Energy) · utility-side anchor
-
-**Faculty advisor**
-
-- **Ming Jin** · Virginia Tech · ECE · vision, design, project foundation
+- **Ming Jin** · faculty mentor · project lead (VT · ECE) · vision, design, foundation
+- **Bhawuk Luthra** · co-conceptualizer · co-developer (Dominion Energy) · utility-side anchor
+- **Vikrant Bhati** · co-developer
 
 ---
 
