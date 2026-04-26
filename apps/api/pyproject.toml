@@ -1,0 +1,24 @@
+[project]
+name = "grid-passport-api"
+version = "0.0.0"
+description = "Grid Passport confidential-workflow API — FastAPI service for forecaster and scenario endpoints."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "pydantic>=2.9",
+  "uvicorn[standard]>=0.32",
+  "httpx>=0.27",
+  "python-multipart>=0.0.9",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100

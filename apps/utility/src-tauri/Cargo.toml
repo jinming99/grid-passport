@@ -1,0 +1,30 @@
+[package]
+name = "grid-passport-utility"
+version = "0.0.0"
+description = "Grid Passport — utility-side verifier shell (receives signed disclosure bundles)"
+authors = ["Grid Passport team"]
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/jinming99/grid-passport"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "grid_passport_utility_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.6", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.10.3", features = [] }
+tauri-plugin-log = "2"
+# Utility consumes bundles; it doesn't sign. The core dep surface is
+# deliberately narrow — no keyring, no ed25519-dalek, no canonicalizer, no
+# signing binary. Verification happens in the webview via @grid-passport/
+# verifier + @noble/ed25519. The dialog + fs plugins exist for opening
+# a bundle.json file from disk once the drop-zone UX lands.
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"

@@ -1,0 +1,24 @@
+# uv / Python env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.pyright_cache/
+
+# uv lock — commit for reproducibility? keep out for now until first live run
+uv.lock
+
+# Raw run outputs — aggregated results are committed under results/ top-level.
+# Raw transcripts and per-run judge outputs are gitignored per §12.1.
+results/pilot/transcripts/
+results/pilot/judge-runs/
+results/pilot/scores/
+results/main/transcripts/
+results/main/judge-runs/
+results/main/scores/
+# P0.3 cross-family spot-check raw rationales (summary rolled into sim-bench-results.md).
+results/pilot/spot_check_sonnet/
+
+# OS noise
+.DS_Store

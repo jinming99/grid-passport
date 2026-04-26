@@ -1,0 +1,10 @@
+{
+  "name": "@grid-passport/policy",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Canonical Rego policy for Grid Passport field visibility.",
+  "files": [
+    "grid-passport.rego",
+    "README.md"
+  ]
+}

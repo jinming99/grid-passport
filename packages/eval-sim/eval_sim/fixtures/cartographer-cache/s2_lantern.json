@@ -1,0 +1,42 @@
+{
+  "floodRisk": "medium",
+  "notes": [
+    "FEMA NFHL indicates parcel LANTERN-95MW-P1 partially intersects a 500-yr shaded Zone X overlay along a tributary to Tuscarora Creek; conservative tier applied (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "County GIS flood layer shows a narrower overlay footprint than FEMA; sources disagree, more conservative FEMA tier used (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA DEQ air-permit docket shows a Tier-2 minor-source permit application pending for the 95 MW load with backup generator fleet; published DEQ runway for Tier-2 is 14\u201322 months (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA DEQ water-permit listing shows no VPDES action in flight for this parcel; non-tidal wetland impact screen pending (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Loudoun LOGIS zoning lookup places the parcel outside the post-March-2025 by-right data-center overlay; special-exception (SpEx) would be required and none is currently docketed (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Loudoun land records show no recorded deed, option, or lease in Lantern Cloud's name on parcel LANTERN-95MW-P1; site control appears unrecorded (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Dominion Facility Interconnection Requirements apply given Loudoun territory; 95 MW request falls under large-load study scope (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA SCC data-center initiatives fact sheet notes GS-5 rate class and active queue-plan docket relevant to Q2 2028 COD targeting (synthetic scenario; URL shape from SOURCES.md, record not live-fetched)."
+  ],
+  "permitRisk": "medium",
+  "siteControlEvidence": false,
+  "sourceRefs": [
+    {
+      "label": "FEMA National Flood Hazard Layer",
+      "url": "https://www.fema.gov/flood-maps/national-flood-hazard-layer"
+    },
+    {
+      "label": "VA DEQ \u2014 Air Permits for Data Centers",
+      "url": "https://www.deq.virginia.gov/news-info/shortcuts/permits/air/issued-air-permits-for-data-centers"
+    },
+    {
+      "label": "VA DEQ \u2014 Water Permits",
+      "url": "https://www.deq.virginia.gov/permits/water"
+    },
+    {
+      "label": "Loudoun County GIS (LOGIS)",
+      "url": "https://logis.loudoun.gov/"
+    },
+    {
+      "label": "Dominion Facility Interconnection Requirements",
+      "url": "https://www.dominionenergy.com/-/media/content/large-business-services/pdfs/virginia/facility-interconnection-requirements.pdf"
+    },
+    {
+      "label": "VA SCC \u2014 Data Center Initiatives Fact Sheet",
+      "url": "https://www.scc.virginia.gov/media/sccvirginiagov-home/about-the-scc/fact-sheets/scc-data-center-initiatives-02-2026.pdf"
+    }
+  ],
+  "zoningRisk": "high"
+}

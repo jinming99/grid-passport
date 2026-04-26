@@ -1,0 +1,27 @@
+{
+  "name": "@grid-passport/verifier",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone verifier for Grid Passport disclosure bundles (v1). Depends only on @noble/ed25519.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "grid-passport-verify": "./bin/verify.js"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/index.test.ts src/fuzz.test.ts",
+    "canary": "tsx scripts/bundle-canary.ts"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^3.1.0",
+    "@grid-passport/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "tsx": "^4.21.0",
+    "@types/node": "^20"
+  }
+}

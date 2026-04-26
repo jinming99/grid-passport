@@ -1,0 +1,35 @@
+{
+  "floodRisk": "low",
+  "notes": [
+    "FEMA NFHL shows parcel OWL-180MW-P1 sits outside the 500-yr overlay on the Ashburn panel; classified low (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "VA DEQ air-permit docket shows a Tier 2 application pending for a 180 MW load with backup generator fleet; 14-22 month runway per DEQ published timelines (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Loudoun LOGIS overlay indicates parcel falls under the post-March-2025 no-by-right overlay with a special-exception application in flight; classified medium (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Loudoun clerk land records show a recorded deed in Owl Compute's name for parcel OWL-180MW-P1; siteControlEvidence true (synthetic scenario; URL shape from SOURCES.md, record not live-fetched).",
+    "Dominion Facility Interconnection Requirements apply; site is in Dominion territory and subject to GS-5 rate class per SCC data-center fact sheet (synthetic scenario; URL shape from SOURCES.md, record not live-fetched)."
+  ],
+  "permitRisk": "medium",
+  "siteControlEvidence": true,
+  "sourceRefs": [
+    {
+      "label": "FEMA National Flood Hazard Layer",
+      "url": "https://www.fema.gov/flood-maps/national-flood-hazard-layer"
+    },
+    {
+      "label": "VA DEQ Issued Air Permits for Data Centers",
+      "url": "https://www.deq.virginia.gov/news-info/shortcuts/permits/air/issued-air-permits-for-data-centers"
+    },
+    {
+      "label": "Loudoun County GIS (LOGIS)",
+      "url": "https://logis.loudoun.gov/"
+    },
+    {
+      "label": "Dominion Facility Interconnection Requirements",
+      "url": "https://www.dominionenergy.com/-/media/content/large-business-services/pdfs/virginia/facility-interconnection-requirements.pdf"
+    },
+    {
+      "label": "VA SCC Data Center Initiatives Fact Sheet",
+      "url": "https://www.scc.virginia.gov/media/sccvirginiagov-home/about-the-scc/fact-sheets/scc-data-center-initiatives-02-2026.pdf"
+    }
+  ],
+  "zoningRisk": "medium"
+}

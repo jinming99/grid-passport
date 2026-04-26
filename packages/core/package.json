@@ -1,0 +1,29 @@
+{
+  "name": "@grid-passport/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./src/types.ts",
+    "./policy": "./src/policy.ts",
+    "./projection": "./src/projection.ts",
+    "./forecast": "./src/forecast.ts",
+    "./learning": "./src/learning.ts",
+    "./audit": "./src/audit.ts",
+    "./bundle": "./src/bundle.ts",
+    "./crypto": "./src/crypto.ts",
+    "./ask-reasons": "./src/ask-reasons.ts",
+    "./fixtures": "./src/fixtures/index.ts",
+    "./geo/synthetic": "./src/geo/synthetic.ts",
+    "./geo/types": "./src/geo/types.ts"
+  },
+  "scripts": {
+    "test": "tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^3.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0"
+  }
+}

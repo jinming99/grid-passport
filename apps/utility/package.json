@@ -1,0 +1,38 @@
+{
+  "name": "@grid-passport/utility",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Grid Passport — utility-side verifier + viewer (receives signed disclosure bundles from applicants)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "canary": "tsx scripts/canary-utility.ts",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "@grid-passport/core": "workspace:*",
+    "@grid-passport/verifier": "workspace:*",
+    "recharts": "^2.15.0",
+    "@tauri-apps/api": "^2.1.1",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@noble/ed25519": "^3.1.0",
+    "@tauri-apps/cli": "^2.1.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "vite": "^7.0.0"
+  }
+}

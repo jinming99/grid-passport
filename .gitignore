@@ -1,0 +1,44 @@
+node_modules
+.next
+dist
+out
+.vite
+target
+*.log
+pnpm-debug.log*
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+.DS_Store
+.turbo
+coverage
+
+# python
+__pycache__
+*.pyc
+.venv
+.pytest_cache
+.ruff_cache
+
+.vercel
+.idea
+.vscode
+
+# tauri / desktop local build artifacts
+src-tauri/target
+src-tauri/gen
+
+# personal notes / session-planning scratch not part of the product
+docs/human_inputs/
+
+# claude code: ship project-shared config (skills/, agents/, commands/, settings.json);
+# keep per-user local state out. Update the allowlist if we add new shared subdirs.
+.claude/*
+!.claude/skills/
+!.claude/skills/**
+!.claude/agents/
+!.claude/agents/**
+!.claude/commands/
+!.claude/commands/**
+!.claude/settings.json

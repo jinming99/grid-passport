@@ -1,0 +1,1069 @@
+{
+  "schema": "grid-passport/bundle",
+  "version": "1.0.0",
+  "payload": {
+    "bundleId": "bundle_01KQ46JJT9F6SGZSCBBHPWPJZF",
+    "caseId": "",
+    "requestId": "",
+    "issuedAt": "2026-04-26T06:10:37.001Z",
+    "validUntil": null,
+    "issuer": {
+      "publicKey": "AaxOUopxV1DD3f7rS4sGBN8XiPUdlNQFU+n1EYZpRzI=",
+      "keyId": "e742bda225a7946f",
+      "label": "Thunderhead Labs"
+    },
+    "policyHash": {
+      "rego": "sha256:unknown-desktop-v0",
+      "runtime": "sha256:6d232c5bdacba4927b954b3a8c1b108470d5cb8defa3bb4c2780f4df47d6198e"
+    },
+    "policyVersion": "grid-passport-policy@0.1.0",
+    "projections": {
+      "applicant": {
+        "role": "applicant",
+        "caseId": "",
+        "requestId": "",
+        "policyVersion": "grid-passport-policy@0.1.0",
+        "header": {
+          "applicantOrg": {
+            "path": "request.applicantOrg",
+            "label": "Applicant",
+            "class": "public",
+            "visible": true,
+            "value": "Thunderhead Labs",
+            "redactionReason": ""
+          },
+          "requestedMW": {
+            "path": "request.requestedMW",
+            "label": "Requested capacity (MW)",
+            "class": "public",
+            "visible": true,
+            "value": 320,
+            "redactionReason": ""
+          },
+          "targetCOD": {
+            "path": "request.targetCOD",
+            "label": "Target COD",
+            "class": "public",
+            "visible": true,
+            "value": "2029-01-01",
+            "redactionReason": ""
+          },
+          "phases": {
+            "path": "request.phases",
+            "label": "Build phases",
+            "class": "public",
+            "visible": true,
+            "value": 2,
+            "redactionReason": ""
+          },
+          "site": {
+            "path": "request.site",
+            "label": "Site",
+            "class": "public",
+            "visible": true,
+            "value": {
+              "state": "VA",
+              "county": "Henrico",
+              "parcelId": "thunderhead-e1",
+              "displayName": "Thunderhead Labs Campus — Henrico, VA"
+            },
+            "redactionReason": ""
+          },
+          "customerContact": {
+            "path": "request.customerContact",
+            "label": "Customer contact",
+            "class": "public",
+            "visible": true,
+            "value": {
+              "name": "",
+              "email": ""
+            },
+            "redactionReason": ""
+          },
+          "loadType": {
+            "path": "request.loadType",
+            "label": "Load type",
+            "class": "public",
+            "visible": true,
+            "value": "data_center",
+            "redactionReason": ""
+          },
+          "connectionVoltageKV": {
+            "path": "request.connectionVoltageKV",
+            "label": "Connection voltage (kV)",
+            "class": "public",
+            "visible": true,
+            "value": 0,
+            "redactionReason": ""
+          },
+          "netMetered": {
+            "path": "request.netMetered",
+            "label": "Net-metered",
+            "class": "public",
+            "visible": true,
+            "value": false,
+            "redactionReason": ""
+          }
+        },
+        "privateProfile": {
+          "flexPercent": {
+            "path": "private.flexPercent",
+            "label": "% deferrable workload",
+            "class": "private",
+            "visible": true,
+            "value": 36,
+            "redactionReason": ""
+          },
+          "redundancyShiftPercent": {
+            "path": "private.redundancyShiftPercent",
+            "label": "% shiftable to redundant sites",
+            "class": "private",
+            "visible": true,
+            "value": 30,
+            "redactionReason": ""
+          },
+          "backupGenHours": {
+            "path": "private.backupGenHours",
+            "label": "Backup generation (hours)",
+            "class": "private",
+            "visible": true,
+            "value": 8,
+            "redactionReason": ""
+          },
+          "backupGenMW": {
+            "path": "private.backupGenMW",
+            "label": "Backup generation (MW)",
+            "class": "private",
+            "visible": true,
+            "value": 240,
+            "redactionReason": ""
+          },
+          "bessMW": {
+            "path": "private.bessMW",
+            "label": "BESS capacity (MW)",
+            "class": "private",
+            "visible": true,
+            "value": 48,
+            "redactionReason": ""
+          },
+          "bessHours": {
+            "path": "private.bessHours",
+            "label": "BESS duration (hours)",
+            "class": "private",
+            "visible": true,
+            "value": 4,
+            "redactionReason": ""
+          },
+          "internalScheduleConfidence": {
+            "path": "private.internalScheduleConfidence",
+            "label": "Internal schedule confidence",
+            "class": "private",
+            "visible": true,
+            "value": 0.83,
+            "redactionReason": ""
+          },
+          "workloadMix": {
+            "path": "private.workloadMix",
+            "label": "Workload mix",
+            "class": "private",
+            "visible": true,
+            "value": {
+              "training": 0.7,
+              "inference": 0.3
+            },
+            "redactionReason": ""
+          },
+          "forwardOperationalWindows": {
+            "path": "private.forwardOperationalWindows",
+            "label": "Forward operational windows",
+            "class": "private",
+            "visible": true,
+            "value": [],
+            "redactionReason": ""
+          },
+          "flexibilityEnvelope": {
+            "path": "private.flexibilityEnvelope",
+            "label": "Flexibility envelope",
+            "class": "private",
+            "visible": true,
+            "value": {
+              "maxShedMW": 0,
+              "maxShedDurationMin": 0,
+              "rampRateMW_per_min": 0,
+              "noticeRequiredMin": 0,
+              "callsPerWeek": 0
+            },
+            "redactionReason": ""
+          },
+          "backupGenProfile": {
+            "path": "private.backupGenProfile",
+            "label": "Backup-gen behavior profile",
+            "class": "private",
+            "visible": true,
+            "value": {
+              "transitionTimeSec": 0,
+              "capacityMW": 0,
+              "autoTriggerThresholdMW": 0,
+              "plannedTestWindows": []
+            },
+            "redactionReason": ""
+          },
+          "failureModeProfile": {
+            "path": "private.failureModeProfile",
+            "label": "Failure-mode profile",
+            "class": "private",
+            "visible": true,
+            "value": {
+              "redundancyClass": "TierIII",
+              "P_dropGT100MW_24h": 0,
+              "P_dropGT500MW_24h": 0
+            },
+            "redactionReason": ""
+          }
+        },
+        "publicEvidence": {
+          "floodRisk": {
+            "path": "public.floodRisk",
+            "label": "Flood risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "permitRisk": {
+            "path": "public.permitRisk",
+            "label": "Permit risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "zoningRisk": {
+            "path": "public.zoningRisk",
+            "label": "Zoning risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "siteControlEvidence": {
+            "path": "public.siteControlEvidence",
+            "label": "Site control evidence",
+            "class": "public",
+            "visible": true,
+            "value": false,
+            "redactionReason": ""
+          },
+          "sourceRefs": {
+            "path": "public.sourceRefs",
+            "label": "Sources",
+            "class": "public",
+            "visible": true,
+            "value": [],
+            "redactionReason": ""
+          },
+          "notes": {
+            "path": "public.notes",
+            "label": "Evidence notes",
+            "class": "public",
+            "visible": true,
+            "value": [],
+            "redactionReason": ""
+          }
+        },
+        "derivedProof": {
+          "firmnessScore": {
+            "path": "derived.firmnessScore",
+            "label": "Firmness score",
+            "class": "derived",
+            "visible": true,
+            "value": 70,
+            "redactionReason": ""
+          },
+          "expectedPeakMW": {
+            "path": "derived.expectedPeakMW",
+            "label": "Expected peak band (MW)",
+            "class": "derived",
+            "visible": true,
+            "value": [
+              192,
+              256
+            ],
+            "redactionReason": ""
+          },
+          "flexibilityPassport": {
+            "path": "derived.flexibilityPassport",
+            "label": "Flexibility passport",
+            "class": "derived",
+            "visible": true,
+            "value": {
+              "mwMin": 64,
+              "mwMax": 128,
+              "durationHoursMin": 4,
+              "durationHoursMax": 8,
+              "responseClass": "B"
+            },
+            "redactionReason": ""
+          },
+          "siteReadinessClass": {
+            "path": "derived.siteReadinessClass",
+            "label": "Site readiness",
+            "class": "derived",
+            "visible": true,
+            "value": "red",
+            "redactionReason": ""
+          },
+          "energizationBand": {
+            "path": "derived.energizationBand",
+            "label": "Earliest energization band",
+            "class": "derived",
+            "visible": true,
+            "value": "Q4 2028 – Q4 2029",
+            "redactionReason": ""
+          },
+          "costExposureClass": {
+            "path": "derived.costExposureClass",
+            "label": "Cost exposure class",
+            "class": "derived",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "topBlockers": {
+            "path": "derived.topBlockers",
+            "label": "Top blockers",
+            "class": "derived",
+            "visible": true,
+            "value": [
+              "Site control evidence not yet on file"
+            ],
+            "redactionReason": ""
+          }
+        },
+        "stats": {
+          "hiddenCount": 0,
+          "visibleCount": 34,
+          "totalClassified": 34,
+          "releasedProofCount": 7
+        }
+      },
+      "utility": {
+        "role": "utility",
+        "caseId": "",
+        "requestId": "",
+        "policyVersion": "grid-passport-policy@0.1.0",
+        "header": {
+          "applicantOrg": {
+            "path": "request.applicantOrg",
+            "label": "Applicant",
+            "class": "public",
+            "visible": true,
+            "value": "Thunderhead Labs",
+            "redactionReason": ""
+          },
+          "requestedMW": {
+            "path": "request.requestedMW",
+            "label": "Requested capacity (MW)",
+            "class": "public",
+            "visible": true,
+            "value": 320,
+            "redactionReason": ""
+          },
+          "targetCOD": {
+            "path": "request.targetCOD",
+            "label": "Target COD",
+            "class": "public",
+            "visible": true,
+            "value": "2029-01-01",
+            "redactionReason": ""
+          },
+          "phases": {
+            "path": "request.phases",
+            "label": "Build phases",
+            "class": "public",
+            "visible": true,
+            "value": 2,
+            "redactionReason": ""
+          },
+          "site": {
+            "path": "request.site",
+            "label": "Site",
+            "class": "public",
+            "visible": true,
+            "value": {
+              "state": "VA",
+              "county": "Henrico",
+              "parcelId": "thunderhead-e1",
+              "displayName": "Thunderhead Labs Campus — Henrico, VA"
+            },
+            "redactionReason": ""
+          },
+          "customerContact": {
+            "path": "request.customerContact",
+            "label": "Customer contact",
+            "class": "public",
+            "visible": true,
+            "value": {
+              "name": "",
+              "email": ""
+            },
+            "redactionReason": ""
+          },
+          "loadType": {
+            "path": "request.loadType",
+            "label": "Load type",
+            "class": "public",
+            "visible": true,
+            "value": "data_center",
+            "redactionReason": ""
+          },
+          "connectionVoltageKV": {
+            "path": "request.connectionVoltageKV",
+            "label": "Connection voltage (kV)",
+            "class": "public",
+            "visible": true,
+            "value": 0,
+            "redactionReason": ""
+          },
+          "netMetered": {
+            "path": "request.netMetered",
+            "label": "Net-metered",
+            "class": "public",
+            "visible": true,
+            "value": false,
+            "redactionReason": ""
+          }
+        },
+        "privateProfile": {
+          "flexPercent": {
+            "path": "private.flexPercent",
+            "label": "% deferrable workload",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw flex % is sealed. Utility sees the derived flexibility passport."
+          },
+          "redundancyShiftPercent": {
+            "path": "private.redundancyShiftPercent",
+            "label": "% shiftable to redundant sites",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw redundancy ratio is sealed; feeds derived proofs only."
+          },
+          "backupGenHours": {
+            "path": "private.backupGenHours",
+            "label": "Backup generation (hours)",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Backup detail feeds derived proofs only."
+          },
+          "backupGenMW": {
+            "path": "private.backupGenMW",
+            "label": "Backup generation (MW)",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Backup detail feeds derived proofs only."
+          },
+          "bessMW": {
+            "path": "private.bessMW",
+            "label": "BESS capacity (MW)",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "BESS detail feeds derived proofs only."
+          },
+          "bessHours": {
+            "path": "private.bessHours",
+            "label": "BESS duration (hours)",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "BESS detail feeds derived proofs only."
+          },
+          "internalScheduleConfidence": {
+            "path": "private.internalScheduleConfidence",
+            "label": "Internal schedule confidence",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Roadmap confidence stays sealed; utility receives a firmness score instead."
+          },
+          "workloadMix": {
+            "path": "private.workloadMix",
+            "label": "Workload mix",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Training/inference mix is sealed."
+          },
+          "forwardOperationalWindows": {
+            "path": "private.forwardOperationalWindows",
+            "label": "Forward operational windows",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw windows (workload type, duty cycle, repeat pattern) are sealed. Utility receives derived MW bands via the forecaster."
+          },
+          "flexibilityEnvelope": {
+            "path": "private.flexibilityEnvelope",
+            "label": "Flexibility envelope",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw flexibility envelope is sealed. Utility receives derived flex-program-eligible bands."
+          },
+          "backupGenProfile": {
+            "path": "private.backupGenProfile",
+            "label": "Backup-gen behavior profile",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw backup-gen profile (auto-trigger thresholds) is sealed. Utility receives transition-time + planned-test-window bands."
+          },
+          "failureModeProfile": {
+            "path": "private.failureModeProfile",
+            "label": "Failure-mode profile",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw failure-mode profile (redundancy class, drop probabilities) is sealed. Utility receives derived drop-risk envelope."
+          }
+        },
+        "publicEvidence": {
+          "floodRisk": {
+            "path": "public.floodRisk",
+            "label": "Flood risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "permitRisk": {
+            "path": "public.permitRisk",
+            "label": "Permit risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "zoningRisk": {
+            "path": "public.zoningRisk",
+            "label": "Zoning risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "siteControlEvidence": {
+            "path": "public.siteControlEvidence",
+            "label": "Site control evidence",
+            "class": "public",
+            "visible": true,
+            "value": false,
+            "redactionReason": ""
+          },
+          "sourceRefs": {
+            "path": "public.sourceRefs",
+            "label": "Sources",
+            "class": "public",
+            "visible": true,
+            "value": [],
+            "redactionReason": ""
+          },
+          "notes": {
+            "path": "public.notes",
+            "label": "Evidence notes",
+            "class": "public",
+            "visible": true,
+            "value": [],
+            "redactionReason": ""
+          }
+        },
+        "derivedProof": {
+          "firmnessScore": {
+            "path": "derived.firmnessScore",
+            "label": "Firmness score",
+            "class": "derived",
+            "visible": true,
+            "value": 70,
+            "redactionReason": ""
+          },
+          "expectedPeakMW": {
+            "path": "derived.expectedPeakMW",
+            "label": "Expected peak band (MW)",
+            "class": "derived",
+            "visible": true,
+            "value": [
+              192,
+              256
+            ],
+            "redactionReason": ""
+          },
+          "flexibilityPassport": {
+            "path": "derived.flexibilityPassport",
+            "label": "Flexibility passport",
+            "class": "derived",
+            "visible": true,
+            "value": {
+              "mwMin": 64,
+              "mwMax": 128,
+              "durationHoursMin": 4,
+              "durationHoursMax": 8,
+              "responseClass": "B"
+            },
+            "redactionReason": ""
+          },
+          "siteReadinessClass": {
+            "path": "derived.siteReadinessClass",
+            "label": "Site readiness",
+            "class": "derived",
+            "visible": true,
+            "value": "red",
+            "redactionReason": ""
+          },
+          "energizationBand": {
+            "path": "derived.energizationBand",
+            "label": "Earliest energization band",
+            "class": "derived",
+            "visible": true,
+            "value": "Q4 2028 – Q4 2029",
+            "redactionReason": ""
+          },
+          "costExposureClass": {
+            "path": "derived.costExposureClass",
+            "label": "Cost exposure class",
+            "class": "derived",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "topBlockers": {
+            "path": "derived.topBlockers",
+            "label": "Top blockers",
+            "class": "derived",
+            "visible": true,
+            "value": [
+              "Site control evidence not yet on file"
+            ],
+            "redactionReason": ""
+          }
+        },
+        "stats": {
+          "hiddenCount": 12,
+          "visibleCount": 22,
+          "totalClassified": 34,
+          "releasedProofCount": 7
+        }
+      },
+      "regulator": {
+        "role": "regulator",
+        "caseId": "",
+        "requestId": "",
+        "policyVersion": "grid-passport-policy@0.1.0",
+        "header": {
+          "applicantOrg": {
+            "path": "request.applicantOrg",
+            "label": "Applicant",
+            "class": "public",
+            "visible": true,
+            "value": "Thunderhead Labs",
+            "redactionReason": ""
+          },
+          "requestedMW": {
+            "path": "request.requestedMW",
+            "label": "Requested capacity (MW)",
+            "class": "public",
+            "visible": true,
+            "value": 320,
+            "redactionReason": ""
+          },
+          "targetCOD": {
+            "path": "request.targetCOD",
+            "label": "Target COD",
+            "class": "public",
+            "visible": true,
+            "value": "2029-01-01",
+            "redactionReason": ""
+          },
+          "phases": {
+            "path": "request.phases",
+            "label": "Build phases",
+            "class": "public",
+            "visible": true,
+            "value": 2,
+            "redactionReason": ""
+          },
+          "site": {
+            "path": "request.site",
+            "label": "Site",
+            "class": "public",
+            "visible": true,
+            "value": {
+              "state": "VA",
+              "county": "Henrico",
+              "parcelId": "thunderhead-e1",
+              "displayName": "Thunderhead Labs Campus — Henrico, VA"
+            },
+            "redactionReason": ""
+          },
+          "customerContact": {
+            "path": "request.customerContact",
+            "label": "Customer contact",
+            "class": "public",
+            "visible": true,
+            "value": {
+              "name": "",
+              "email": ""
+            },
+            "redactionReason": ""
+          },
+          "loadType": {
+            "path": "request.loadType",
+            "label": "Load type",
+            "class": "public",
+            "visible": true,
+            "value": "data_center",
+            "redactionReason": ""
+          },
+          "connectionVoltageKV": {
+            "path": "request.connectionVoltageKV",
+            "label": "Connection voltage (kV)",
+            "class": "public",
+            "visible": true,
+            "value": 0,
+            "redactionReason": ""
+          },
+          "netMetered": {
+            "path": "request.netMetered",
+            "label": "Net-metered",
+            "class": "public",
+            "visible": true,
+            "value": false,
+            "redactionReason": ""
+          }
+        },
+        "privateProfile": {
+          "flexPercent": {
+            "path": "private.flexPercent",
+            "label": "% deferrable workload",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw flex % is sealed. Utility sees the derived flexibility passport."
+          },
+          "redundancyShiftPercent": {
+            "path": "private.redundancyShiftPercent",
+            "label": "% shiftable to redundant sites",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw redundancy ratio is sealed; feeds derived proofs only."
+          },
+          "backupGenHours": {
+            "path": "private.backupGenHours",
+            "label": "Backup generation (hours)",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Backup detail feeds derived proofs only."
+          },
+          "backupGenMW": {
+            "path": "private.backupGenMW",
+            "label": "Backup generation (MW)",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Backup detail feeds derived proofs only."
+          },
+          "bessMW": {
+            "path": "private.bessMW",
+            "label": "BESS capacity (MW)",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "BESS detail feeds derived proofs only."
+          },
+          "bessHours": {
+            "path": "private.bessHours",
+            "label": "BESS duration (hours)",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "BESS detail feeds derived proofs only."
+          },
+          "internalScheduleConfidence": {
+            "path": "private.internalScheduleConfidence",
+            "label": "Internal schedule confidence",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Roadmap confidence stays sealed; utility receives a firmness score instead."
+          },
+          "workloadMix": {
+            "path": "private.workloadMix",
+            "label": "Workload mix",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Training/inference mix is sealed."
+          },
+          "forwardOperationalWindows": {
+            "path": "private.forwardOperationalWindows",
+            "label": "Forward operational windows",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw windows (workload type, duty cycle, repeat pattern) are sealed. Utility receives derived MW bands via the forecaster."
+          },
+          "flexibilityEnvelope": {
+            "path": "private.flexibilityEnvelope",
+            "label": "Flexibility envelope",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw flexibility envelope is sealed. Utility receives derived flex-program-eligible bands."
+          },
+          "backupGenProfile": {
+            "path": "private.backupGenProfile",
+            "label": "Backup-gen behavior profile",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw backup-gen profile (auto-trigger thresholds) is sealed. Utility receives transition-time + planned-test-window bands."
+          },
+          "failureModeProfile": {
+            "path": "private.failureModeProfile",
+            "label": "Failure-mode profile",
+            "class": "private",
+            "visible": false,
+            "value": null,
+            "redactionReason": "Raw failure-mode profile (redundancy class, drop probabilities) is sealed. Utility receives derived drop-risk envelope."
+          }
+        },
+        "publicEvidence": {
+          "floodRisk": {
+            "path": "public.floodRisk",
+            "label": "Flood risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "permitRisk": {
+            "path": "public.permitRisk",
+            "label": "Permit risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "zoningRisk": {
+            "path": "public.zoningRisk",
+            "label": "Zoning risk",
+            "class": "public",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "siteControlEvidence": {
+            "path": "public.siteControlEvidence",
+            "label": "Site control evidence",
+            "class": "public",
+            "visible": true,
+            "value": false,
+            "redactionReason": ""
+          },
+          "sourceRefs": {
+            "path": "public.sourceRefs",
+            "label": "Sources",
+            "class": "public",
+            "visible": true,
+            "value": [],
+            "redactionReason": ""
+          },
+          "notes": {
+            "path": "public.notes",
+            "label": "Evidence notes",
+            "class": "public",
+            "visible": true,
+            "value": [],
+            "redactionReason": ""
+          }
+        },
+        "derivedProof": {
+          "firmnessScore": {
+            "path": "derived.firmnessScore",
+            "label": "Firmness score",
+            "class": "derived",
+            "visible": true,
+            "value": 70,
+            "redactionReason": ""
+          },
+          "expectedPeakMW": {
+            "path": "derived.expectedPeakMW",
+            "label": "Expected peak band (MW)",
+            "class": "derived",
+            "visible": true,
+            "value": [
+              192,
+              256
+            ],
+            "redactionReason": ""
+          },
+          "flexibilityPassport": {
+            "path": "derived.flexibilityPassport",
+            "label": "Flexibility passport",
+            "class": "derived",
+            "visible": true,
+            "value": {
+              "mwMin": 64,
+              "mwMax": 128,
+              "durationHoursMin": 4,
+              "durationHoursMax": 8,
+              "responseClass": "B"
+            },
+            "redactionReason": ""
+          },
+          "siteReadinessClass": {
+            "path": "derived.siteReadinessClass",
+            "label": "Site readiness",
+            "class": "derived",
+            "visible": true,
+            "value": "red",
+            "redactionReason": ""
+          },
+          "energizationBand": {
+            "path": "derived.energizationBand",
+            "label": "Earliest energization band",
+            "class": "derived",
+            "visible": true,
+            "value": "Q4 2028 – Q4 2029",
+            "redactionReason": ""
+          },
+          "costExposureClass": {
+            "path": "derived.costExposureClass",
+            "label": "Cost exposure class",
+            "class": "derived",
+            "visible": true,
+            "value": "low",
+            "redactionReason": ""
+          },
+          "topBlockers": {
+            "path": "derived.topBlockers",
+            "label": "Top blockers",
+            "class": "derived",
+            "visible": true,
+            "value": [
+              "Site control evidence not yet on file"
+            ],
+            "redactionReason": ""
+          }
+        },
+        "stats": {
+          "hiddenCount": 12,
+          "visibleCount": 22,
+          "totalClassified": 34,
+          "releasedProofCount": 7
+        }
+      }
+    },
+    "auditChain": [
+      {
+        "seq": 1,
+        "id": "audit__001",
+        "timestamp": "2026-04-26T06:10:36.981Z",
+        "actor": "interviewer",
+        "action": "Structured intake submitted · 320 MW · Henrico, VA",
+        "reasonCode": "case_created",
+        "artifactHash": "f8d6cd42ddc9644d",
+        "policyVersion": "",
+        "details": {
+          "requestedMW": 320,
+          "phases": 2,
+          "targetCOD": "2029-01-01"
+        },
+        "prevHash": null
+      },
+      {
+        "seq": 2,
+        "id": "audit__002",
+        "timestamp": "2026-04-26T06:52:36.981Z",
+        "actor": "cartographer",
+        "action": "Public evidence refreshed · 0 sources",
+        "reasonCode": "evidence_refreshed",
+        "artifactHash": "356e81df185dd657",
+        "policyVersion": "",
+        "details": {
+          "sourceCount": 0,
+          "floodRisk": "low",
+          "permitRisk": "low"
+        },
+        "prevHash": "sha256:8aed1d67d65eebf4f700e189910b6100952c996e6f75de35d2b9d6aa3f132532"
+      },
+      {
+        "seq": 3,
+        "id": "audit__003",
+        "timestamp": "2026-04-26T08:13:36.981Z",
+        "actor": "notary",
+        "action": "Private profile sealed into confidential path",
+        "reasonCode": "sealed_raw_input",
+        "artifactHash": "c95b02f17c5ffc90",
+        "policyVersion": "",
+        "details": {
+          "sealedFieldCount": 8
+        },
+        "prevHash": "sha256:dd7936d5cd9be3b0b4095467c06bc153fb3f15433d2dd1f9fcae7c748e9c2b23"
+      },
+      {
+        "seq": 4,
+        "id": "audit__004",
+        "timestamp": "2026-04-26T09:16:36.981Z",
+        "actor": "forecaster",
+        "action": "Derived proofs generated · firmness 70",
+        "reasonCode": "proof_generated",
+        "artifactHash": "28c46f38cc8d794b",
+        "policyVersion": "grid-passport-policy@0.1.0",
+        "details": {
+          "firmnessScore": 70,
+          "energizationBand": "Q4 2028 – Q4 2029"
+        },
+        "prevHash": "sha256:840bc7c73e2c96bf748cfeb47d188696a074b27b670e1c760eed3c6f6180674d"
+      },
+      {
+        "seq": 5,
+        "id": "audit__005",
+        "timestamp": "2026-04-26T10:14:36.981Z",
+        "actor": "referee",
+        "action": "Release policy evaluated · projection for utility",
+        "reasonCode": "policy_evaluated",
+        "artifactHash": "2ce087a40041ab0c",
+        "policyVersion": "grid-passport-policy@0.1.0",
+        "details": {
+          "role": "utility"
+        },
+        "prevHash": "sha256:88197779c09cc3c810fd07376b21c224704c4910722c435f59546383e5165a22"
+      },
+      {
+        "seq": 6,
+        "id": "audit__006",
+        "timestamp": "2026-04-26T06:10:37.001Z",
+        "actor": "referee",
+        "action": "Role projection rendered · utility",
+        "reasonCode": "role_projection",
+        "artifactHash": "f0a947fafd583a17",
+        "policyVersion": "grid-passport-policy@0.1.0",
+        "details": {
+          "role": "utility"
+        },
+        "prevHash": "sha256:b8e0810eba6eff45a1c19ba41db8211a2eaa1aeab385d03f955811ab14896b13"
+      }
+    ]
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "8eHx6V6JT9Dt2awCp36G3geByOzuepoOVd2CMMMw5xswS95yFg18jr2WTrB7rwHle9OZSexeFRhTTiiERNH8DQ=="
+  }
+}
