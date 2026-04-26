@@ -14,6 +14,13 @@ export const lanternCloud: CaseInput = {
   targetCOD: "2028-04-01",
   phases: 1,
   status: "submitted",
+  customerContact: {
+    name: "Theo Park",
+    email: "theo.park@lanterncloud.example",
+  },
+  loadType: "data_center",
+  connectionVoltageKV: 138,
+  netMetered: false,
   privateProfile: {
     flexPercent: 9,
     redundancyShiftPercent: 4,

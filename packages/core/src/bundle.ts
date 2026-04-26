@@ -21,6 +21,41 @@ export const BUNDLE_SCHEMA = "grid-passport/bundle" as const;
 export const BUNDLE_VERSION = "1.0.0" as const;
 export const SIGNATURE_ALG = "Ed25519" as const;
 
+/**
+ * Bundle kinds.
+ *
+ *  - "disclosure"     — applicant → utility. Carries projections + audit
+ *                       chain. The Act 2 export. (Default for v1.0.0
+ *                       bundles that omit `kind`, for backward compat.)
+ *  - "shed_request"   — utility → applicant. A signed demand-response
+ *                       request. No projections (utility never holds raw
+ *                       privateProfile); just the request fields.
+ *  - "acknowledgment" — applicant → utility. References the shed-request
+ *                       by bundleId, captures accept/decline + committed
+ *                       MW. Closes the loop.
+ */
+export type BundleKind = "disclosure" | "shed_request" | "acknowledgment";
+
+export interface ShedRequestPayload {
+  pocket: string;            // e.g. "Loudoun-North"
+  windowStart: string;       // ISO 8601
+  windowEnd: string;         // ISO 8601
+  totalShedMW: number;       // utility's full ask across the pocket
+  recipientCaseId: string;   // which DC this allocation lands on
+  recipientAllocationMW: number;
+  noticeRequiredMin: number;
+  creditUsd: number;
+  notes?: string;
+}
+
+export interface AcknowledgmentPayload {
+  shedRequestBundleId: string;   // the bundleId being ack'd
+  shedRequestHash: string;       // sha256 of JCS(shed-request payload), keeps the link tamper-evident
+  accepted: boolean;             // true = will deliver; false = decline
+  committedMW: number;           // typically === recipientAllocationMW; can be lower if accepted-with-reduction (v0: equal or zero)
+  notes?: string;
+}
+
 export interface BundleIssuer {
   publicKey: string;    // base64 of 32-byte Ed25519 public key
   keyId: string;        // first 16 hex chars of SHA-256(publicKey bytes)
@@ -43,6 +78,14 @@ export interface BundlePayload {
   policyVersion: string;
   projections: Record<Role, ProjectedView>;
   auditChain: AuditEvent[];
+  // Bundle kind discriminator — added in v1.1 of the bundle spec to
+  // support utility→applicant `shed_request` and applicant→utility
+  // `acknowledgment` flows alongside the original applicant→utility
+  // `disclosure` flow. Optional for backward compat: bundles that omit
+  // `kind` are treated as `disclosure` and verify identically.
+  kind?: BundleKind;
+  shedRequest?: ShedRequestPayload;
+  acknowledgment?: AcknowledgmentPayload;
 }
 
 export interface BundleSignature {
@@ -105,8 +148,17 @@ export interface BuildBundleInput {
   issuerLabel: string;
   policyHash: PolicyHash;
   policyVersion: string;
-  projections: Record<Role, ProjectedView>;
-  auditChain: AuditEvent[];
+  // For `kind: "disclosure"` (the original applicant→utility path), both
+  // are required and carry the case projection + audit chain. For
+  // `kind: "shed_request"` and `kind: "acknowledgment"` (utility-side and
+  // applicant-side coordination messages), neither is meaningful — the
+  // utility never holds raw projections, and the message itself is the
+  // payload. signBundle defaults both to empty values when absent.
+  projections?: Record<Role, ProjectedView>;
+  auditChain?: AuditEvent[];
+  kind?: BundleKind;
+  shedRequest?: ShedRequestPayload;
+  acknowledgment?: AcknowledgmentPayload;
 }
 
 export async function signBundle(
@@ -129,8 +181,11 @@ export async function signBundle(
     },
     policyHash: input.policyHash,
     policyVersion: input.policyVersion,
-    projections: input.projections,
-    auditChain: input.auditChain,
+    projections: input.projections ?? ({} as Record<Role, ProjectedView>),
+    auditChain: input.auditChain ?? [],
+    ...(input.kind !== undefined ? { kind: input.kind } : {}),
+    ...(input.shedRequest !== undefined ? { shedRequest: input.shedRequest } : {}),
+    ...(input.acknowledgment !== undefined ? { acknowledgment: input.acknowledgment } : {}),
   };
 
   const canonical = new TextEncoder().encode(jcs(payload));
@@ -150,6 +205,15 @@ export async function signBundle(
       value: bytesToBase64(signature),
     },
   };
+}
+
+/**
+ * Compute the canonical hash of a payload — used by acknowledgments to
+ * tamper-evidently reference the shed-request they're acking. Output is
+ * `"sha256:<64-hex>"` to match the rest of the spec's hash format.
+ */
+export async function payloadHash<T>(payload: T): Promise<string> {
+  return `sha256:${await sha256Hex(jcs(payload))}`;
 }
 
 // --------------------------------------------------------------------

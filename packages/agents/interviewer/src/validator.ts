@@ -99,6 +99,56 @@ export function validateInterviewerOutput(raw: unknown): CaseInput {
   requireString(site, "parcelId", "site");
   requireString(site, "displayName", "site");
 
+  // Baseline-filing fields (ERCOT-precedent additions, all public class).
+  // These land progressively across Rounds 2 of the chat. The validator
+  // accepts a hand-off where any of these are missing or null — the
+  // transport synthesizes defaults so the runtime always has a structurally
+  // complete CaseInput. If present, shape must be valid (typed correctly)
+  // so a malformed value isn't silently accepted.
+  if ("customerContact" in r && r.customerContact !== null && r.customerContact !== undefined) {
+    if (typeof r.customerContact !== "object" || Array.isArray(r.customerContact)) {
+      throw new InterviewerContractViolation(
+        "root.customerContact, if present, must be an object with { name, email, phone? }",
+      );
+    }
+    const contact = r.customerContact as Record<string, unknown>;
+    requireString(contact, "name", "customerContact");
+    requireString(contact, "email", "customerContact");
+    if ("phone" in contact && contact.phone !== undefined && contact.phone !== null) {
+      requireString(contact, "phone", "customerContact");
+    }
+  }
+  if ("loadType" in r && r.loadType !== null && r.loadType !== undefined) {
+    const loadType = r.loadType;
+    if (
+      loadType !== "data_center" &&
+      loadType !== "industrial" &&
+      loadType !== "manufacturing" &&
+      loadType !== "other"
+    ) {
+      throw new InterviewerContractViolation(
+        `loadType, if present, must be one of "data_center" | "industrial" | "manufacturing" | "other" (got ${JSON.stringify(loadType)})`,
+      );
+    }
+  }
+  if ("connectionVoltageKV" in r && r.connectionVoltageKV !== null && r.connectionVoltageKV !== undefined) {
+    if (typeof r.connectionVoltageKV !== "number" || !Number.isFinite(r.connectionVoltageKV)) {
+      throw new InterviewerContractViolation(
+        "root.connectionVoltageKV, if present, must be a finite number",
+      );
+    }
+  }
+  if ("netMetered" in r && r.netMetered !== null && r.netMetered !== undefined) {
+    if (typeof r.netMetered !== "boolean") {
+      throw new InterviewerContractViolation(
+        "root.netMetered, if present, must be a boolean",
+      );
+    }
+    if (r.netMetered === true && "nettedGenerationStation" in r && r.nettedGenerationStation !== undefined && r.nettedGenerationStation !== null) {
+      requireString(r, "nettedGenerationStation", "root");
+    }
+  }
+
   const pp = requireObject(r, "privateProfile", "root");
   const numericPrivateKeys = [
     "flexPercent",

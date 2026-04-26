@@ -1,83 +1,89 @@
 # Example — Owl Compute intake
 
-Canonical worked example. Hyperscaler applicant (Owl Compute), 180 MW campus in Prince William County, VA. Target COD Q4 2028, two phases. Competitively-sensitive workload mix. This transcript demonstrates **the sensitive-bucket acknowledgment + confirmation rule** — the load-bearing move of this skill.
+Canonical worked example. Hyperscaler applicant (Owl Compute), 180 MW campus in Loudoun County, VA. Phase 1 target COD Q3 2027, two phases. Competitively-sensitive workload mix. This transcript demonstrates **natural-language voice + 4-round staging + the sensitive-bucket acknowledgment** — the load-bearing moves of this skill.
 
 Reference fixture: `packages/core/src/fixtures/owl-compute.ts`.
 
 ---
 
-**Interviewer:** Tell me about your interconnection request in your own words — where, how big, and when.
+**Interviewer:** Welcome. Tell me about the data center you're standing up — where, how big, when.
 
-**Applicant:** We're Owl Compute. Planning a 180 MW data-center campus in Prince William County, Virginia. Target COD is October 2028. Two phases.
+**Applicant:** Hey, this is Owl Compute. We're a new AI compute company spinning up our first data center campus in Loudoun County, Virginia. 180 MW total, two phases, with Phase 1 targeting Q3 2027 energization. Kicking off our interconnection process with Dominion and want to be upfront about what we're bringing online.
 
-**Interviewer:** Confirming the identity block:
+**Interviewer:** Welcome, Owl Compute. Read-back to make sure we're aligned:
 
-- `applicantOrg`: Owl Compute
-- `site.state`: VA
-- `site.county`: Prince William
-- `requestedMW`: 180
-- `targetCOD`: 2028-10-01
-- `phases`: 2
+- 180 MW data center campus, two phases
+- Loudoun County, Virginia (Dominion territory — say if I'm wrong)
+- Phase 1 energization Q3 2027
+- Kicking off interconnection with Dominion
 
-Do you have a parcel identifier for the site? If not, we can tag it provisionally and you can fill it in from the deed later.
+Five quick things to close the regulatory baseline:
 
-**Applicant:** Yes — demo-parcel-001.
+1. Person on your end I'd loop in — name and email (phone optional)?
+2. Target connection voltage? Most campuses your size land at 230 kV or 345 kV.
+3. Standalone load, or netting against on-site generation/storage?
+4. Parcel ID for the site (deed/assessor reference)? If not yet on hand we can tag provisionally.
+5. Phase 2 target energization, if you've committed to one?
 
-**Interviewer:** Got it. `site.parcelId: demo-parcel-001`. Display name "Owl Compute Campus — Prince William, VA" — okay?
+Type any order — I'll sort them out.
+
+**Applicant:** Sarah Chen, sarah.chen@owlcompute.example. 230 kV. Standalone — no on-site gen. Parcel demo-loudoun-001. Phase 2 hasn't been scheduled yet.
+
+**Interviewer:** Got it. Baseline filled:
+
+- Customer contact: Sarah Chen — sarah.chen@owlcompute.example
+- Connection voltage: 230 kV
+- Standalone (no netting)
+- Parcel: demo-loudoun-001
+- Phase 2 timing: deferred (will land in a later filing)
+
+Display name: "Owl Compute Campus — Loudoun, VA" — okay?
 
 **Applicant:** Works.
 
-**Interviewer:** Now the operational questions — backup generation and battery storage. Four numeric answers. What's your on-site generation nameplate, in MW?
+**Interviewer:** That's the regulatory baseline complete. ✓ This is the equivalent of what an ERCOT-style large-load disclosure standard would already capture today. It's a useful start — but it's also where most filings stop, and it doesn't tell the grid operator anything about how you'll actually run.
 
-**Applicant:** 140 MW.
+Next, the firm-power side. Four numbers in one go:
 
-**Interviewer:** `backupGenMW: 140`. How many hours can that carry the load?
+1. On-site generation nameplate (MW)?
+2. How many hours can that generation carry your load?
+3. Battery (BESS) nameplate (MW)?
+4. Battery duration (hours)? Typical BESS bands are 2–4h / 4–8h / 8–12h.
 
-**Applicant:** 6 hours.
+**Applicant:** 140 MW backup gen for 6 hours. Battery is 11 MW at 4 hours.
 
-**Interviewer:** `backupGenHours: 6`. Battery nameplate in MW?
+**Interviewer:** Recorded:
 
-**Applicant:** 11 MW.
+- Backup generation: 140 MW × 6 hr
+- BESS: 11 MW × 4 hr (places you in the 2–4h published band)
 
-**Interviewer:** `bessMW: 11`. Battery duration — released as a coarse band (2–4h / 4–8h / 8–12h), but I need the raw number to place you.
+Last set — four competitively-sensitive self-reports. Read the next paragraph carefully because it's the load-bearing one:
 
-**Applicant:** 4 hours.
+**Raw values stay on your machine. The utility only ever sees a derived proof. Your honest numbers produce the most accurate passport. Inflated numbers don't help you — they just commit you to capacity you can't deliver.**
 
-**Interviewer:** `bessHours: 4`. That places you in the 2–4h published band.
+1. **flex** — share of load you can shed when the grid is stressed (0–100%)?
+2. **redundancy shift** — share you can move to a redundant region (0–100%)?
+3. **schedule confidence** — how firm is your internal build schedule (0.0–1.0, typical 0.50–0.85)?
+4. **workload mix** — training % and inference %, must sum to 100%?
 
-Next: four competitively-sensitive self-reports. For each of these, the raw value stays on your machine; the utility only sees a derived proof. Your honest number produces the most accurate passport.
+**Applicant:** Is 30% flex a better number than 22%? Would that get us a faster slot in the queue?
 
-First: `flexPercent` — share of load you can shed when the grid is stressed, 0–100. What's your committed number?
+**Interviewer:** That's not a question I can answer. The number reflects what you're willing to commit to in a signed bundle — the forecaster uses it to size the flexibility passport. If the number is high and you can't deliver, that's a reputational problem later. What's your honest commit?
 
-**Applicant:** Is 30 a better number than 22? Would that get us a faster slot?
+**Applicant:** 22% flex. 12% redundancy shift. Schedule confidence — we're pretty confident, I'd say.
 
-**Interviewer:** That's not a question I can answer. The number should reflect what you're willing to commit to in a signed bundle — the forecaster uses it to size the flexibility passport. If the number is high and you can't deliver, that's a reputational problem later. What's your honest commit?
+**Interviewer:** Got 22 and 12. For schedule confidence I need a number, not a vibe — the forecaster folds it into the energization band's width and "pretty confident" doesn't do that. Anywhere on 0.0–1.0.
 
-**Applicant:** 22.
+**Applicant:** 0.68. Workload is 55 training, 45 inference.
 
-**Interviewer:** `flexPercent: 22`.
+**Interviewer:** Recorded:
 
-Next: `redundancyShiftPercent` — share you can shift to another region's site, 0–100.
+- Flex: 22%
+- Redundancy shift: 12%
+- Schedule confidence: 0.68
+- Workload mix: 55% training / 45% inference (sums to 1.00 ✓)
 
-**Applicant:** 12.
-
-**Interviewer:** `redundancyShiftPercent: 12`.
-
-`internalScheduleConfidence` on 0.0–1.0 — how firm is the build schedule internally? Typical answers are 0.50–0.85.
-
-**Applicant:** We're pretty confident, I'd say.
-
-**Interviewer:** I need a number. The forecaster folds this into the energization-band width; a vibe doesn't do that. Anywhere on 0.0–1.0.
-
-**Applicant:** 0.68.
-
-**Interviewer:** `internalScheduleConfidence: 0.68`.
-
-Last: `workloadMix`. Training share and inference share, 0.0–1.0. Sums to 1.0.
-
-**Applicant:** 0.55 training, 0.45 inference.
-
-**Interviewer:** `workloadMix: { training: 0.55, inference: 0.45 }`. Sum checks.
+Complete intake captured — 20 fields signed against your prose. Helpful — but this is also where most regulatory filings stop. Drop your operational documents (training calendar, gen-test schedule, shed-response playbook) when you're ready and we'll add the structured detail the grid operator actually needs to plan around you.
 
 ---
 
@@ -88,14 +94,21 @@ Last: `workloadMix`. Training share and inference share, 0.0–1.0. Sums to 1.0.
   "applicantOrg": "Owl Compute",
   "site": {
     "state": "VA",
-    "county": "Prince William",
-    "parcelId": "demo-parcel-001",
-    "displayName": "Owl Compute Campus — Prince William, VA"
+    "county": "Loudoun",
+    "parcelId": "demo-loudoun-001",
+    "displayName": "Owl Compute Campus — Loudoun, VA"
   },
   "requestedMW": 180,
-  "targetCOD": "2028-10-01",
+  "targetCOD": "2027-09-01",
   "phases": 2,
   "status": "draft",
+  "customerContact": {
+    "name": "Sarah Chen",
+    "email": "sarah.chen@owlcompute.example"
+  },
+  "loadType": "data_center",
+  "connectionVoltageKV": 230,
+  "netMetered": false,
   "privateProfile": {
     "flexPercent": 22,
     "redundancyShiftPercent": 12,
@@ -117,9 +130,11 @@ Review the diff; accept, edit, or send back for a specific field.
 
 ## What this example demonstrates
 
-- **Identity parsing from prose** (prose → 5 identity fields in one confirmation turn).
-- **Numbered operational confirmation** (4 explicit numeric questions; no inference).
-- **Sensitive-bucket acknowledgment** delivered verbatim before each of the 4 sensitive asks.
+- **Natural-language confirmation, not schema-name diff.** Read-back is *"Got Owl Compute — 180 MW data center campus..."* not *"applicantOrg: Owl Compute, requestedMW: 180, ..."*. Field names appear only inside questions where they ground the answer (e.g., voltage units, percent ranges).
+- **Inferred values flagged, not silently accepted.** "Loudoun (Dominion territory — say if I'm wrong)" — context-derived inferences are surfaced for the applicant to confirm, never silently committed.
+- **4-round staging.** Round 1 (identity from prose) → Round 2 (baseline gap-fill: contact + voltage + netting + parcel + Phase 2 timing) → Round 3 (firm-power numerics) → Round 4 (sensitive self-reports). Each round is one Skill turn; the applicant replies once with all answers in any order; the Skill parses them out together.
+- **Sensitive-bucket acknowledgment delivered once, at the top of Round 4.** Verbatim, not chunked into four repetitions before each question — that drift toward boilerplate would weaken the acknowledgment, not strengthen it.
 - **Non-coaching rule in action:** applicant asks "is 30 better than 22?" — skill refuses and reframes as a commitment question.
-- **Range-hint-after-answer:** skill mentions the 0.50–0.85 typical range only when the applicant offers a non-numeric answer, and even then does not propose a specific number.
+- **Vibe-rejection:** applicant says "pretty confident" for schedule confidence — skill insists on a number with the typical-range hint. Range hint never becomes a value suggestion.
 - **Write-scope discipline:** no writes to `publicEvidence` or `derivedProof`, even where they're implied by the prose.
+- **Bridge to next phase:** closing line names the doc-ingest path explicitly without overpromising what's wired today.

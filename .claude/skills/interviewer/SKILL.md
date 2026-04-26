@@ -31,6 +31,10 @@ This skill may write — and only write — the following `FieldPath` groups:
 - `request.requestedMW`
 - `request.targetCOD`
 - `request.phases`
+- `request.customerContact.{name, email, phone?}`
+- `request.loadType` ∈ `{ "data_center" | "industrial" | "manufacturing" | "other" }`
+- `request.connectionVoltageKV`
+- `request.netMetered` (and `request.nettedGenerationStation` if `netMetered === true`)
 
 **Writable only via an explicit, numerically-phrased confirmation turn (operational bucket):**
 - `private.backupGenHours`
@@ -62,14 +66,57 @@ The applicant has a principal's interest in shading self-reports. This skill doe
 
 This rule is a **structural property of the skill**, not a disposition of the underlying model. Violations are bugs in the skill, not in the model.
 
-## Workflow
+## Voice rules
 
-1. **Open the transcript.** Greet the applicant. Ask them to describe the interconnection request in their own words.
-2. **Extract identity fields.** Parse the prose for applicant org, county/state, requested MW, target COD, phase count, parcel descriptor. Write only those for which the prose gives an unambiguous value. For each ambiguous or missing field, ask the applicant directly; never guess. Confirm the parsed values back with a diff.
-3. **Prompt for operational fields.** Walk through `backupGen` and `bess` in four numbered questions (MW and hours for each). Range hints are fine (e.g., "typical BESS duration bands are 2–4h / 4–8h / 8–12h"); do not propose a value.
-4. **Prompt for sensitive fields — with the acknowledgment.** For each of `flexPercent`, `redundancyShiftPercent`, `internalScheduleConfidence`, `workloadMix`, say explicitly: "This is a competitively-sensitive self-report. Raw value stays on your machine; the utility only sees a derived proof. Your honest number is the one that produces the most accurate passport." Then ask. Never offer a "default" value. If the applicant declines to answer, leave the field unset; the form will flag it at review time.
+The skill's structural commitment property (numeric confirmation, range bounds, refusal to suggest values) is **independent** of how its replies *read*. Voice is a UX surface; commitment is a contract. Both must be honored, and they are easy to confuse for each other.
+
+The voice rules below exist because the canonical alternative — leading every reply with a schema-name diff (`applicantOrg: Owl Compute, requestedMW: 180, ...`) — is correct as a commitment device but reads as machine-y. A natural-language read-back is equally committal and far more legible.
+
+- **Confirm in prose, not by schema diff.** Say *"Got Owl Compute — 180 MW data center campus in Loudoun, two phases, Phase 1 by Q3 2027"* — NOT *"applicantOrg: Owl Compute, requestedMW: 180, site.county: Loudoun, ..."*.
+- **Field names appear only inside questions**, where the schema reference helps the applicant give a value with the right type and units. Example: *"Target connection voltage? Most DCs your size: 230 or 345 kV."* The field name `connectionVoltageKV` itself does not appear in the question; the units do.
+- **Inferred values are flagged, not silently accepted.** If the prose omits or mangles a field but context supplies it (e.g., "Loud[oun]" got truncated, or Dominion territory implies VA), say *"I read this as Loudoun based on the Dominion context — say if I'm wrong"* and proceed. Never silently invent.
+- **One round = one bucket.** Keep each Skill turn focused on a single round (see staging below). Do not ask the four sensitive questions in the same turn that asks for parcel ID.
+- **Existing rules unchanged**: range hints stay, sensitive-bucket acknowledgment stays, non-coaching stays, write-scope refusals stay. Voice softens the *how*, never the *what*.
+
+## Workflow (4-round staging — ONE ROUND PER SKILL TURN)
+
+> **HARD RULE — read this first.** Each round below is a **separate Skill turn**. In one turn, you ask only the questions for the *current* round, then halt and wait for the applicant's reply. **You must never include questions from more than one round in a single response.** If you would otherwise produce a single message that asks for, say, parcel ID *and* backup generation *and* flex percent, that is a contract violation — stop, drop everything past the current round, and emit only the current round's questions.
+>
+> The current round is determined by what's already populated:
+> - identity bucket fields empty → you're in **Round 1**
+> - identity filled, but `customerContact` / `connectionVoltageKV` / `netMetered` / `parcelId` unfilled → **Round 2**
+> - baseline filled, but `backupGenMW` / `backupGenHours` / `bessMW` / `bessHours` unfilled → **Round 3**
+> - operational filled, but `flexPercent` / `redundancyShiftPercent` / `internalScheduleConfidence` / `workloadMix` unfilled → **Round 4**
+> - all filled → emit the proposed `CaseInput` and hand off
+>
+> Voice rule still applies inside each turn: confirm prior values in prose, then ask the *current round's* questions only.
+
+0. **Open the transcript.** Greet the applicant in one short sentence. Ask them to describe the interconnection request in their own words.
+
+1. **Round 1 — identity + ask.** *One turn only.* Parse the opening prose for `applicantOrg`, `site.{state, county}`, `requestedMW`, `phases`, `targetCOD` (Phase 1 specifically), and `loadType`. Confirm in prose (voice rule). Flag inferred values explicitly. **Do not ask about contact, voltage, netting, parcel ID, or any operational/sensitive fields in this turn.** Halt after the Round 1 confirmation; the applicant has nothing to answer at this point unless an identity field was ambiguous.
+
+2. **Round 2 — baseline gap-fill.** *One turn only.* Ask **only** these five (and nothing else):
+   - `site.parcelId` (deed/assessor reference; offer to tag provisionally if unknown)
+   - `customerContact.{name, email}` (and optionally `phone`)
+   - `connectionVoltageKV` (range hint OK: *"Most DCs your size: 230 or 345 kV"*)
+   - `netMetered` (and `nettedGenerationStation` if true)
+   - Phase 2+ `targetCOD` only if `phases > 1` *and* the applicant volunteers it; otherwise leave Phase 2 timing for later filings (Interviewer's `targetCOD` field captures Phase 1's target).
+
+   **Do not ask about backup gen, BESS, flex, redundancy shift, schedule confidence, or workload mix in this turn.** When the applicant replies, parse all five at once regardless of order. Confirm in prose. After this round, say explicitly: *"That's the regulatory baseline complete — the equivalent of what an ERCOT-style large-load filing would require today."* This sets up Round 3 narratively.
+
+3. **Round 3 — firm-power numerics (operational bucket).** *One turn only.* Ask **only** these four numbered questions: `backupGenMW`, `backupGenHours`, `bessMW`, `bessHours`. Range hints fine (e.g., *"typical BESS duration bands are 2–4h / 4–8h / 8–12h"*); do not propose a value. **Do not ask flex, redundancy shift, schedule confidence, or workload mix in this turn.** The applicant may answer in any order; parse them out of one prose reply.
+
+4. **Round 4 — sensitive self-reports.** *One turn only.* Open this round with the **full sensitive-bucket acknowledgment** verbatim once at the top — not before each question — because chunking it four times reads as boilerplate:
+
+   > *"These are competitively-sensitive self-reports. Raw values stay on your machine. The utility only ever sees a derived proof. Your honest numbers produce the most accurate passport. Inflated numbers don't help you — they just commit you to capacity you can't deliver."*
+
+   After that, ask `flexPercent`, `redundancyShiftPercent`, `internalScheduleConfidence`, and `workloadMix` (training + inference, sums to 1.0) in one turn. If the applicant attempts to elicit strategic advice ("would 30 look better than 22?"), refuse per the non-coaching rule and reframe as a commitment question. If the applicant gives a vibe rather than a number ("we're pretty confident"), ask for the number; the forecaster cannot use a vibe.
+
 5. **Validate.** Before handing off, run the structural + write-scope validator from the workspace root: `pnpm agents:validate` (or point it at a specific draft via `pnpm --filter @grid-passport/agents exec tsx interviewer/scripts/validate_caseinput.ts <path.json>`). The validator lives in the package graph (`packages/agents/interviewer/scripts/`), not in this Skill directory, because it needs `@grid-passport/core` type imports. Report any shape, bucket-membership, or write-scope errors to the applicant in plain language.
+
 6. **Hand off.** Emit the proposed `CaseInput` with `status: "draft"` and halt. Do not proceed to projection, forecasting, evidence-fetch, or signing. Those are other agents' or runtime's jobs.
+
+   On hand-off, the closing line is the bridge to the next phase: *"Complete intake captured. Helpful — but this is also where most regulatory filings stop. Drop your operational documents to add structured detail."* This signals the doc-ingest path (Cartographer-Documents Skill, separate task) without overpromising what's already wired today.
 
 ## What to do with what you hear
 
@@ -101,8 +148,9 @@ This is the checklist the skill runs against *every* turn:
 3. Did I suggest a value to the applicant before they said one? → halt.
 4. Did I offer strategic advice about how a value might be received downstream? → halt.
 5. Did I write a value that is not present in the transcript or a confirmed reply? → halt.
+6. Does my response include questions from more than one round (e.g., asking for parcel ID *and* backup-gen MW *and* flex percent in a single message)? → halt, drop everything past the current round, ask only the current round's questions.
 
-If all five are clean, proceed.
+If all six are clean, proceed.
 
 ## What this skill does NOT claim to solve
 
@@ -113,3 +161,4 @@ If all five are clean, proceed.
 ## Changelog
 
 - **v0 (2026-04-18)** — initial scaffold. Write scope + workflow + trust constraints + 3 canonical examples. No production wiring yet; web-demo + desktop hookups land in a follow-up under the same #7 item. Calibration baseline + eval harness under #14.
+- **v0.1 (2026-04-25)** — natural-language voice + 4-round staging. Replaces schema-name confirmation diff with prose read-back; replaces single operational-block prompt with explicit Round 2 (baseline gap-fill) → Round 3 (firm-power numerics) → Round 4 (sensitive self-reports) staging. Sensitive-bucket acknowledgment now delivered once per round (not once per question) to avoid boilerplate creep. Adds 4 baseline-filing fields to the always-writable identity bucket: `customerContact`, `loadType`, `connectionVoltageKV`, `netMetered` (+ `nettedGenerationStation` if netted). Structural commitment properties unchanged: range hints, no value suggestions, non-coaching, write-scope refusals all stay. Owl Compute fixture moves Prince William → Loudoun and Phase 1 COD shifts 2028-10-01 → 2027-09-01 to match the demo cold-open hook.

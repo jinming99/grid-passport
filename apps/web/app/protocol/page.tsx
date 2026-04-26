@@ -159,7 +159,7 @@ export default function ProtocolPage() {
             signed disclosure bundle · v1.0.0
           </span>
           <h1 className="max-w-4xl text-4xl font-semibold leading-[1.1] tracking-tight text-neutral-50 sm:text-5xl">
-            Don't trust us.{" "}
+            Don&apos;t trust us.{" "}
             <span className="text-neutral-500">
               The protocol is verifiable with 200 lines of Python.
             </span>
@@ -168,7 +168,7 @@ export default function ProtocolPage() {
             When an applicant exports a disclosure bundle from Grid Passport,
             it carries three things: role-projected views, a hash-chained
             audit trail, and an Ed25519 signature from a key that lives only
-            on the applicant's machine. A utility with the applicant's pinned
+            on the applicant&apos;s machine. A utility with the applicant&apos;s pinned
             public key can verify the bundle independently, without running
             our code and without a network call.
           </p>

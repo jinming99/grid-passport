@@ -5,6 +5,7 @@ import { dirname } from "node:path";
 import { getCase } from "@grid-passport/core/fixtures";
 import { buildRecord } from "@grid-passport/core/forecast";
 import { projectForRole } from "@grid-passport/core/projection";
+import { PRIVATE_FIELD_COUNT } from "@grid-passport/core/policy";
 import type { Role } from "@grid-passport/core/types";
 
 // Desktop-specific mechanical check. The web privacy-canary already asserts
@@ -60,7 +61,7 @@ for (const caseId of CASES) {
     const privateVisible = Object.values(view.privateProfile).filter(
       (f) => f.visible,
     ).length;
-    const expectVisible = role === "applicant" ? 8 : 0;
+    const expectVisible = role === "applicant" ? PRIVATE_FIELD_COUNT : 0;
     if (privateVisible !== expectVisible) {
       console.error(
         `[canary:desktop] FAIL: ${caseId} · ${role} · expected ${expectVisible} private visible, got ${privateVisible}`,

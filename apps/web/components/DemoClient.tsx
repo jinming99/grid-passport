@@ -56,6 +56,12 @@ export function DemoClient({
   const isCounterfactual =
     hasBaseline && flexPercent !== null && flexPercent !== baselineFlexPercent;
 
+  /* eslint-disable react-hooks/set-state-in-effect --
+     The two effects below mirror props into local state — legitimate use:
+     switching caseId requires resetting role/view/audit/baseline, and
+     leaving counterfactual mode restores the original view. The cleaner
+     alternative is a `key` prop on the parent, which is a bigger
+     restructure than the hackathon scope warrants. */
   useEffect(() => {
     setRole(initialRole);
     setView(initialView);

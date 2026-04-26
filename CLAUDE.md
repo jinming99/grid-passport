@@ -1,5 +1,134 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## Commands
+
+Monorepo uses **pnpm 10** workspaces (Node ≥20) + **Tauri 2 / Rust** + **Python (uv)** for the FastAPI scaffold and Python eval-sim. Root `package.json` proxies the common commands:
+
+```sh
+# Web (Next.js 16) — apps/web
+pnpm dev                     # http://localhost:3000
+pnpm build
+pnpm lint                    # eslint via eslint-config-next
+pnpm typecheck               # tsc --noEmit
+pnpm privacy:canary          # structural no-raw-leakage check
+
+# Desktop + Utility Tauri binaries
+pnpm desktop:dev             # applicant app — port 1420
+pnpm utility:dev             # utility app — port 1430
+pnpm desktop:build / utility:build
+pnpm desktop:typecheck / utility:typecheck
+pnpm canary:desktop          # applicant-side invariants
+pnpm canary:utility          # structural write-scope proof (gate 15)
+pnpm desktop:test            # cargo test --lib in src-tauri
+
+# Core pure-function library + TS verifier
+pnpm core:test               # tsx --test packages/core/src/*.test.ts
+pnpm verifier:test           # tsx --test packages/verifier/src/*.test.ts + fuzz
+pnpm verifier:typecheck
+pnpm canary:bundle           # sign / verify / tamper / reject roundtrip (TS)
+pnpm canary:roundtrip        # full TS + Rust + Python roundtrip
+pnpm demo:bundle             # alias — 60-sec end-to-end demo
+
+# Agent Skills (packages/agents)
+pnpm agents:validate                  # all three grid-domain validators
+pnpm agents:validate:interviewer      # CaseInput validator
+pnpm agents:validate:cartographer     # publicEvidence validator
+pnpm agents:validate:explainer        # narration validator
+pnpm agents:typecheck
+pnpm agents:baseline[:check]          # regenerate / drift-check prompt-only baselines
+pnpm agents:metrics[:check]           # recompute / drift-check metrics.json
+
+# FastAPI scaffold (apps/api) — uses uv, not pnpm
+pnpm api:sync                # uv sync
+pnpm api:dev                 # uvicorn main:app --reload --port 8000
+
+# Python eval-sim (packages/eval-sim) — pyproject.toml; see its README for pytest + pilot scripts.
+```
+
+**Running a single TS test file** (any `packages/*`): `pnpm --filter <pkg> exec tsx --test path/to/file.test.ts`. **Running a single Rust test**: `cd apps/desktop/src-tauri && cargo test <name>`.
+
+**Canary gates are the safety net, not the test suite.** `pnpm canary:roundtrip` is the one command that exercises the full cross-language invariant (TS policy ↔ Rego ↔ Python reference verifier byte-for-byte). If you touch anything in the projection / policy / bundle / crypto path, run it. Individual canaries (`privacy:canary`, `canary:desktop`, `canary:utility`, `canary:bundle`) are faster and scope-local.
+
+---
+
+## Architecture at a glance
+
+The repo is a **two-binary, zero-server** design with a shared pure-function core and a three-way policy mirror. Read this alongside `docs/tech-overview.md`.
+
+### Monorepo layout (why, not what)
+
+- `apps/web` — Next.js 16 marketing/demo site; read-only UI over fixtures. Never touches keychain or private inputs.
+- `apps/desktop` — applicant Tauri binary. Intake → projection → signing. **May** import all of `@grid-passport/core` including `fixtures`, `forecast`, `audit`. Ed25519 private key lives in OS keychain; never crosses the Tauri IPC boundary.
+- `apps/utility` — utility Tauri binary. **Gate 15 (`canary:utility`) fails CI if `apps/utility/src/` imports `@grid-passport/core/fixtures`, `forecast`, or `audit`.** This is a compile-time write-scope proof — the utility binary structurally cannot reconstruct raw private fields.
+- `apps/api` — FastAPI parity scaffold (Phase 2+). Not in the critical path today.
+- `apps/verifier-py` — ~30-line Python reference verifier. Portability artifact that proves the bundle spec is implementable without TS.
+- `packages/core` — pure TS. `types.ts` (schemas), `policy.ts` (TS mirror of Rego), `projection.ts` (role → view), `forecast.ts` (deterministic toy tier bands, **not** a real model), `audit.ts` (hash-chained log), `bundle.ts` (JCS + Ed25519), `crypto.ts`, `ask-reasons.ts`, `geo/`, `fixtures/`. **No I/O, no network, no randomness beyond seeded.** Agents propose, these pure functions dispose.
+- `packages/verifier` — standalone `@noble/ed25519`-only verifier library + `grid-passport-verify` CLI. Depends on `core` only for types.
+- `packages/agents` — Claude Agent Skills infra. Each Skill (`interviewer/`, `cartographer/`, `explainer/`, `priorauth-interviewer/`) has a `SKILL.md` + a paired CI validator + a mechanically-derived prompt-only baseline gated by content-hash drift. `metrics.json`/`metrics.md` quantify the upfront-context savings vs. baseline.
+- `packages/eval-sim` — Python (Concordia-based) multi-agent sim bench. Pre-registered under `docs/evals/sim-bench-design.md`; results under `results/pilot/`.
+- `packages/policy` — canonical Rego (`grid-passport.rego`). **Source of truth** for disclosure policy; TS and Python mirrors must agree byte-for-byte.
+- `scripts/demo-bundle-roundtrip.sh` — the one shell script that runs the full cross-language canary.
+- `.claude/skills/` — per-project Skill definitions auto-discovered by Claude Code (Interviewer, Cartographer, Explainer, priorauth-Interviewer).
+- `grid-passport-harness/` — separate harness sandbox; not part of the product build.
+
+### The data-flow pipeline (where the non-negotiable rules are enforced)
+
+```
+applicant prose
+    │
+    ▼
+Interviewer Skill  ──writes──▶  CaseInput.privateProfile + requestMeta
+(validator-gated)               ▲ never touches derivedProof — write-scope contract
+    │
+    ▼
+Cartographer Skill ──writes──▶  CaseInput.publicEvidence (source-cited; null if no source)
+    │
+    ▼
+forecast.ts + projection.ts  (pure functions, deterministic under seed)
+    │
+    ▼ ProjectedView(role)
+    ├──▶ Explainer Skill  (reads ProjectedView only; never privateProfile)  ──▶ prose
+    ├──▶ desktop UI       (applicant role)
+    └──▶ bundle.ts  ──JCS──▶ Ed25519 sign  ──▶ signed bundle
+                                                    │
+                                                    ▼
+                                        utility Tauri binary
+                                        (verifier runs; renders utility-role projection)
+```
+
+**Three-way mirror:** `packages/policy/grid-passport.rego` (canonical) ↔ `packages/core/src/policy.ts` (TS) ↔ `apps/verifier-py/` (Python). `privacy:canary` structurally verifies all three agree. A change to disclosure rules **must** land in all three or CI fails.
+
+**Skill contract axis:** Interviewer/Cartographer/priorauth-Interviewer are *write-scope* Skills (they populate named buckets and nothing else). Explainer is a *read-scope* Skill (it consumes `ProjectedView` only — never `privateProfile`). This axis is the research contribution — see `docs/design/research-thesis.md` §4.
+
+### The 15 canary gates
+
+Every commit runs 15 structural gates (not unit tests — invariants). Named ones worth knowing:
+
+- `privacy:canary` — TS ↔ Rego ↔ Python drift check.
+- `canary:desktop` — applicant-side invariants.
+- `canary:utility` — **gate 15** — walks `apps/utility/src/` import graph and fails if private-bucket types leak in.
+- `canary:bundle` — TS sign/verify/tamper/reject.
+- `canary:roundtrip` — full TS + Rust + Python cross-language roundtrip.
+- `agents:baseline:check` + `agents:metrics:check` — content-hash drift gates on the prompt-only baselines and the claimed context savings.
+
+When a gate fails, do **not** disable it. Gates are load-bearing for the "the schema is the safety case" thesis (`docs/design/research-thesis.md`).
+
+### Where to look first
+
+- Schema / type definitions: `packages/core/src/types.ts`
+- Projection logic (role → view): `packages/core/src/projection.ts`
+- Policy in TS: `packages/core/src/policy.ts`; Rego: `packages/policy/grid-passport.rego`
+- Bundle format + signing: `packages/core/src/bundle.ts` + `packages/core/src/crypto.ts`
+- Verifier library: `packages/verifier/src/`
+- Skills (Claude Code auto-discovers): `.claude/skills/<name>/SKILL.md`
+- Fixtures used by the demo: `packages/core/src/fixtures/`
+
+---
+
 ## Project identity
 
 This repository implements **Grid Passport**, a confidential coordination workflow for large electric-load requests.

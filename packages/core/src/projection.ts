@@ -1,8 +1,14 @@
 import { POLICY, POLICY_VERSION } from "./policy";
 import type {
+  BackupGenProfile,
+  CustomerContact,
+  FailureModeProfile,
   FieldClass,
   FieldPath,
+  FlexibilityEnvelope,
   FlexibilityPassport,
+  ForwardOperationalWindow,
+  LoadType,
   ReadinessClass,
   RequestRecord,
   RiskClass,
@@ -32,6 +38,10 @@ export interface ProjectedView {
     targetCOD: ProjectedField<string>;
     phases: ProjectedField<number>;
     site: ProjectedField<SiteContext>;
+    customerContact: ProjectedField<CustomerContact>;
+    loadType: ProjectedField<LoadType>;
+    connectionVoltageKV: ProjectedField<number>;
+    netMetered: ProjectedField<boolean>;
   };
   privateProfile: {
     flexPercent: ProjectedField<number>;
@@ -42,6 +52,10 @@ export interface ProjectedView {
     bessHours: ProjectedField<number>;
     internalScheduleConfidence: ProjectedField<number>;
     workloadMix: ProjectedField<WorkloadMix>;
+    forwardOperationalWindows: ProjectedField<ForwardOperationalWindow[]>;
+    flexibilityEnvelope: ProjectedField<FlexibilityEnvelope>;
+    backupGenProfile: ProjectedField<BackupGenProfile>;
+    failureModeProfile: ProjectedField<FailureModeProfile>;
   };
   publicEvidence: {
     floodRisk: ProjectedField<RiskClass>;
@@ -100,6 +114,18 @@ export function projectForRole(
       targetCOD: field("request.targetCOD", req.targetCOD, role),
       phases: field("request.phases", req.phases, role),
       site: field("request.site", req.site, role),
+      customerContact: field(
+        "request.customerContact",
+        req.customerContact,
+        role,
+      ),
+      loadType: field("request.loadType", req.loadType, role),
+      connectionVoltageKV: field(
+        "request.connectionVoltageKV",
+        req.connectionVoltageKV,
+        role,
+      ),
+      netMetered: field("request.netMetered", req.netMetered, role),
     },
     privateProfile: {
       flexPercent: field(
@@ -136,6 +162,41 @@ export function projectForRole(
       workloadMix: field(
         "private.workloadMix",
         req.privateProfile.workloadMix,
+        role,
+      ),
+      forwardOperationalWindows: field<ForwardOperationalWindow[]>(
+        "private.forwardOperationalWindows",
+        req.privateProfile.forwardOperationalWindows ?? [],
+        role,
+      ),
+      flexibilityEnvelope: field<FlexibilityEnvelope>(
+        "private.flexibilityEnvelope",
+        req.privateProfile.flexibilityEnvelope ?? {
+          maxShedMW: 0,
+          maxShedDurationMin: 0,
+          rampRateMW_per_min: 0,
+          noticeRequiredMin: 0,
+          callsPerWeek: 0,
+        },
+        role,
+      ),
+      backupGenProfile: field<BackupGenProfile>(
+        "private.backupGenProfile",
+        req.privateProfile.backupGenProfile ?? {
+          transitionTimeSec: 0,
+          capacityMW: 0,
+          autoTriggerThresholdMW: 0,
+          plannedTestWindows: [],
+        },
+        role,
+      ),
+      failureModeProfile: field<FailureModeProfile>(
+        "private.failureModeProfile",
+        req.privateProfile.failureModeProfile ?? {
+          redundancyClass: "TierIII",
+          P_dropGT100MW_24h: 0,
+          P_dropGT500MW_24h: 0,
+        },
         role,
       ),
     },

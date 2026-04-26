@@ -79,14 +79,21 @@ const FAKE_OWL: CaseInput = {
   applicantOrg: "Owl Compute",
   site: {
     state: "VA",
-    county: "Prince William",
-    parcelId: "demo-parcel-001",
-    displayName: "Owl Compute Campus — Prince William, VA",
+    county: "Loudoun",
+    parcelId: "demo-loudoun-001",
+    displayName: "Owl Compute Campus — Loudoun, VA",
   },
   requestedMW: 180,
-  targetCOD: "2028-10-01",
+  targetCOD: "2027-09-01",
   phases: 2,
   status: "draft",
+  customerContact: {
+    name: "Sarah Chen",
+    email: "sarah.chen@owlcompute.example",
+  },
+  loadType: "data_center",
+  connectionVoltageKV: 230,
+  netMetered: false,
   privateProfile: {
     flexPercent: 22,
     redundancyShiftPercent: 12,
@@ -117,7 +124,7 @@ const FAKE_OWL: CaseInput = {
  * overwrites the empty shell with real evidence.
  */
 function toInterviewerHandoff(c: CaseInput): Record<string, unknown> {
-  return {
+  const handoff: Record<string, unknown> = {
     id: c.id,
     caseId: c.caseId,
     applicantOrg: c.applicantOrg,
@@ -126,6 +133,10 @@ function toInterviewerHandoff(c: CaseInput): Record<string, unknown> {
     phases: c.phases,
     status: "draft",
     site: { ...c.site },
+    customerContact: { ...c.customerContact },
+    loadType: c.loadType,
+    connectionVoltageKV: c.connectionVoltageKV,
+    netMetered: c.netMetered,
     privateProfile: {
       flexPercent: c.privateProfile.flexPercent,
       redundancyShiftPercent: c.privateProfile.redundancyShiftPercent,
@@ -139,19 +150,47 @@ function toInterviewerHandoff(c: CaseInput): Record<string, unknown> {
     },
     policyVersion: c.policyVersion,
   };
+  if (c.nettedGenerationStation !== undefined) {
+    handoff.nettedGenerationStation = c.nettedGenerationStation;
+  }
+  return handoff;
 }
 
 /**
  * Merge the Interviewer hand-off (validated) with a default empty
- * publicEvidence shell. The Interviewer is structurally forbidden from
- * writing this section — Cartographer owns it — so we synthesize the
- * shell here, AFTER validation has passed. Callers receiving the returned
- * CaseInput see a complete record ready for projection.
+ * publicEvidence shell + sentinel defaults for any baseline-filing
+ * fields the chat hasn't gathered yet.
+ *
+ * Two reasons defaults live here, after validation, not in the validator:
+ *   1. Cartographer owns publicEvidence; the Interviewer is structurally
+ *      forbidden from writing it, so the shell has to be synthesized.
+ *   2. The new baseline fields (customerContact, loadType, voltage,
+ *      netMetered) land progressively in Round 2 of the chat. A model
+ *      that hands off mid-flow may legitimately not have them yet —
+ *      validator passes, transport fills sentinels, the work view shows
+ *      "(pending)" so the applicant sees what's still owed.
+ *
+ * Callers receiving the returned CaseInput see a structurally complete
+ * record ready for projection.
  */
-function assembleCaseInput(handoff: CaseInput): CaseInput {
+function assembleCaseInput(handoff: Partial<CaseInput> & Pick<CaseInput, "applicantOrg" | "site" | "requestedMW" | "targetCOD" | "phases" | "status" | "privateProfile">): CaseInput {
   return {
-    ...handoff,
-    publicEvidence: {
+    id: handoff.id ?? "",
+    caseId: handoff.caseId ?? "",
+    applicantOrg: handoff.applicantOrg,
+    site: handoff.site,
+    requestedMW: handoff.requestedMW,
+    targetCOD: handoff.targetCOD,
+    phases: handoff.phases,
+    status: handoff.status,
+    privateProfile: handoff.privateProfile,
+    policyVersion: handoff.policyVersion ?? "grid-passport-policy@0.1.0",
+    customerContact: handoff.customerContact ?? { name: "", email: "" },
+    loadType: handoff.loadType ?? "data_center",
+    connectionVoltageKV: handoff.connectionVoltageKV ?? 0,
+    netMetered: handoff.netMetered ?? false,
+    nettedGenerationStation: handoff.nettedGenerationStation,
+    publicEvidence: handoff.publicEvidence ?? {
       floodRisk: "low",
       permitRisk: "low",
       zoningRisk: "low",

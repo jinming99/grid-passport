@@ -22,6 +22,10 @@ field_class := {
   "request.targetCOD":                       "public",
   "request.phases":                          "public",
   "request.site":                            "public",
+  "request.customerContact":                 "public",
+  "request.loadType":                        "public",
+  "request.connectionVoltageKV":             "public",
+  "request.netMetered":                      "public",
 
   # private applicant inputs
   "private.flexPercent":                     "private",
@@ -32,6 +36,10 @@ field_class := {
   "private.bessHours":                       "private",
   "private.internalScheduleConfidence":      "private",
   "private.workloadMix":                     "private",
+  "private.forwardOperationalWindows":       "private",
+  "private.flexibilityEnvelope":             "private",
+  "private.backupGenProfile":                "private",
+  "private.failureModeProfile":              "private",
 
   # public evidence (gathered from external sources)
   "public.floodRisk":                        "public",

@@ -22,12 +22,36 @@ function formatValue(v: unknown): string {
     if (typeof v[0] === "string") {
       return (v as string[]).join(" · ");
     }
+    if (
+      typeof v[0] === "object" &&
+      v[0] !== null &&
+      "startUtc" in (v[0] as Record<string, unknown>) &&
+      "endUtc" in (v[0] as Record<string, unknown>) &&
+      "deltaMW" in (v[0] as Record<string, unknown>)
+    ) {
+      return (v as Array<Record<string, unknown>>)
+        .map((row) => {
+          const start = String(row.startUtc ?? "");
+          const end = String(row.endUtc ?? "");
+          const delta = row.deltaMW;
+          const duty = row.dailyDutyCycleHours;
+          const workloadType = row.workloadType;
+          return `${compactIso(start)} → ${compactIso(end)} · +${delta} MW${
+            duty ? ` · ${duty} hr/day` : ""
+          }${workloadType ? ` · ${String(workloadType)}` : ""}`;
+        })
+        .join(" || ");
+    }
     return JSON.stringify(v);
   }
   if (typeof v === "object") {
     return JSON.stringify(v);
   }
   return String(v);
+}
+
+function compactIso(iso: string): string {
+  return iso.replace(/T(\d{2}:\d{2}):\d{2}Z$/, " $1Z");
 }
 
 function Tooltip({

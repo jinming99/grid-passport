@@ -42,11 +42,12 @@ const PRIVATE_FIELD_KEYS: Array<keyof CaseInput["privateProfile"]> = [
 ];
 
 export interface TrustPanelProps {
-  loaded: LoadedCase;
+  loaded: LoadedCase | null;
 }
 
 export function TrustPanel({ loaded }: TrustPanelProps) {
   const inputsLabel = useMemo((): string => {
+    if (!loaded) return "no case loaded";
     const s = loaded.source;
     if (s.kind === "file") return s.path;
     if (s.kind === "bundled") return `bundled fixture · ${s.caseId}`;

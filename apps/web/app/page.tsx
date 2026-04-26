@@ -154,7 +154,7 @@ export default function Home() {
         <section className="mt-20">
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="text-[11px] uppercase tracking-[0.22em] text-neutral-500">
-              verifiable protocol · don't take our word for it
+              verifiable protocol · don&apos;t take our word for it
             </h2>
             <Link
               href="/protocol"
@@ -173,7 +173,7 @@ export default function Home() {
               </h3>
               <p className="mt-2 text-[12px] leading-relaxed text-neutral-400">
                 Every bundle hashes to the same bytes regardless of producer.
-                Tested against the RFC author's six official vectors including
+                Tested against the RFC author&apos;s six official vectors including
                 the emoji surrogate-pair case.
               </p>
             </div>

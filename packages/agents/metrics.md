@@ -24,7 +24,7 @@ Skill substrate loads content progressively (metadata always; body when triggere
 
 | Skill | L1 metadata | L2 body (triggered) | L3 resources (on-demand) | Prompt-only (always) | Upfront saving | Triggered saving |
 |---|---:|---:|---:|---:|---:|---:|
-| interviewer | 341 tok | 2,356 tok | 4,977 tok | 8,141 tok | -95.8% | -66.9% |
+| interviewer | 341 tok | 3,986 tok | 5,612 tok | 10,406 tok | -96.7% | -58.4% |
 | cartographer | 316 tok | 2,741 tok | 5,344 tok | 8,871 tok | -96.4% | -65.5% |
 | priorauth-interviewer | 352 tok | 1,868 tok | 3,012 tok | 5,662 tok | -93.8% | -60.8% |
 | explainer | 330 tok | 2,905 tok | 5,022 tok | 8,729 tok | -96.2% | -62.9% |
@@ -48,7 +48,7 @@ These are the schema-discipline signals from research-thesis §3.1 (*schema-as-s
 
 | Skill | "Never" clauses | "halt" clauses | "refuse" clauses | Write-scope section headings | Validator contract-violations refused |
 |---|---:|---:|---:|---:|---:|
-| interviewer | 6 | 6 | 7 | 1 | 3 |
+| interviewer | 8 | 9 | 8 | 1 | 3 |
 | cartographer | 6 | 9 | 2 | 1 | 4 |
 | priorauth-interviewer | 5 | 5 | 12 | 1 | 0 |
 | explainer | 4 | 8 | 3 | 1 | 5 |
@@ -72,7 +72,7 @@ These are the schema-discipline signals from research-thesis §3.1 (*schema-as-s
 
 | Skill | Baseline content-hash | Regeneration command |
 |---|---|---|
-| interviewer | `1fab1b125127be51` | `pnpm agents:baseline` |
+| interviewer | `493325b28521a819` | `pnpm agents:baseline` |
 | cartographer | `118f6fe979461988` | `pnpm agents:baseline` |
 | priorauth-interviewer | `485fae34bc895913` | `pnpm agents:baseline` |
 | explainer | `b61e11b35cf9de2c` | `pnpm agents:baseline` |

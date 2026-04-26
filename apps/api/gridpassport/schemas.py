@@ -25,9 +25,60 @@ class SiteContext(BaseModel):
     displayName: str
 
 
+class CustomerContact(BaseModel):
+    name: str
+    email: str
+    phone: str | None = None
+
+
+LoadType = Literal["data_center", "industrial", "manufacturing", "other"]
+
+
 class WorkloadMix(BaseModel):
     training: float
     inference: float
+
+
+RedundancyClass = Literal["TierI", "TierII", "TierIII", "TierIV"]
+RepeatPattern = Literal["none", "daily", "weekly"]
+
+
+class ForwardOperationalWindow(BaseModel):
+    startUtc: str
+    endUtc: str
+    deltaMW: float
+    ciPlusMinus: float
+    confidence: float
+    dailyDutyCycleHours: float
+    repeats: RepeatPattern
+    workloadType: str | None = None
+    sourceDocHash: str | None = None
+
+
+class FlexibilityEnvelope(BaseModel):
+    maxShedMW: float
+    maxShedDurationMin: float
+    rampRateMW_per_min: float
+    noticeRequiredMin: float
+    callsPerWeek: float
+
+
+class PlannedTestWindow(BaseModel):
+    startUtc: str
+    endUtc: str
+
+
+class BackupGenProfile(BaseModel):
+    transitionTimeSec: float
+    capacityMW: float
+    autoTriggerThresholdMW: float
+    plannedTestWindows: list[PlannedTestWindow] = Field(default_factory=list)
+
+
+class FailureModeProfile(BaseModel):
+    redundancyClass: RedundancyClass
+    P_dropGT100MW_24h: float
+    P_dropGT500MW_24h: float
 
 
 class PrivateProfile(BaseModel):
@@ -39,6 +90,11 @@ class PrivateProfile(BaseModel):
     bessHours: float
     internalScheduleConfidence: float
     workloadMix: WorkloadMix
+    # Layer-2 operational additions (optional for backward-compat).
+    forwardOperationalWindows: list[ForwardOperationalWindow] = Field(default_factory=list)
+    flexibilityEnvelope: FlexibilityEnvelope | None = None
+    backupGenProfile: BackupGenProfile | None = None
+    failureModeProfile: FailureModeProfile | None = None
 
 
 class SourceRef(BaseModel):
@@ -86,6 +142,12 @@ class CaseInput(BaseModel):
     privateProfile: PrivateProfile
     publicEvidence: PublicEvidence
     policyVersion: str
+    # Baseline-filing fields (ERCOT-precedent additions). All public class.
+    customerContact: CustomerContact
+    loadType: LoadType
+    connectionVoltageKV: float
+    netMetered: bool
+    nettedGenerationStation: str | None = None
 
 
 class RequestRecord(CaseInput):
