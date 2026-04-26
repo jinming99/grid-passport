@@ -16,6 +16,7 @@
   "dependencies": {
     "@grid-passport/agents": "workspace:*",
     "@grid-passport/core": "workspace:*",
+    "@grid-passport/verifier": "workspace:*",
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",

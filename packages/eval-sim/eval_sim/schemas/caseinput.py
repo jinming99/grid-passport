@@ -32,6 +32,15 @@ class SiteContext(BaseModel):
     displayName: str
 
 
+class CustomerContact(BaseModel):
+    name: str
+    email: str
+    phone: str | None = None
+
+
+LoadType = Literal["data_center", "industrial", "manufacturing", "other"]
+
+
 class WorkloadMix(BaseModel):
     training: float = Field(ge=0.0, le=1.0)
     inference: float = Field(ge=0.0, le=1.0)
@@ -93,6 +102,11 @@ class CaseInput(BaseModel):
     privateProfile: PrivateProfile
     publicEvidence: PublicEvidence
     policyVersion: str
+    customerContact: CustomerContact
+    loadType: LoadType
+    connectionVoltageKV: float
+    netMetered: bool
+    nettedGenerationStation: str | None = None
 
 
 class RequestRecord(CaseInput):

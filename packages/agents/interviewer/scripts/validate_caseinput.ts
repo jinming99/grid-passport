@@ -36,13 +36,17 @@ export { InterviewerContractViolation, validateInterviewerOutput };
 function stripToInterviewerScope(
   c: CaseInput,
 ): Record<string, unknown> {
-  return {
+  const stripped: Record<string, unknown> = {
     applicantOrg: c.applicantOrg,
     requestedMW: c.requestedMW,
     targetCOD: c.targetCOD,
     phases: c.phases,
     status: "draft",
     site: { ...c.site },
+    customerContact: { ...c.customerContact },
+    loadType: c.loadType,
+    connectionVoltageKV: c.connectionVoltageKV,
+    netMetered: c.netMetered,
     privateProfile: {
       flexPercent: c.privateProfile.flexPercent,
       redundancyShiftPercent: c.privateProfile.redundancyShiftPercent,
@@ -54,6 +58,10 @@ function stripToInterviewerScope(
       workloadMix: { ...c.privateProfile.workloadMix },
     },
   };
+  if (c.nettedGenerationStation !== undefined) {
+    stripped.nettedGenerationStation = c.nettedGenerationStation;
+  }
+  return stripped;
 }
 
 function mustGet(caseId: string): CaseInput {

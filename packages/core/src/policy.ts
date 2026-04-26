@@ -43,6 +43,30 @@ export const POLICY: Record<FieldPath, PolicyEntry> = {
     label: "Site",
     redactionReason: "",
   },
+  "request.customerContact": {
+    class: "public",
+    visibleTo: ALL,
+    label: "Customer contact",
+    redactionReason: "",
+  },
+  "request.loadType": {
+    class: "public",
+    visibleTo: ALL,
+    label: "Load type",
+    redactionReason: "",
+  },
+  "request.connectionVoltageKV": {
+    class: "public",
+    visibleTo: ALL,
+    label: "Connection voltage (kV)",
+    redactionReason: "",
+  },
+  "request.netMetered": {
+    class: "public",
+    visibleTo: ALL,
+    label: "Net-metered",
+    redactionReason: "",
+  },
 
   "private.flexPercent": {
     class: "private",
@@ -93,6 +117,34 @@ export const POLICY: Record<FieldPath, PolicyEntry> = {
     visibleTo: APPLICANT_ONLY,
     label: "Workload mix",
     redactionReason: "Training/inference mix is sealed.",
+  },
+  "private.forwardOperationalWindows": {
+    class: "private",
+    visibleTo: APPLICANT_ONLY,
+    label: "Forward operational windows",
+    redactionReason:
+      "Raw windows (workload type, duty cycle, repeat pattern) are sealed. Utility receives derived MW bands via the forecaster.",
+  },
+  "private.flexibilityEnvelope": {
+    class: "private",
+    visibleTo: APPLICANT_ONLY,
+    label: "Flexibility envelope",
+    redactionReason:
+      "Raw flexibility envelope is sealed. Utility receives derived flex-program-eligible bands.",
+  },
+  "private.backupGenProfile": {
+    class: "private",
+    visibleTo: APPLICANT_ONLY,
+    label: "Backup-gen behavior profile",
+    redactionReason:
+      "Raw backup-gen profile (auto-trigger thresholds) is sealed. Utility receives transition-time + planned-test-window bands.",
+  },
+  "private.failureModeProfile": {
+    class: "private",
+    visibleTo: APPLICANT_ONLY,
+    label: "Failure-mode profile",
+    redactionReason:
+      "Raw failure-mode profile (redundancy class, drop probabilities) is sealed. Utility receives derived drop-risk envelope.",
   },
 
   "public.floodRisk": {

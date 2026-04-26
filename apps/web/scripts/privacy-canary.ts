@@ -119,7 +119,7 @@ function structuralCheck(input: CaseInput, role: Role): void {
 // --------------------------------------------------------------------
 
 function privateValueStrings(p: PrivateProfile): string[] {
-  return [
+  const base: string[] = [
     String(p.flexPercent),
     String(p.redundancyShiftPercent),
     String(p.backupGenHours),
@@ -130,6 +130,42 @@ function privateValueStrings(p: PrivateProfile): string[] {
     String(p.workloadMix.training),
     String(p.workloadMix.inference),
   ];
+  // Layer-2 operational additions (all optional). Fingerprint each present
+  // numeric/string field so the audit-action scan catches inadvertent leaks.
+  for (const w of p.forwardOperationalWindows ?? []) {
+    base.push(
+      String(w.deltaMW),
+      String(w.ciPlusMinus),
+      String(w.confidence),
+      String(w.dailyDutyCycleHours),
+      w.repeats,
+    );
+    if (w.workloadType) base.push(w.workloadType);
+  }
+  if (p.flexibilityEnvelope) {
+    base.push(
+      String(p.flexibilityEnvelope.maxShedMW),
+      String(p.flexibilityEnvelope.maxShedDurationMin),
+      String(p.flexibilityEnvelope.rampRateMW_per_min),
+      String(p.flexibilityEnvelope.noticeRequiredMin),
+      String(p.flexibilityEnvelope.callsPerWeek),
+    );
+  }
+  if (p.backupGenProfile) {
+    base.push(
+      String(p.backupGenProfile.transitionTimeSec),
+      String(p.backupGenProfile.capacityMW),
+      String(p.backupGenProfile.autoTriggerThresholdMW),
+    );
+  }
+  if (p.failureModeProfile) {
+    base.push(
+      p.failureModeProfile.redundancyClass,
+      String(p.failureModeProfile.P_dropGT100MW_24h),
+      String(p.failureModeProfile.P_dropGT500MW_24h),
+    );
+  }
+  return base;
 }
 
 function publicValueStrings(input: CaseInput): string[] {
@@ -146,12 +182,23 @@ function publicValueStrings(input: CaseInput): string[] {
     input.site.county,
     input.site.parcelId,
     input.site.displayName,
+    input.customerContact.name,
+    input.customerContact.email,
+    input.loadType,
+    String(input.connectionVoltageKV),
+    String(input.netMetered),
     input.publicEvidence.floodRisk,
     input.publicEvidence.permitRisk,
     input.publicEvidence.zoningRisk,
     String(input.publicEvidence.siteControlEvidence),
     String(input.publicEvidence.sourceRefs.length),
   ];
+  if (input.customerContact.phone) {
+    out.push(input.customerContact.phone);
+  }
+  if (input.nettedGenerationStation) {
+    out.push(input.nettedGenerationStation);
+  }
   for (const ref of input.publicEvidence.sourceRefs) {
     out.push(ref.label);
     if (ref.url) out.push(ref.url);

@@ -20,6 +20,10 @@ dependencies = [
   "rich>=13.7",
   "claude-agent-sdk>=0.1.63",
   "anyio>=4.13.0",
+  # ISO/RTO grid-data wrapper. Used by pull_pjm_dominion.py to fetch real
+  # Dominion-zone hourly load from PJM Data Miner 2 for the demo's Act 4
+  # learning loop. No API key required for the load endpoints we use.
+  "gridstatus>=0.30",
 ]
 
 [dependency-groups]

@@ -1,7 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { VerifyResult } from "@grid-passport/verifier";
 import { loadAndVerifyBundle } from "./lib/bundle-loader";
 import { UtilityProjection } from "./components/UtilityProjection";
+import { ComposeShedRequest } from "./components/ComposeShedRequest";
+import { ForecastChart } from "./components/ForecastChart";
+import { ReasoningPanel } from "./components/ReasoningPanel";
 
 // Track 3.1-polish. Real drop-zone + projection render + trust-claim stamp.
 //
@@ -23,6 +26,8 @@ type LoadState =
     }
   | { kind: "error"; message: string };
 
+type SessionTone = "ready" | "loading" | "ok" | "error";
+
 export function App() {
   const [pubKeyInput, setPubKeyInput] = useState("");
   const [state, setState] = useState<LoadState>({ kind: "idle" });
@@ -42,93 +47,128 @@ export function App() {
   }, [pubKeyInput]);
 
   const canLoad = pubKeyInput.trim().length > 0 && state.kind !== "loading";
+  const session = sessionStatus(state);
 
   return (
     <div className="shell">
       <header className="banner">
-        <div>
-          grid<span className="brand-dot">·</span>passport
+        <div className="banner-brand">
+          <span className="brand">
+            grid<span className="brand-dot">·</span>passport
+          </span>
           <span className="stamp">utility · v0</span>
         </div>
-        <div className="telltale">
-          <span className="telltale-dot" /> verifier · ready · no network
+        <div className={`telltale is-${session.tone}`}>
+          <span className="telltale-dot" /> verifier · local only ·{" "}
+          <span className="telltale-text">{session.label}</span>
         </div>
       </header>
 
-      <main className="stage">
-        <section className="card">
-          <div className="card-title">open a disclosure bundle</div>
-          <div className="card-body">
-            <p>
-              Paste the applicant's issuer public key (base64), then open the
-              bundle JSON. Verification happens locally — nothing leaves this
-              machine. The utility view is only rendered when the signature
-              checks out.
+      <main className="stage utility-stage">
+        <section className="utility-hero">
+          <div className="utility-hero-copy">
+            <div className="utility-eyebrow">utility review surface</div>
+            <TypeOnHeadline text="Verify the disclosure before you plan against it." />
+            <p className="utility-sub">
+              Paste the applicant&apos;s issuer key, open the signed bundle,
+              and inspect only the projection the utility is allowed to see.
+              Signature verification, policy checks, and projection rendering
+              all happen locally on this machine.
             </p>
+          </div>
+        </section>
 
-            <label
-              style={{
-                display: "block",
-                fontFamily: "var(--mono)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: "var(--ink-mute)",
-                marginBottom: 6,
-              }}
-            >
-              issuer public key (base64, 32-byte Ed25519)
+        <section className="verify-workbench">
+          <div className="verify-workbench-copy">
+            <h2 className="verify-workbench-title">
+              Pin the issuer key, then open the disclosure bundle.
+            </h2>
+            <p className="verify-workbench-sub">
+              If the signature, issuer key, or policy envelope do not line up,
+              the utility view stays blocked. Successful verification unlocks
+              the proof-only projection and the downstream operations tools.
+            </p>
+            <div className="verify-checklist">
+              <div className="verify-check-item">
+                <span className="verify-check-num">01</span>
+                <span>paste the applicant&apos;s Ed25519 public key</span>
+              </div>
+              <div className="verify-check-item">
+                <span className="verify-check-num">02</span>
+                <span>open the signed bundle.json from the handoff</span>
+              </div>
+              <div className="verify-check-item">
+                <span className="verify-check-num">03</span>
+                <span>render the utility projection only after local verify</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="verify-panel">
+            <div className="verify-panel-head">
+              <div>
+                <div className="verify-panel-title">Issuer Key + Bundle</div>
+                <div className="verify-panel-sub">
+                  base64 public key for this verification session
+                </div>
+              </div>
+              <div className={`verify-state-pill is-${session.tone}`}>
+                {session.label}
+              </div>
+            </div>
+
+            <label htmlFor="issuer-pubkey" className="verify-label">
+              issuer public key
             </label>
-            <input
-              type="text"
+            <textarea
+              id="issuer-pubkey"
               value={pubKeyInput}
               onChange={(e) => setPubKeyInput(e.target.value)}
-              placeholder="MCowBQYDK2VwAyEA... (paste applicant pubkey)"
-              style={{
-                width: "100%",
-                fontFamily: "var(--mono)",
-                fontSize: 11,
-                background: "var(--bg)",
-                color: "var(--ink)",
-                border: "1px solid var(--border)",
-                padding: 10,
-              }}
+              placeholder="MCowBQYDK2VwAyEA... paste applicant pubkey"
+              className="verify-input"
+              spellCheck={false}
+              rows={4}
             />
 
-            <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+            <div className="verify-actions">
               <button
                 type="button"
                 onClick={onLoad}
                 disabled={!canLoad}
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: 11,
-                  padding: "8px 14px",
-                  background: "transparent",
-                  color: "var(--ink)",
-                  border: "1px solid var(--border)",
-                  cursor: canLoad ? "pointer" : "not-allowed",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                }}
+                className="utility-button utility-button-primary"
               >
                 {state.kind === "loading"
                   ? "verifying…"
                   : "open bundle.json →"}
               </button>
+              <div className="verify-action-note">
+                Signature verification, policy checks, and utility projection
+                rendering all run locally with no network path.
+              </div>
+            </div>
+
+            <div className="verify-trust-strip">
+              <span className="verify-trust-chip">local verify only</span>
+              <span className="verify-trust-chip">ed25519 signature gate</span>
+              <span className="verify-trust-chip">proof-only release view</span>
             </div>
           </div>
         </section>
 
         {state.kind === "error" ? (
-          <section className="card" style={{ borderColor: "var(--rose, #fb7185)" }}>
-            <div
-              className="card-title"
-              style={{ color: "var(--rose, #fb7185)" }}
-            >
-              error
+          <section className="verify-result is-error">
+            <div className="verify-result-head">
+              <div>
+                <div className="verify-result-eyebrow">session blocked</div>
+                <div className="verify-result-title">
+                  The bundle could not be opened for verification.
+                </div>
+              </div>
+              <div className="verify-result-badge is-error">
+                utility view blocked
+              </div>
             </div>
-            <div className="card-body mono">{state.message}</div>
+            <div className="verify-result-body mono">{state.message}</div>
           </section>
         ) : null}
 
@@ -154,25 +194,23 @@ function BundleView({
 }) {
   if (!verify.ok || !verify.payload) {
     return (
-      <section
-        className="card"
-        style={{ borderColor: "var(--rose, #fb7185)" }}
-      >
-        <div
-          className="card-title"
-          style={{ color: "var(--rose, #fb7185)" }}
-        >
-          rejected
+      <section className="verify-result is-error">
+        <div className="verify-result-head">
+          <div>
+            <div className="verify-result-eyebrow">bundle rejected</div>
+            <div className="verify-result-title">
+              The signed disclosure did not pass verification.
+            </div>
+          </div>
+          <div className="verify-result-badge is-error">
+            projection withheld
+          </div>
         </div>
-        <div className="card-body">
-          <div
-            className="mono"
-            style={{ fontSize: 10, color: "var(--ink-mute)" }}
-            title={path}
-          >
+        <div className="verify-result-body">
+          <div className="verify-source mono" title={path}>
             source · {path}
           </div>
-          <ul style={{ margin: "8px 0 0 18px" }}>
+          <ul className="verify-reason-list">
             {verify.reasons.map((r) => (
               <li key={r} className="mono">
                 {r}
@@ -189,58 +227,45 @@ function BundleView({
 
   return (
     <>
-      <section
-        className="card"
-        style={{ borderColor: "var(--lime, #a3e635)" }}
-      >
-        <div
-          className="card-title"
-          style={{ color: "var(--lime, #a3e635)" }}
-        >
-          verified
-        </div>
-        <div className="card-body" style={{ fontFamily: "var(--mono)", fontSize: 11 }}>
+      <section className="verify-result is-ok">
+        <div className="verify-result-head">
           <div>
-            keyId <span className="mono">{p.issuer.keyId}</span>
-            {p.issuer.label ? (
-              <>
-                {" · "}issuer <span className="mono">{p.issuer.label}</span>
-              </>
-            ) : null}
+            <div className="verify-result-eyebrow">bundle verified</div>
+            <div className="verify-result-title">
+              {p.issuer.label ?? "Applicant disclosure"} accepted for utility
+              review.
+            </div>
           </div>
-          <div style={{ marginTop: 4 }}>
-            bundle <span className="mono">{p.bundleId}</span>
+          <div className="verify-result-badge is-ok">
+            utility projection unlocked
           </div>
-          <div style={{ marginTop: 4 }}>
-            policy @ <span className="mono">{p.policyVersion}</span>
-          </div>
-          <div style={{ marginTop: 4 }}>
-            policy hash · rego{" "}
-            <span className="mono">
-              {verify.policyHash?.rego?.slice(0, 22)}…
-            </span>{" "}
-            · runtime{" "}
-            <span className="mono">
-              {verify.policyHash?.runtime?.slice(0, 22)}…
-            </span>
-          </div>
-          <div style={{ marginTop: 4 }}>
-            audit events{" "}
-            <span className="mono">{p.auditChain.length}</span> · chained via
-            SHA-256 prevHash
-          </div>
-          <div
-            style={{
-              marginTop: 6,
-              color: "var(--ink-mute)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-            title={path}
-          >
-            source · {path}
-          </div>
+        </div>
+        <div className="verify-meta-grid">
+          <VerifyMeta label="issuer keyId" value={p.issuer.keyId} />
+          <VerifyMeta label="bundle id" value={p.bundleId} />
+          <VerifyMeta label="request id" value={p.requestId} />
+          <VerifyMeta label="policy version" value={p.policyVersion} />
+          <VerifyMeta
+            label="policy hash · rego"
+            value={compactValue(verify.policyHash?.rego)}
+            title={verify.policyHash?.rego}
+          />
+          <VerifyMeta
+            label="policy hash · runtime"
+            value={compactValue(verify.policyHash?.runtime)}
+            title={verify.policyHash?.runtime}
+          />
+          <VerifyMeta
+            label="audit chain"
+            value={`${p.auditChain.length} event(s) · sha-256 prevHash linked`}
+          />
+          <VerifyMeta
+            label="issuer"
+            value={p.issuer.label ?? "applicant"}
+          />
+        </div>
+        <div className="verify-source mono" title={path}>
+          source · {path}
         </div>
       </section>
 
@@ -250,6 +275,16 @@ function BundleView({
           <UtilityProjection view={utilityView} />
         </div>
       </section>
+
+      <ForecastChart />
+
+      <ReasoningPanel />
+
+      <ComposeShedRequest
+        recipientCaseId={p.caseId}
+        recipientRequestId={p.requestId}
+        recipientLabel={p.issuer.label || "applicant"}
+      />
 
       <section
         className="card"
@@ -288,5 +323,88 @@ function BundleView({
         </div>
       </section>
     </>
+  );
+}
+
+function VerifyMeta({
+  label,
+  value,
+  title,
+}: {
+  label: string;
+  value: string;
+  title?: string;
+}) {
+  return (
+    <div className="verify-meta-cell">
+      <div className="verify-meta-label">{label}</div>
+      <div className="verify-meta-value mono" title={title ?? value}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function sessionStatus(state: LoadState): { tone: SessionTone; label: string } {
+  if (state.kind === "loading") {
+    return { tone: "loading", label: "verifying bundle" };
+  }
+  if (state.kind === "error") {
+    return { tone: "error", label: "verify blocked" };
+  }
+  if (state.kind === "loaded") {
+    return state.verify.ok
+      ? { tone: "ok", label: "bundle verified" }
+      : { tone: "error", label: "bundle rejected" };
+  }
+  return { tone: "ready", label: "ready for bundle" };
+}
+
+function compactValue(value: string | undefined): string {
+  if (!value) return "—";
+  if (value.length <= 28) return value;
+  return `${value.slice(0, 18)}…${value.slice(-6)}`;
+}
+
+function TypeOnHeadline({ text }: { text: string }) {
+  const showPeriod = text.endsWith(".");
+  const animatedText = showPeriod ? text.slice(0, -1) : text;
+  const [visibleCount, setVisibleCount] = useState(0);
+
+  useEffect(() => {
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) {
+      setVisibleCount(animatedText.length);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setVisibleCount((prev) => {
+        if (prev >= animatedText.length) {
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, visibleCount >= animatedText.length ? 1800 : 28);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [animatedText, visibleCount]);
+
+  const typed = animatedText.slice(0, visibleCount);
+
+  return (
+    <h1 className="utility-title" aria-label={text.replace(/\n/g, " ")}>
+      <span className="utility-title-sizer" aria-hidden="true">
+        {text}
+      </span>
+      <span className="utility-title-typed" aria-hidden="true">
+        {typed}
+        {showPeriod && visibleCount >= animatedText.length ? "." : null}
+      </span>
+    </h1>
   );
 }

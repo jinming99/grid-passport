@@ -8,6 +8,7 @@
     "./policy": "./src/policy.ts",
     "./projection": "./src/projection.ts",
     "./forecast": "./src/forecast.ts",
+    "./learning": "./src/learning.ts",
     "./audit": "./src/audit.ts",
     "./bundle": "./src/bundle.ts",
     "./crypto": "./src/crypto.ts",

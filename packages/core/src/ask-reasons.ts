@@ -45,6 +45,22 @@ export const ASK_INFO: Record<FieldPath, AskInfo> = {
     bucket: "identity",
     why: "Parcel identity. Binds the request to a specific point on the grid; also unlocks public-evidence lookups (flood, permits, zoning).",
   },
+  "request.customerContact": {
+    bucket: "identity",
+    why: "Customer-side point of contact. Required by every large-load filing standard; gives the utility someone to email when the docket moves.",
+  },
+  "request.loadType": {
+    bucket: "identity",
+    why: "Whether this is a data center, industrial process, manufacturing line, or other large load. Determines which downstream rules and rate classes apply.",
+  },
+  "request.connectionVoltageKV": {
+    bucket: "identity",
+    why: "Target connection voltage. Drives substation siting and the upstream-network study; ERCOT-precedent fields require it on the initial filing.",
+  },
+  "request.netMetered": {
+    bucket: "identity",
+    why: "Whether the load is netted against on-site generation/storage or stands alone. Standalone loads route through the standard interconnection path; netted loads pull in resource-side reviews.",
+  },
 
   "private.flexPercent": {
     bucket: "sensitive",
@@ -77,6 +93,22 @@ export const ASK_INFO: Record<FieldPath, AskInfo> = {
   "private.workloadMix": {
     bucket: "sensitive",
     why: "Training vs inference share. Probably the most competitively sensitive field — the ratio is something hyperscalers track closely. Feeds cost-exposure class; never released.",
+  },
+  "private.forwardOperationalWindows": {
+    bucket: "sensitive",
+    why: "Specific upcoming demand windows (training spikes, calibration runs, repeat patterns). The most operationally valuable disclosure for the grid operator and the most strategically sensitive on the applicant side; sealed and projected only as derived MW bands through the forecaster.",
+  },
+  "private.flexibilityEnvelope": {
+    bucket: "operational",
+    why: "Structured flex parameters: max shed MW, ramp rate, notice required, calls per week. Richer than the flat flexPercent — the utility plans dispatch programs against it. Released only as a flex-program-eligible band.",
+  },
+  "private.backupGenProfile": {
+    bucket: "operational",
+    why: "Backup-gen behavior detail: transition time, auto-trigger thresholds, planned test windows. Auto-trigger thresholds are sealed; the utility receives transition-time and planned-test bands.",
+  },
+  "private.failureModeProfile": {
+    bucket: "operational",
+    why: "Redundancy class (Tier I–IV) plus drop-probability tail estimates. Feeds the drop-risk envelope shown to the utility; raw probabilities stay sealed.",
   },
 
   "public.floodRisk": {

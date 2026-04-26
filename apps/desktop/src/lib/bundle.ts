@@ -11,7 +11,7 @@ import {
 } from "@grid-passport/core/bundle";
 import type { CaseInput, Role } from "@grid-passport/core/types";
 import type { ProjectedView } from "@grid-passport/core/projection";
-import { tauriSigner } from "./signer";
+import { applicantSigner } from "./local-signer";
 
 /**
  * Build + sign a disclosure bundle v1 from a loaded case, using the
@@ -37,7 +37,7 @@ export async function buildAndSignBundle(
     runtime: `sha256:${runtimeHash}`,
   };
 
-  const signer = await tauriSigner();
+  const signer = await applicantSigner();
 
   return signBundle(
     {

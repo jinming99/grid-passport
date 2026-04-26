@@ -24,11 +24,71 @@
   }
 }
 
+@keyframes hud-flicker {
+  0%, 96%, 100% { opacity: 1; }
+  97% { opacity: 0.82; }
+  98% { opacity: 1; }
+  99% { opacity: 0.9; }
+}
+
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+
+@keyframes scanline-drift {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes hud-line-in {
+  0% { opacity: 0; transform: translateX(-6px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes hud-dot-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 rgba(56, 189, 248, 0); }
+  50% { opacity: 0.55; box-shadow: 0 0 8px rgba(56, 189, 248, 0.9); }
+}
+
+@keyframes hud-tick-flash {
+  0% { box-shadow: 0 0 0 rgba(56, 189, 248, 0); border-color: rgba(56, 189, 248, 1); }
+  50% { box-shadow: 0 0 14px rgba(56, 189, 248, 0.85); border-color: rgba(125, 211, 252, 1); }
+  100% { box-shadow: 0 0 0 rgba(56, 189, 248, 0); border-color: rgba(56, 189, 248, 0.6); }
+}
+
+@keyframes hud-peel-in {
+  0% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 @utility grid-backdrop {
   background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 64px 64px;
+}
+
+@utility hud-backdrop {
+  background-color: #05080f;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(56, 189, 248, 0.08), transparent 70%),
+    linear-gradient(to right, rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+  background-size: auto, 48px 48px, 48px 48px;
+}
+
+@utility hud-frame {
+  position: relative;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background:
+    linear-gradient(180deg, rgba(8, 12, 22, 0.85), rgba(5, 8, 15, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(56, 189, 248, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+@utility hud-caret {
+  animation: caret-blink 1.05s steps(1) infinite;
 }
 
 html,

@@ -14,6 +14,13 @@ export const krakenTrain: CaseInput = {
   targetCOD: "2029-01-01",
   phases: 3,
   status: "submitted",
+  customerContact: {
+    name: "Mira Aoki",
+    email: "mira.aoki@krakentrain.example",
+  },
+  loadType: "data_center",
+  connectionVoltageKV: 345,
+  netMetered: false,
   privateProfile: {
     flexPercent: 34,
     redundancyShiftPercent: 28,

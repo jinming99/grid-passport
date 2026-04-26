@@ -2,7 +2,11 @@ node_modules
 .next
 dist
 out
+.vite
+target
 *.log
+pnpm-debug.log*
+*.tsbuildinfo
 .env
 .env.local
 .env.*.local
@@ -18,6 +22,12 @@ __pycache__
 .ruff_cache
 
 .vercel
+.idea
+.vscode
+
+# tauri / desktop local build artifacts
+src-tauri/target
+src-tauri/gen
 
 # personal notes / session-planning scratch not part of the product
 docs/human_inputs/

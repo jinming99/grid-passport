@@ -12,9 +12,64 @@ export interface SiteContext {
   displayName: string;
 }
 
+export interface CustomerContact {
+  name: string;
+  email: string;
+  phone?: string;
+}
+
+export type LoadType =
+  | "data_center"
+  | "industrial"
+  | "manufacturing"
+  | "other";
+
 export interface WorkloadMix {
   training: number;
   inference: number;
+}
+
+// Layer-2 operational schema (forward-looking, what utilities can't get today).
+// All four are private — utility never sees raw values; instead receives
+// derived projections through the forecaster + memory-graph layer.
+export interface ForwardOperationalWindow {
+  startUtc: string;
+  endUtc: string;
+  deltaMW: number;
+  ciPlusMinus: number;
+  confidence: number;
+  dailyDutyCycleHours: number;
+  repeats: "none" | "daily" | "weekly";
+  workloadType?: string;
+  sourceDocHash?: string;
+}
+
+export interface FlexibilityEnvelope {
+  maxShedMW: number;
+  maxShedDurationMin: number;
+  rampRateMW_per_min: number;
+  noticeRequiredMin: number;
+  callsPerWeek: number;
+}
+
+export interface PlannedTestWindow {
+  startUtc: string;
+  endUtc: string;
+}
+
+export interface BackupGenProfile {
+  transitionTimeSec: number;
+  capacityMW: number;
+  autoTriggerThresholdMW: number;
+  plannedTestWindows: PlannedTestWindow[];
+}
+
+export type RedundancyClass = "TierI" | "TierII" | "TierIII" | "TierIV";
+
+export interface FailureModeProfile {
+  redundancyClass: RedundancyClass;
+  P_dropGT100MW_24h: number;
+  P_dropGT500MW_24h: number;
 }
 
 export interface PrivateProfile {
@@ -26,6 +81,11 @@ export interface PrivateProfile {
   bessHours: number;
   internalScheduleConfidence: number;
   workloadMix: WorkloadMix;
+  // Layer-2 operational additions (optional for backward-compat with existing fixtures).
+  forwardOperationalWindows?: ForwardOperationalWindow[];
+  flexibilityEnvelope?: FlexibilityEnvelope;
+  backupGenProfile?: BackupGenProfile;
+  failureModeProfile?: FailureModeProfile;
 }
 
 export interface SourceRef {
@@ -73,6 +133,13 @@ export interface CaseInput {
   privateProfile: PrivateProfile;
   publicEvidence: PublicEvidence;
   policyVersion: string;
+  // Baseline-filing fields (ERCOT-precedent additions). All public class —
+  // appear in every role's view. Captured in the Interviewer's Round 2.
+  customerContact: CustomerContact;
+  loadType: LoadType;
+  connectionVoltageKV: number;
+  netMetered: boolean;
+  nettedGenerationStation?: string;
 }
 
 export interface RequestRecord extends CaseInput {
@@ -89,6 +156,10 @@ export type FieldPath =
   | "request.phases"
   | "request.applicantOrg"
   | "request.site"
+  | "request.customerContact"
+  | "request.loadType"
+  | "request.connectionVoltageKV"
+  | "request.netMetered"
   | "private.flexPercent"
   | "private.redundancyShiftPercent"
   | "private.backupGenHours"
@@ -97,6 +168,10 @@ export type FieldPath =
   | "private.bessHours"
   | "private.internalScheduleConfidence"
   | "private.workloadMix"
+  | "private.forwardOperationalWindows"
+  | "private.flexibilityEnvelope"
+  | "private.backupGenProfile"
+  | "private.failureModeProfile"
   | "public.floodRisk"
   | "public.permitRisk"
   | "public.zoningRisk"
